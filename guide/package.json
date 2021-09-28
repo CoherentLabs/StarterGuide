@@ -8,7 +8,7 @@
   "repository": "https://github.com/h-enk/doks",
   "license": "MIT",
   "publishConfig": {
-    "access": "../public"
+    "access": "public"
   },
   "scripts": {
     "init": "shx rm -rf .git && git init -b main",

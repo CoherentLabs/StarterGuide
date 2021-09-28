@@ -1,4 +1,4 @@
-baseurl = "./"
+baseurl = "https://coherentlabs.github.io/StarterGuide"
 canonifyURLs = false
 disableAliases = true
 disableHugoGeneratorInject = true
