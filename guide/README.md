@@ -1,119 +1,80 @@
-<p align="center">
-  <a href="https://getdoks.org/">
-    <img alt="Doks" src="https://doks.netlify.app/logo-doks.svg" width="60">
-  </a>
-</p>
-
-<h1 align="center">
-  Doks
-</h1>
-
-<h3 align="center">
-  Doks child theme
-</h3>
-
-<p align="center">
-  Doks is a Hugo theme helping you build modern documentation websites that are secure, fast, and SEO-ready — by default.
-</p>
-
-<p align="center">
-  <a href="https://github.com/h-enk/doks-child-theme/blob/master/LICENSE">
-    <img src="https://img.shields.io/github/license/h-enk/doks-child-theme?style=flat-square" alt="GitHub">
-  </a>
-  <a href="https://github.com/h-enk/doks-child-theme/releases">
-    <img src="https://img.shields.io/github/v/release/h-enk/doks-child-theme?include_prereleases&style=flat-square"alt="GitHub release (latest SemVer including pre-releases)">
-  </a>
-  <a href="https://github.com/h-enk/doks-child-theme/actions/workflows/codeql-analysis.yml">
-    <img src="https://img.shields.io/github/workflow/status/h-enk/doks-child-theme/CodeQL/master?style=flat-square" alt="GitHub Workflow Status (branch)">
-  </a>
-  <a href="https://app.netlify.com/sites/hyas-child-theme/deploys">
-    <img src="https://img.shields.io/netlify/75395a37-8537-4410-a8c3-d56bf27ec963?style=flat-square" alt="Netlify">
-  </a>
-</p>
-
-![Doks — Modern Documentation Theme](https://raw.githubusercontent.com/h-enk/doks/master/images/tn.png)
-
-## Demo
-
-- [doks-child-theme.netlify.app](https://doks-child-theme.netlify.app/)
-
-## Why Doks?
-
-Nine reasons why you should use Doks:
-
-1. __Security aware__. Get A+ scores on [Mozilla Observatory](https://observatory.mozilla.org/analyze/doks.netlify.app) out of the box. Easily change the default Security Headers to suit your needs.
-
-2. __Fast by default__. Get 100 scores on [Google Lighthouse](https://googlechrome.github.io/lighthouse/viewer/?gist=7731347bb8ce999eff7428a8e763b637) by default. Doks removes unused css, prefetches links, and lazy loads images.
-
-3. __SEO-ready__. Use sensible defaults for structured data, open graph, and Twitter cards. Or easily change the SEO settings to your liking.
-
-4. __Development tools__. Code with confidence. Check styles, scripts, and markdown for errors and fix automatically or manually.
-
-5. __Bootstrap framework__. Build robust, flexible, and intuitive websites with Bootstrap 5. Easily customize your Doks site with the source Sass files.
-
-6. __Netlify-ready__. Deploy to Netlify with sensible defaults. Easily use Netlify Functions, Netlify Redirects, and Netlify Headers.
-
-7. __Full text search__. Search your Doks site with FlexSearch. Easily customize index settings and search options to your liking.
-
-8. __Page layouts__. Build pages with a landing page, blog, or documentation layout. Add custom sections and components to suit your needs.
-
-9. __Dark mode__. Switch to a low-light UI with the click of a button. Change colors with variables to match your branding.
-
-## Requirements
-
-Doks uses npm to centralize dependency management, making it [easy to update](https://getdoks.org/docs/help/how-to-update/) resources, build tooling, plugins, and build scripts:
-
-- Download and install [Node.js](https://nodejs.org/) (it includes npm) for your platform.
+# User Guide Theme
+This user guide uses the [doks theme](https://getdoks.org/)
 
 ## Get started
 
-Start a new Doks project in three steps:
-
-### 1. Create a new site
-
-Doks is available as a child theme, and a starter theme:
-
-- Use the Doks child theme, if you do __not__ plan to customize a lot, and/or need future Doks updates.
-- Use the Doks starter theme, if you plan to customize a lot, and/or do __not__ need future Doks updates.
-
-Not quite sure? Use the Doks child theme.
-
-#### Doks child theme
+### Install dependencies
 
 ```bash
-git clone https://github.com/h-enk/doks-child-theme.git my-doks-site && cd my-doks-site
+  npm install
 ```
 
-#### Doks starter theme
+### Start development server
 
 ```bash
-git clone https://github.com/h-enk/doks.git my-doks-site && cd my-doks-site
+  npm run start
 ```
 
-### 2. Install dependencies
-
+### Build for production
 ```bash
-npm install
+  npm run build
 ```
 
-### 3. Start development server
-
-```bash
-npm run start
-```
-
-## Other commands
+### Other commands
 
 Doks comes with [commands](https://getdoks.org/docs/prologue/commands/) for common tasks.
 
-## Documentation
 
-- [Netlify](https://docs.netlify.com/)
+## Content
+
+### Edit chapters
+
+To edit the existing chapters simply edit the `.md` files inside the `content` folder
+
+### Add Chapters
+
+To add a new chapter run the following command
+
+```bash
+  npm run create [path] [flags]
+```
+Where path will be `chapters/{{name-of-chapter}}/index.md`
+
+To publish your chapter change `draft` to `true`
+
+To add your new chapter to the side menu you must add the following to the page params
+```
+menu:
+    chapters:
+        parent: "chapters"
+```
+
+The items in the menu are ordered by name, if your chapter is 10 or greater you need to add weight to the params
+
+```
+menu:
+    chapters:
+        parent: "chapters"
+        weight: 0
+```
+
+### Adding images
+
+To add images you can use the img shortcode. The image should be located in the folder of the chapter
+
+```
+{{< img src="" alt="" caption="<em></em>" class="border-0" >}}
+```
+
+### Adding a new chapter to the main page
+
+To add a new chapter to the main page simply edit `/layouts/index.html`
+
+
+## Documentation
 - [Hugo](https://gohugo.io/documentation/)
 - [Doks](https://getdoks.org/)
 
 ## Communities
-
-- [Netlify Community](https://community.netlify.com/)
 - [Hugo Forums](https://discourse.gohugo.io/)
 - [Doks Discussions](https://github.com/h-enk/doks/discussions)
