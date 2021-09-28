@@ -1,0 +1,13 @@
+[[chapters]]
+  name = "Chapters"
+  weight = 10
+  identifier = "chapters"
+  url = "/chapters/"
+
+
+
+
+# [[footer]]
+#   name = "Privacy"
+#   url = "/privacy-policy/"
+#   weight = 10
