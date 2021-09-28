@@ -1,0 +1,224 @@
+<!doctype html><html lang=en-us><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="ie=edge"><meta name=viewport content="width=device-width,initial-scale=1,shrink-to-fit=no"><link rel=preload as=font href=https://coherentlabs.github.io/StarterGuide/fonts/vendor/jost/jost-v4-latin-regular.woff2 type=font/woff2 crossorigin><link rel=preload as=font href=https://coherentlabs.github.io/StarterGuide/fonts/vendor/jost/jost-v4-latin-700.woff2 type=font/woff2 crossorigin><link rel=stylesheet href=/StarterGuide/main.97177929d6609804395388d97b1c33d05ff123faacdb470ba6df96eba63466c3912512d5e7996ae1a74d34b04f660f5be64f6713688d123759c5493834e721a7.css integrity="sha512-lxd5KdZgmAQ5U4jZexwz0F/xI/qs20cLpt+W66Y0ZsORJRLV55lq4adNNLBPZg9b5k9nE2iNEjdZxUk4NOchpw==" crossorigin=anonymous><noscript><style>img.lazyload{display:none}</style></noscript><meta name=robots content="index, follow"><meta name=googlebot content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><meta name=bingbot content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><title>Chapter 9: Map -</title><meta name=description content><link rel=canonical href=https://coherentlabs.github.io/StarterGuide/chapters/chapter-9/><meta property="og:locale" content="en_US"><meta property="og:type" content="article"><meta property="og:title" content="Chapter 9: Map"><meta property="og:description" content="In this chapter we’ll show you how to use some of the more advanced features and techniques in Gameface to create a map. We’ll look at how to make a large tiled map that can be moved around with the mouse and zoomed in and out. The map will also have a custom cursor and points of interest that will show the relevant information when hovered over. All of this will be achieved through data-binding."><meta property="og:url" content="https://coherentlabs.github.io/StarterGuide/chapters/chapter-9/"><meta property="article:published_time" content="2021-09-15T08:39:24+03:00"><meta property="article:modified_time" content="2021-09-15T08:39:24+03:00"><meta property="og:image" content="https://coherentlabs.github.io/StarterGuide/doks.png"><meta property="og:image:alt" content><meta name=twitter:card content="summary_large_image"><meta name=twitter:site content="@getdoks"><meta name=twitter:creator content="@henkverlinde"><meta name=twitter:title content="Chapter 9: Map"><meta name=twitter:description content><meta name=twitter:image content="https://coherentlabs.github.io/StarterGuide/doks.png"><meta name=twitter:image:alt content="Chapter 9: Map"><script type=application/ld+json>{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://coherentlabs.github.io/#/schema/organization/1","name":"Doks","url":"https://coherentlabs.github.io/","sameAs":["https://twitter.com/getdoks","https://github.com/h-enk/doks"],"logo":{"@type":"ImageObject","@id":"https://coherentlabs.github.io/#/schema/image/1","url":"https://coherentlabs.github.io/logo-doks.png","width":512,"height":512,"caption":"Doks"},"image":{"@id":"https://coherentlabs.github.io/#/schema/image/1"}},{"@type":"WebSite","@id":"https://coherentlabs.github.io/#/schema/website/1","url":"https://coherentlabs.github.io/","name":"","description":"","publisher":{"@id":"https://coherentlabs.github.io/#/schema/organization/1"}},{"@type":"WebPage","@id":"https://coherentlabs.github.io/StarterGuide/chapters/chapter-9/","url":"https://coherentlabs.github.io/StarterGuide/chapters/chapter-9/","name":"Chapter 9: Map","description":"","isPartOf":{"@id":"https://coherentlabs.github.io/#/schema/website/1"},"about":{"@id":"https://coherentlabs.github.io/#/schema/organization/1"},"datePublished":"2021-09-15T08:39:24CET","dateModified":"2021-09-15T08:39:24CET","breadcrumb":{"@id":"https://coherentlabs.github.io/StarterGuide/chapters/chapter-9/#/schema/breadcrumb/1"},"primaryImageOfPage":{"@id":"https://coherentlabs.github.io/StarterGuide/chapters/chapter-9/#/schema/image/2"},"inLanguage":"en-US","potentialAction":[{"@type":"ReadAction","target":["https://coherentlabs.github.io/StarterGuide/chapters/chapter-9/"]}]},{"@type":"BreadcrumbList","@id":"https://coherentlabs.github.io/StarterGuide/chapters/chapter-9/#/schema/breadcrumb/1","name":"Breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"item":{"@type":"WebPage","@id":"https://coherentlabs.github.io/StarterGuide","url":"https://coherentlabs.github.io/StarterGuide","name":"Home"}},{"@type":"ListItem","position":3,"item":{"@type":"WebPage","@id":"https://coherentlabs.github.io/StarterGuide/chapters/","url":"https://coherentlabs.github.io/StarterGuide/chapters/","name":"Chapters"}},{"@type":"ListItem","position":4,"item":{"@id":"https://coherentlabs.github.io/StarterGuide/chapters/chapter-9/"}}]},{"@context":"https://schema.org","@graph":[{"@type":"ImageObject","@id":"https://coherentlabs.github.io/StarterGuide/chapters/chapter-9/#/schema/image/2","url":"https://coherentlabs.github.io/StarterGuide/doks.png","contentUrl":"https://coherentlabs.github.io/StarterGuide/doks.png","caption":"Chapter 9: Map"}]}]}</script><meta name=theme-color content="#fff"><link rel=apple-touch-icon sizes=180x180 href=https://coherentlabs.github.io/StarterGuide/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=https://coherentlabs.github.io/StarterGuide/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=https://coherentlabs.github.io/StarterGuide/favicon-16x16.png><link rel=manifest crossorigin=use-credentials href=https://coherentlabs.github.io/StarterGuide/site.webmanifest></head><body class="chapters single"><div class=header-bar></div><header class="navbar navbar-expand-md navbar-light doks-navbar"><nav class="container-xxl flex-wrap flex-md-nowrap" aria-label="Main navigation"><a class="navbar-brand p-0 me-auto" href=/StarterGuide/ aria-label=Bootstrap></a><button class="btn btn-menu d-block d-md-none order-5" type=button data-bs-toggle=offcanvas data-bs-target=#offcanvasDoks aria-controls=offcanvasDoks aria-label="Open main menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button><div class="offcanvas offcanvas-start border-0 py-md-1" tabindex=-1 id=offcanvasDoks data-bs-backdrop=true aria-labelledby=offcanvasDoksLabel><div class="header-bar d-md-none"></div><div class="offcanvas-header d-md-none"><h2 class="h5 offcanvas-title ps-2" id=offcanvasDoksLabel><a class=text-dark href=/StarterGuide/></a></h2><button type=button class="btn-close text-reset me-2" data-bs-dismiss=offcanvas aria-label="Close main menu"></button></div><div class="offcanvas-body px-4"><h3 class="h6 text-uppercase mb-3 d-md-none">Main</h3><ul class="nav flex-column flex-md-row ms-md-n3"></ul><hr class="text-black-50 my-4 d-md-none"><h3 class="h6 text-uppercase mb-3 d-md-none">Socials</h3><ul class="nav flex-column flex-md-row ms-md-auto me-md-n5 pe-md-2"></ul></div></div></nav></header><div class="wrap container-xxl" role=document><div class=content><div class="row flex-xl-nowrap"><div class="col-lg-5 col-xl-4 docs-sidebar"><nav class=docs-links aria-label="Main navigation"><ul class="list-unstyled collapsible-sidebar"><li class=mb-1><button class="btn btn-toggle align-items-center rounded collapsed" data-bs-toggle=collapse data-bs-target=#section-chapters aria-expanded=true>
+Chapters</button><div class="collapse show" id=section-chapters><ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small"><li><a class="docs-link rounded" href=/StarterGuide/StarterGuide/chapters/chapter-1/>Chapter 1: Getting Started</a></li><li><a class="docs-link rounded" href=/StarterGuide/StarterGuide/chapters/chapter-2/>Chapter 2: Creating our first UI component</a></li><li><a class="docs-link rounded" href=/StarterGuide/StarterGuide/chapters/chapter-3/>Chapter 3: Health Bar</a></li><li><a class="docs-link rounded" href=/StarterGuide/StarterGuide/chapters/chapter-4/>Chapter 4: Minimap</a></li><li><a class="docs-link rounded" href=/StarterGuide/StarterGuide/chapters/chapter-5/>Chapter 5: Pause Menu</a></li><li><a class="docs-link rounded" href=/StarterGuide/StarterGuide/chapters/chapter-6/>Chapter 6: Settings Menu</a></li><li><a class="docs-link rounded" href=/StarterGuide/StarterGuide/chapters/chapter-7/>Chapter 7: Adding more menus</a></li><li><a class="docs-link rounded" href=/StarterGuide/StarterGuide/chapters/chapter-8/>Chapter 8: Inventory</a></li><li><a class="docs-link rounded active" href=/StarterGuide/StarterGuide/chapters/chapter-9/>Chapter 9: Map</a></li><li><a class="docs-link rounded" href=/StarterGuide/StarterGuide/chapters/chapter-10/>Chapter 10: Debugging, Profiling and Optimizations</a></li></ul></div></li></ul></nav></div><nav class="docs-toc d-none d-xl-block col-xl-3" aria-label="Secondary navigation"><div class=page-links><h3>On this page</h3><nav id=TableOfContents><ul><li><a href=#adding-a-new-model-for-the-map>Adding a new model for the map</a></li><li><a href=#adding-a-grid-of-tiles>Adding a grid of tiles</a></li><li><a href=#add-interactivity-to-the-map>Add interactivity to the map</a></li><li><a href=#adding-point-of-interest-markers-to-the-map>Adding Point Of Interest markers to the map</a></li><li><a href=#get-the-chapter-files>Get the chapter files</a></li></ul></nav></div></nav><main class="docs-content col-lg-11 col-xl-9 mx-xl-auto"><nav aria-label=breadcrumb><ol class=breadcrumb><li class=breadcrumb-item><a href=/StarterGuide/>Home</a></li><li class=breadcrumb-item><a href=/StarterGuide/chapters/>Chapters</a></li><li class="breadcrumb-item active" aria-current=page>Chapter 9: Map</li></ol></nav><h1>Chapter 9: Map</h1><p class=lead></p><nav class=d-xl-none aria-label="Quaternary navigation"><div class=page-links><h3>On this page</h3><nav id=TableOfContents><ul><li><a href=#adding-a-new-model-for-the-map>Adding a new model for the map</a></li><li><a href=#adding-a-grid-of-tiles>Adding a grid of tiles</a></li><li><a href=#add-interactivity-to-the-map>Add interactivity to the map</a></li><li><a href=#adding-point-of-interest-markers-to-the-map>Adding Point Of Interest markers to the map</a></li><li><a href=#get-the-chapter-files>Get the chapter files</a></li></ul></nav></div></nav><p>In this chapter we’ll show you how to use some of the more advanced features and techniques in Gameface to create a map. We’ll look at how to make a large tiled map that can be moved around with the mouse and zoomed in and out. The map will also have a custom cursor and points of interest that will show the relevant information when hovered over. All of this will be achieved through data-binding.</p><h2 id=adding-a-new-model-for-the-map>Adding a new model for the map<a href=#adding-a-new-model-for-the-map class=anchor aria-hidden=true>#</a></h2><p>As with all previous chapters, we will start by adding data to our model. This time however we’ll make a new model for the map as we&rsquo;ll be updating the model every time we interact with the map. If we keep everything in a single model we are risking performance issues as the model grows bigger.</p><p>We’ll start by creating a new map object with the following values - zoom, x, y, pointsOfInterest and mapTiles.</p><pre><code>const map = {
+    zoom: 1,
+    x: 0,
+    y: 0,
+    pointsOfInterest: [],
+    mapTiles: Array.from(Array(64))
+}
+</code></pre><p>Then in our whenReady promise resolve, we’ll register the new Model</p><pre><code>engine.createJSModel(&quot;MapModel&quot;, map);
+</code></pre><p>While all of the values are pretty self explanatory, the <code>mapTiles</code> seems out of place as it’s just an array of empty values. While it is indeed not necessary to have this value, we’ll be using it to avoid having to manually set up each map tile. The tiles we have provided in the assets folder are for an <strong>8 x 8</strong> map, or <strong>64</strong> tiles in total. So instead of having to write an element for each tile, we can now easily write one with <code>data-bind-for</code> and create all <strong>64</strong> tiles at once.</p><h2 id=adding-a-grid-of-tiles>Adding a grid of tiles<a href=#adding-a-grid-of-tiles class=anchor aria-hidden=true>#</a></h2><p>To do that we’ll use another component called <code>automatic-grid</code>, which will allow us to create an <strong>8x8</strong> grid easily. To install it, we’ll do the same thing we did in <a href=/chapters/chapter-6/#adding-the-dependencies>Chapter 6</a> and use the node package manager. For this particular component we’ll also need to use the grid component style as it’s built on top of it.</p><p>To install both components we’ll use:</p><pre><code>npm install coherent-gameface-automatic-grid
+npm install coherent-gameface-grid
+</code></pre><p>And then in our index.html we’ll add the style for the <code>grid</code> and the <code>automatic-grid</code>.</p><pre><code>&lt;link rel=&quot;stylesheet&quot; href=&quot;./node_modules/coherent-gameface-grid/style.css&quot;&gt;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;./node_modules/coherent-gameface-automatic-grid/style.css&quot;&gt;
+</code></pre><p>Plus the script for the <code>automatic-grid</code>:</p><pre><code>&lt;script src=&quot;./node_modules/coherent-gameface-automatic-grid/umd/automatic-grid.production.min.js&quot;&gt;&lt;/script&gt;
+</code></pre><p>To create our automatic grid, we just need to add the <code>automatic-grid</code> element to our <code>html</code>. Before that, however, we need to create a new tab, just like we did for the inventory and settings:</p><pre><code>&lt;div class=&quot;tab&quot; data-bind-class-toggle=&quot;active-tab:{{PlayerModel.activePauseMenu}} === 'map'&quot;&gt;Map&lt;/div&gt;
+
+&lt;div class=&quot;map&quot; data-bind-if=&quot;{{PlayerModel.activePauseMenu}} === 'map'&quot;&gt;
+ 
+&lt;/div&gt;
+</code></pre><p>And then we’ll add:</p><pre><code>&lt;div class=&quot;map&quot; data-bind-if=&quot;{{PlayerModel.activePauseMenu}} === 'map'&quot;&gt;
+     &lt;gameface-automatic-grid class=&quot;map-tile-grid&quot;&gt;&lt;/gameface-automatic-grid&gt;
+&lt;/div&gt;
+</code></pre><p>To set the columns and rows in our <code>automatic-grid</code> we just need to add them as attributes to our <code>automatic-grid</code> element like this:</p><pre><code>&lt;gameface-automatic-grid class=&quot;map-tile-grid&quot; columns=&quot;8&quot; rows=&quot;8&quot;&gt;
+ 
+&lt;/gameface-automatic-grid&gt;
+</code></pre><p>With this we now have an <strong>8x8</strong> grid. But we still need to add the map tiles to it, for which we’ll use a <code>component-slot</code> element. <code>Component-slot</code> elements are elements that are added as children to the component and are then used in the component template based on their data-name attribute. Here, we’ll need a <code>component-slot</code> with a <code>data-name=”item”</code></p><pre><code>&lt;gameface-automatic-grid class=&quot;map-tile-grid&quot; columns=&quot;8&quot; rows=&quot;8&quot;&gt;
+    &lt;component-slot data-name=&quot;item&quot;&gt;&lt;/component-slot&gt;
+&lt;/gameface-automatic-grid&gt;
+</code></pre><p>And inside this component slot we can add our map tile:</p><pre><code>&lt;component-slot data-name=&quot;item&quot;&gt;
+    &lt;div class=&quot;map-tile&quot;&gt;&lt;/div&gt;
+&lt;/component-slot&gt;
+</code></pre><p>But we have <strong>64</strong> tiles and we don’t want to write a component slot for each one of them. Instead, we’ll use the <code>mapTiles</code> we added to our model and by using <code>data-bind-for</code>, we’ll create <strong>64</strong> of those component slots</p><pre><code>&lt;component-slot data-name=&quot;item&quot; data-bind-for=&quot;index, tile: {{MapModel.mapTiles}}&quot;&gt;
+</code></pre><p>We now have <strong>64</strong> tiles that will be arranged in an <strong>8x8</strong> grid. But we still don’t have the images for them. This can be easily fixed by adding a <code>data-bind-style-background-image-url</code> just as we did in the previous chapter:</p><pre><code>&lt;div class=&quot;map-tile&quot; data-bind-style-background-image-url=&quot;'./assets/map-1_'+ ({{index}} + 1) +'.jpg'&quot;&gt;&lt;/div&gt;
+</code></pre><p>where we need <strong>index + 1</strong> because the map tiles start from <strong>1</strong>, but the index starts with <strong>0</strong> and to indicate that it’s a number, otherwise it will be resolved to - <code>“./assets/map-1_01.jpg”</code></p><p>If we open the Player, we’ll see the map displayed:</p><figure class=border-0><img class="img-fluid lazyload blur-up" data-sizes=auto src=/StarterGuide/chapters/chapter-9/chapter-9_1.png width=1283 height=755 alt=chapter-9_1><noscript><img class=img-fluid sizes=100vw src=/StarterGuide/chapters/chapter-9/chapter-9_1.png width=1283 height=755 alt=chapter-9_1></noscript><figcaption class=figure-caption><em></em></figcaption></figure><h2 id=add-interactivity-to-the-map>Add interactivity to the map<a href=#add-interactivity-to-the-map class=anchor aria-hidden=true>#</a></h2><p>Our next step is to make the map more interactive by attaching an event listener and moving it around by dragging. Since we also want to be able to zoom in and out, we’ll be using a single data-binding to achieve both. This can be done with <code>data-bind-style-transform2d</code>, which accepts a matrix of <strong>6</strong> numbers in the following order: <code>scaleX(), skewY(), skewX(), scaleY(), translateX(), translateY()</code>. For our case, we’ll be needing <code>scaleX and Y</code> and <code>translateX and Y</code>.</p><p>To get started we’ll create a function called <code>mapDragStart()</code> in our <code>script.js</code> and attach it on <code>mousedown</code> to our map:</p><pre><code>function mapDragStart(event) {
+    
+}
+</code></pre><pre><code>&lt;div class=&quot;map&quot; onmousedown=&quot;mapDragStart(event)&quot; data-bind-if=&quot;{{PlayerModel.activePauseMenu}} === 'map'&quot;&gt;
+</code></pre><p>If we click on the map now nothing will happen, as the function we attached is empty. Before we start adding some logic to it, let’s add the data-binding to our <code>automatic-grid</code>, as the map will only serve as a container. Since we only need a few transforms, our <code>data-bind-style-transform2d</code> will look something like this:</p><pre><code>&lt;gameface-automatic-grid class=&quot;map-tile-grid&quot; columns=&quot;8&quot; rows=&quot;8&quot; data-bind-style-transform2d=&quot;{{MapModel.zoom}} + ', 0, 0,' + {{MapModel.zoom}} + ',' + {{MapModel.x}} + ',' + {{MapModel.y}}&quot;&gt;
+</code></pre><p>It may look a bit confusing, but the <code>transform2d</code> binding expects a string, so we must concatenate our values to be a string. If we open the Player we should see that nothing has changed.</p><p>Next, we need to create two more functions - <code>mapDrag</code> (which will control the dragging) and <code>mapDragEnd</code> (which will clear any changes we made so as to not interfere with the other operations).</p><pre><code>function mapDrag(event) {
+    
+}
+</code></pre><pre><code>function mapDragEnd() {
+    
+}
+</code></pre><p>Once these are in place, we can attach them to our event listeners. However, unlike with the <code>mousedown</code> event, we’ll be attaching these to the document in order to have the map drag even while we go outside. This will allow us to not set a flag that we are dragging the map. So in the <code>mapDragStart</code> we’ll add the following:</p><pre><code>function mapDragStart(event) {
+    document.addEventListener('mousemove', mapDrag);
+    document.addEventListener('mouseup', mapDragEnd); 
+}
+</code></pre><p>And in the <code>mapDragEnd</code> function we’ll remove these listeners, so that we stop dragging when the mouse button is released:</p><pre><code>function mapDragEnd() {
+    document.removeEventListener('mousemove', mapDrag);
+    document.removeEventListener('mouseup', mapDragEnd);
+}
+</code></pre><p>If we now drag the map in the Player nothing will happen, as we haven’t added any code to our function to be executed. To start we’ll actually add a few global variables, namely <code>offsetY</code> (the offset of our map because of the tabs) <code>startX</code> and <code>startY</code> which will allow us to drag the map based on the starting position of the drag:</p><figure class=border-0><img class="img-fluid lazyload blur-up" data-sizes=auto src=/StarterGuide/chapters/chapter-9/chapter-9_2.png width=1282 height=753 alt=chapter-9_2><noscript><img class=img-fluid sizes=100vw src=/StarterGuide/chapters/chapter-9/chapter-9_2.png width=1282 height=753 alt=chapter-9_2></noscript><figcaption class=figure-caption><em>Why offsetY</em></figcaption></figure><pre><code>let offsetY, startX, startY;
+</code></pre><p>We’ll set these variables in the <code>mapDragStart</code> function :</p><pre><code>function mapDragStart(event) {
+    offsetY = event.currentTarget.getBoundingClientRect().y;
+ 
+    startX = event.clientX;
+    startY = event.clientY - offsetY;
+ 
+    document.addEventListener(&quot;mousemove&quot;, mapDrag);
+    document.addEventListener(&quot;mouseup&quot;, mapDragEnd);
+}
+</code></pre><p>And in the <code>mapDrag</code> function we’ll use these variables to change the model and create the dragging motion:</p><pre><code>function mapDrag(event) {
+    PlayerModel.map.x += event.clientX - startX;
+    PlayerModel.map.y += event.clientY - startY - offsetY;
+ 
+    startX = event.clientX;
+    startY = event.clientY - offsetY;
+ 
+    engine.updateWholeModel(MapModel);
+    engine.synchronizeModels();
+}
+</code></pre><p>Here we add to the model the difference between the starting coordinates and the mouse coordinates - that way, if we move the mouse to the left, we’ll receive a negative number (and so on). We then set the new starting points, so on the next move we’ll only add the distance that the mouse has moved. Lastly, we have to update the model and synchronize it in order for all of these changes to appear on screen.</p><p>If we open the Player and drag our map we’ll see it move:</p><figure class=border-0><img class="img-fluid lazyload blur-up" data-sizes=auto src=/StarterGuide/chapters/chapter-9/chapter-9_3.png width=1281 height=751 alt=chapter-9_3><noscript><img class=img-fluid sizes=100vw src=/StarterGuide/chapters/chapter-9/chapter-9_3.png width=1281 height=751 alt=chapter-9_3></noscript><figcaption class=figure-caption><em></em></figcaption></figure><p>But as we can see, our map can be dragged infinitely, meaning that we can remove it entirely from the map. To fix that we’ll need to make another two global variables - <code>limitX</code> and <code>limitY</code>, which we’ll use to control the dragging. And in the mapDragStart function we’ll do the following:</p><pre><code>    const mapWrapper = event.currentTarget;
+    const map = event.currentTarget.firstChild;
+ 
+    offsetY = mapWrapper.getBoundingClientRect().y;
+ 
+    limitX = (map.getBoundingClientRect().width - mapWrapper.getBoundingClientRect().width) / 2;
+    limitY = (map.getBoundingClientRect().height - mapWrapper.getBoundingClientRect().height) / 2;
+ 
+</code></pre><p>where we have added a constant, so that we don’t have to write <code>event.currentTarget</code> and <code>event.currentTarget.firstChild</code> everywhere.</p><p>This limit is the difference between the <code>width/height</code> of the map and the <code>width/height</code> of the wrapper divided by two (that way we can drag the map to the left as well as to the right, up and down, respectively).</p><p>To add the limits, we’ll just clamp the model values. Clamping is a way to limit a value between two others - a min and max value. To make the clamping, we’ll make a helper function called <code>clamp()</code> in the <code>script.j</code>s file, which will take on a <code>value</code>, a <code>minimum</code> and <code>maximum value</code>:</p><pre><code>function clamp(value, min, max) {
+    return Math.min(Math.max(min, value), max);
+}
+</code></pre><p>And in the <code>mapDrag</code> function:</p><pre><code>MapModel.x = clamp(MapModel.x + event.clientX - startX, -limitX, 0); 
+MapModel.y = clamp(MapModel.y + event.clientY - startY - offsetY, -limitY, 0); 
+</code></pre><p>If we drag the map now it won’t move past the edges.</p><p>The next kind of functionality we will give the map is the ability to zoom in and out using the mouse scroll. To do that, we’ll make another function called zoom and attach it to the wheel event of our map:</p><pre><code>function zoom(event) {
+    
+}
+</code></pre><pre><code>&lt;div class=&quot;map&quot; onmousedown=&quot;mapDragStart(event)&quot; onwheel=&quot;zoom(event)&quot; data-bind-if=&quot;{{PlayerModel.activePauseMenu}} === 'map'&quot;&gt;
+</code></pre><p>We can now start adding the zoom logic to our function. For our use case, we need the map to zoom in on our mouse coordinates - there are a couple of ways to do that, but we are going to do it by moving the <code>x</code> and <code>y</code> coordinates of the map, based on the scale.</p><p>We’ll start by changing the scale of our map based on the mouse wheel movement. To do that we’ll be using the <code>deltaY</code> of our event and multiply it by <strong>-0.01</strong> (The delta is always <strong>40</strong> and it will be too large of a scale; the reason why it’s a negative number is that the delta is negative when you scroll up and positive when down. If we don’t reverse them, we’ll have to scroll down to zoom out and vice versa, which is very counterintuitive). Since we don’t want to scale the map to be infinitely small, we’ll reuse the clamping function we made earlier:</p><pre><code>    MapModel.zoom = clamp(MapModel.zoom + (event.deltaY * -0.01), 1, 3);
+</code></pre><p>If we now try to zoom in on any point in our map, we’ll see that it zooms in and out based on the top left corner where our origin point is located. Аs mentioned previously, to fix that we’ll change the <code>x</code> and <code>y</code> coordinates of the map.</p><div class="alert alert-warning d-flex" role=alert><div class="flex-shrink-1 alert-icon">❗</div><div class=w-100>Note that if we just change them, the map will move outside the limits again, meaning that we need to set the limits again when we are zooming.</div></div><p>The first thing we’ll add to our code are the map constants from the <code>mapDragStart</code> function</p><pre><code>    const mapWrapper = event.currentTarget;
+    const map = event.currentTarget.firstChild;
+</code></pre><p>Then we’ll set the <code>offsetY</code> again ( if we start to zoom without having dragged the map, our calculations will be off)</p><pre><code>    offsetY = mapWrapper.getBoundingClientRect().y;
+</code></pre><p>And then save the initialScale of the map:</p><pre><code>    const initialScale = MapModel.zoom;
+</code></pre><p>We need to save the initial scale because when we scale an element, it scales based on its initial values. For example, if we have a square that is <strong>100x100</strong> and we scale it twice, it will become <strong>200x200</strong>; however, if we change the scale to be <strong>4</strong>, it won’t become <strong>800x800</strong> but <strong>400x400</strong> (hence we’ll need this value to compensate for the difference).</p><p>After that comes the zoom logic we wrote earlier; once set, we can proceed with setting our limits:</p><pre><code>    MapModel.zoom = clamp(MapModel.zoom + event.deltaY * -0.01, 1, 3);
+ 
+    limitX = map.getBoundingClientRect().width * (MapModel.zoom / initialScale) - mapWrapper.getBoundingClientRect().width;
+    limitY = map.getBoundingClientRect().height * (MapModel.zoom / initialScale) - mapWrapper.getBoundingClientRect().height;
+</code></pre><p>As you can see, setting the limits is the same as in the <code>mapDragStart</code> function, but with an addition. When we set the limits, we haven’t yet updated and synchronized the model - this means that the map width is not scaled to the new scale yet. To compensate for this difference, we’ll divide the new scale by the old one and multiply it by the width of the map, so we can get scaled width. Same goes for the height.</p><p>With the limits set, we can set the new map <code>x</code> and <code>y</code> coordinates:</p><pre><code>    MapModel.x = clamp(MapModel.x + event.clientX * (MapModel.zoom - initialScale) * -1, -limitX, 0);
+</code></pre><pre><code>    MapModel.y = clamp(MapModel.y + (event.clientY - offsetY) * (MapModel.zoom - initialScale) * -1, -limitY, 0);
+</code></pre><p>Again, we have a slight difference to the <code>mapDragStart</code> and <code>mapDrag</code> functions. We have to compensate for the scale again, by subtracting the current scale to the old scale, then multiplying by <strong>-1</strong>. The purpose of the multiplication is to have the map move in the correct direction.</p><p>And then we finish by updating and synchronizing our model:</p><pre><code>    engine.updateWholeModel(MapModel);
+    engine.synchronizeModels();
+</code></pre><p>Now when we open the Player we’ll see that we can zoom in and out in the map using the mouse scroll:</p><figure class=border-0><img class="img-fluid lazyload blur-up" data-sizes=auto src=/StarterGuide/chapters/chapter-9/chapter-9_4.png width=1282 height=750 alt=chapter-9_4><noscript><img class=img-fluid sizes=100vw src=/StarterGuide/chapters/chapter-9/chapter-9_4.png width=1282 height=750 alt=chapter-9_4></noscript><figcaption class=figure-caption><em></em></figcaption></figure><h2 id=adding-point-of-interest-markers-to-the-map>Adding Point Of Interest markers to the map<a href=#adding-point-of-interest-markers-to-the-map class=anchor aria-hidden=true>#</a></h2><p>With that done we can move to the last component of our map, the points of interest. These will be markers on the map, that when hovered over will show a tooltip with more information about the point. We can do this by combining a couple of different data-bindings, but in this case we’ll demonstrate how to create your own data-binding attribute and use it.</p><p>To start we’ll create a new file, called <code>poi-data-binding.js</code> and we’ll include it in the <code>index.html</code> between the <code>cohtml</code> script and the <code>model.js</code> file:</p><pre><code>    &lt;script src=&quot;./cohtml.js&quot;&gt;&lt;/script&gt;
+    &lt;script src=&quot;./poi-data-binding.js&quot;&gt;&lt;/script&gt;
+    &lt;script src=&quot;./model.js&quot;&gt;&lt;/script&gt;
+</code></pre><p>We can now start making our custom data-binding attribute. The first thing we need to do is to make a class in the <code>poi-data-binding</code> file we just created which we’ll call <code>POIHandler</code> (the names of the files and classes are arbitrary, you can set them to anything that make sense to your use case)</p><pre><code>class POIHandler {
+    
+}
+</code></pre><p>Inside this class we always need to add 3 functions - <code>init</code>, <code>update</code> and <code>deinit</code>. These functions receive our model value and allow us to control what happens with the custom data-binding. The <code>init</code> function runs the first time we attach the custom data-binding, the <code>update</code> function - each time the model changes, and the <code>deinit</code> is when we remove the data-binding.</p><p>Each function accepts the following parameters:</p><pre><code>    init(element, value) {
+ 
+    }
+ 
+    update(element, value) {
+ 
+    }
+ 
+    deinit(element) {
+        
+    }
+</code></pre><p>where element is the element we have added our custom data-binding attribute to and value is the value of our model.</p><p>The first thing we need to do is to decide on the type of data our custom data-binding will work with. In our case, these will be objects that have <code>x and y coordinates</code>, <code>image</code>, <code>title</code>, <code>description</code> and an indication if it’s <code>locked</code>.</p><p>In our <code>MapModel</code> in <code>pointsOfInterest</code> we’ll add a couple of objects:</p><pre><code>    pointsOfInterest: [
+        {
+            x: 120,
+            y: 429,
+            icon: 'village',
+            title: 'Village',
+            description: 'The village where you were raised.',
+            locked: false
+        },
+        {
+            x: 289,
+            y: 121,
+            icon: 'town',
+            title: 'Town',
+            description: 'The town of Málhildur.',
+            locked: false
+        },
+        {
+            x: 968,
+            y: 409,
+            icon: 'statue',
+            title: 'Statue of Freya',
+            description: 'Statue of the goddess Freya. Only thing left from a sunken village.',
+            locked: false
+        }
+    ],
+</code></pre><p>Now we can start making our tooltips. To start, we’ll create a couple of additional functions in the poi-data-binding:</p><pre><code>    createTooltip(title, description, locked) {
+ 
+    }
+ 
+    onMouseEnter() {
+ 
+    }
+ 
+    onMouseLeave() {
+ 
+    }
+</code></pre><p>The <code>createTooltip</code> will create the tooltip that will show when we hover over a POI and the <code>onMouseEnter</code> and <code>onMouseLeave</code> will be responsible for showing and hiding the tooltip.</p><p>We can now start adding logic to our init function and set the position and images of our points:</p><pre><code>    init(element, value) {
+        element.style.left = `${value.x}px`;
+        element.style.top = `${value.y}px`;
+        element.style.backgroundImage = `url(./assets/map-${value.icon}-icon.png)`;
+    }
+</code></pre><p>Let’s test if everything we’ve done so far works. We’ll first need to register our custom data-binding attribute. In the <code>model.js</code> file (in the <code>engine.whenReady</code>, above the part where we register our model), we’ll add the following:</p><pre><code>engine.registerBindingAttribute('poi', POIHandler);
+</code></pre><p>We can now use our custom data-binding attribute as: <code>data-bind-poi</code>.</p><p>Before we use it, we need to make a few structural changes to our html. In the <code>index.html</code>, we’ll wrap the <code>automatic-grid</code> in a new div that will have the same class and data-binding as the grid:</p><pre><code>&lt;div class=&quot;map-tile-grid&quot;
+     data-bind-style-transform2d=&quot;{{MapModel.zoom}} + ', 0, 0,' + {{MapModel.zoom}} + ',' + {{MapModel.x}} + ',' + {{MapModel.y}}&quot;&gt;
+     &lt;gameface-automatic-grid columns=&quot;8&quot; rows=&quot;8&quot;&gt;
+               &lt;component-slot data-name=&quot;item&quot; data-bind-for=&quot;index, tile: {{MapModel.mapTiles}}&quot;&gt;
+                     &lt;div class=&quot;map-tile&quot; data-bind-style-background-image-url=&quot;'./assets/map-1_'+ ({{index}} + 1) +'.jpg'&quot;&gt;&lt;/div&gt;
+               &lt;/component-slot&gt;
+      &lt;/gameface-automatic-grid&gt;
+&lt;/div&gt;
+</code></pre><p>This will allow us to place our points of interest relative to the grid, so that when we make any changes (e.g. scale, move), it will affect them as well.</p><p>We can now add a <code>.point-of-interest</code> element inside the <code>map-tile-grid</code>; using <code>data-bind-for</code>, we’ll multiply it to the number of points in our model and then our custom data-binding should position it correctly on the map:</p><pre><code>&lt;div class=&quot;point-of-interest&quot; data-bind-for=&quot;poi:{{MapModel.pointsOfInterest}}&quot; data-bind-poi=&quot;{{poi}}&quot;&gt;&lt;/div&gt;
+</code></pre><p>If we open the Player, we should see the icons positioned correctly:</p><figure class=border-0><img class="img-fluid lazyload blur-up" data-sizes=auto src=/StarterGuide/chapters/chapter-9/chapter-9_5.png width=1281 height=747 alt=chapter-9_5><noscript><img class=img-fluid sizes=100vw src=/StarterGuide/chapters/chapter-9/chapter-9_5.png width=1281 height=747 alt=chapter-9_5></noscript><figcaption class=figure-caption><em></em></figcaption></figure><p>Next we’ll add a tooltip and event listeners that will show or hide the tooltip if we hover over the icon. In the <code>poi-data-binding.js</code> we’ll add the following code to the <code>createTooltip</code> function</p><pre><code>    createTooltip(title, description, locked) {
+        const tooltip = document.createElement(&quot;div&quot;);
+        tooltip.classList.add(&quot;tooltip&quot;);
+        tooltip.innerHTML = `&lt;div class=&quot;tooltip-title&quot;&gt;${title}&lt;/div&gt;&lt;div class=&quot;tooltip-description&quot;&gt;${description}&lt;/div&gt;`;
+        return tooltip;
+    }
+</code></pre><p>And in our update function, we can add the following code:</p><pre><code>this._tooltip = this.createTooltip(value.title, value.description, value.locked);
+</code></pre><p>This will make the tooltip available in other functions as well - namely the onMouseEnter and onMouseLeave.The reason why we don’t add it to the init function is that the update function always fires on <code>synchronizeModels</code>, hence we don’t need to run it twice.</p><p>With our tooltip created, we can append it to our element. First, however, we need to clear any other tooltips in order not to have multiple tooltips inside the element.</p><pre><code>    element.innerHTML = '';
+    element.appendChild(this._tooltip);
+</code></pre><p>Now, we can attach our event listeners to the element in the <code>init</code> function, and remove them in the <code>deinit</code>:</p><pre><code>    init(element, value) {
+        element.style.left = `${value.x}px`;
+        element.style.top = `${value.y}px`;
+        element.style.backgroundImage = `url(./assets/map-${value.icon}-icon.png)`;
+ 
+        element.addEventListener('mouseenter', this.onMouseEnter);
+        element.addEventListener('mouseleave', this.onMouseLeave);
+    }
+
+    deinit(element) {
+        element.removeEventListener('mouseenter', this.onMouseEnter);
+        element.removeEventListener('mouseleave', this.onMouseLeave);
+    }
+</code></pre><p>And in the <code>onMouseEnter</code> and <code>onMouseLeave</code> functions we can add:</p><pre><code>    onMouseEnter() {
+        this._tooltip.style.display = 'block';
+    }
+ 
+    onMouseLeave() {
+        this._tooltip.style.display = 'none';
+    }
+</code></pre><p>If we open the Player and hover over the point of interest, we won&rsquo;t see anything; alternatively, if we open the logs, we’ll see an error. The reason is that inside the <code>onMouseEnter</code> and <code>onMouseLeave</code> functions, this points to a different object. To fix that we need to create constructor function and add the following:</p><pre><code>    constructor() {
+        this.onMouseEnter = this.onMouseEnter.bind(this);
+        this.onMouseLeave = this.onMouseLeave.bind(this);
+    }
+</code></pre><p>If we try this now, the tooltips will appear.</p><figure class=border-0><img class="img-fluid lazyload blur-up" data-sizes=auto src=/StarterGuide/chapters/chapter-9/chapter-9_6.png width=1282 height=749 alt=chapter-9_6><noscript><img class=img-fluid sizes=100vw src=/StarterGuide/chapters/chapter-9/chapter-9_6.png width=1282 height=749 alt=chapter-9_6></noscript><figcaption class=figure-caption><em></em></figcaption></figure><p>But what about the locked flag we added to our model? We can use this to lock a POI, show a different icon and not display the tooltip. To do this, we’ll change where we set the icon inside the init function:</p><pre><code>element.style.backgroundImage = `url(./assets/map-${!value.locked ? value.icon : 'locked'}-icon.png)`;
+</code></pre><p>We’ll also change the code of the <code>createTooltip</code> function to be:</p><pre><code>    createTooltip(title, description, locked) {
+        const tooltip = document.createElement(&quot;div&quot;);
+        if (!locked) {
+            tooltip.classList.add(&quot;tooltip&quot;);
+            tooltip.innerHTML = `&lt;div class=&quot;tooltip-title&quot;&gt;${title}&lt;/div&gt;&lt;div class=&quot;tooltip-description&quot;&gt;${description}&lt;/div&gt;`;
+        }
+        return tooltip;
+    }
+</code></pre><p>The last thing to complete is to change some of the points of interest in our model to be locked, like the statue for example:</p><pre><code>{
+   x: 968,
+   y: 409,
+   icon: 'statue',
+   title: 'Statue of Freya',
+   description: 'Statue of the goddess Freya. Only thing left from a sunken village.',
+   locked: true
+}
+</code></pre><p>And in the Player:</p><figure class=border-0><img class="img-fluid lazyload blur-up" data-sizes=auto src=/StarterGuide/chapters/chapter-9/chapter-9_7.png width=1282 height=747 alt=chapter-9_7><noscript><img class=img-fluid sizes=100vw src=/StarterGuide/chapters/chapter-9/chapter-9_7.png width=1282 height=747 alt=chapter-9_7></noscript><figcaption class=figure-caption><em></em></figcaption></figure><p>With that we can now wrap up this chapter. In the final chapter, we’ll go over the ways to debug and profile your app.</p><h2 id=get-the-chapter-files>Get the chapter files<a href=#get-the-chapter-files class=anchor aria-hidden=true>#</a></h2><p>You can download the completed chapter from <a href=https://github.com/CoherentLabs/StarterGuide/raw/master/files/chapter_9/chapter_9.zip>here</a></p><div class=my-n3></div><div class="row mt-5"><div class=col-8><a class="btn btn-dark px-4 mb-4 mt-4" href=https://coherentlabs.github.io/StarterGuide/chapters/chapter-8/ role=button>Previous Chapter</a></div><div class="col-8 d-flex justify-content-end"><a class="btn btn-dark px-4 mb-4 mt-4" href=https://coherentlabs.github.io/StarterGuide/chapters/chapter-10/ role=button>Next Chapter</a></div></div></main></div></div></div><footer class="footer text-muted"><div class=container-xxl><div class=row><div class="col-lg-8 order-last order-lg-first"><ul class=list-inline><li class=list-inline-item>Powered by <a href=https://gohugo.io/>Hugo</a>, and <a href=https://getdoks.org/>Doks</a></li></ul></div><div class="col-lg-8 order-first order-lg-last text-lg-end"><ul class=list-inline></ul></div></div></div></footer><script src=/StarterGuide/js/bootstrap.min.73ca27033146a505b6a0f66b79d99f613a18e778bc9606fd223476d0ebf0fc10508b0d4f5c448b0a946fa1d71fbeffaae9732adc0c2890e61c449217fd6ee1c0.js integrity="sha512-c8onAzFGpQW2oPZredmfYToY53i8lgb9IjR20Ovw/BBQiw1PXESLCpRvodcfvv+q6XMq3AwokOYcRJIX/W7hwA==" crossorigin=anonymous defer></script>
+<script src=/StarterGuide/js/highlight.min.e13cfba4c5524e30386cb9ea71f0f191f39d15b25b222f4b67549689f7c076158f42a2282446044f5cdacc76a6d003efbfa252a84aea0116703803b6339ae35f.js integrity="sha512-4Tz7pMVSTjA4bLnqcfDxkfOdFbJbIi9LZ1SWiffAdhWPQqIoJEYET1zazHam0APvv6JSqErqARZwOAO2M5rjXw==" crossorigin=anonymous defer></script>
+<script src=/StarterGuide/main.min.dabf7f45921a731f1f8e566e38aed10bb67fb15f4056a8d7e7b56548bb63e1242016c0d83ab86eefab01a24933f8aa4f6e183ba127726dcb59f051ed0ec9f345.js integrity="sha512-2r9/RZIacx8fjlZuOK7RC7Z/sV9AVqjX57VlSLtj4SQgFsDYOrhu76sBokkz+KpPbhg7oSdybctZ8FHtDsnzRQ==" crossorigin=anonymous defer></script></body></html>
