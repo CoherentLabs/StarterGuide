@@ -142,8 +142,18 @@ function updateCurrentTime() {
 
 engine.whenReady.then(() => {
 	engine.registerBindingAttribute('poi', POIHandler);
-	engine.createJSModel("PlayerModel", model);
-	engine.createJSModel("MapModel", map);
+
+	if (typeof PlayerModel === 'undefined') {
+		engine.createJSModel("PlayerModel", model);
+	}
+	else {
+		PlayerModel.time = getCurrentTime();
+		engine.updateWholeModel(PlayerModel);
+	}
+
+	if (typeof MapModel === 'undefined') {
+		engine.createJSModel("MapModel", map);
+	}
 
 	engine.createObservableModel("activeItem");
 	activeItem.item = PlayerModel.inventoryItems[PlayerModel.selectedItem];
