@@ -75,16 +75,16 @@ Now that we have a working health bar, we can display the current health as a nu
 ```
 <p class="health-counter"></p>
 ```
-You may be wondering why we would use a paragraph tag instead of a regular div. The reason is that CoHTML doesn’t support inline elements out of the box. On that basis, we have to use the `coh-inline` feature which works only with the `<p>` tag. This will allow us to have all the elements to be inline inside.
+You may be wondering why we would use a paragraph tag instead of a regular div. The reason is that CoHTML doesn’t support inline elements out of the box. On that basis, we have to use the `cohinline` feature which works only with the `<p>` tag. This will allow us to have all the elements to be inline inside.
 
 {{< alert icon="❗" text="Please note that this is an experimental feature and not everything is supported. You can read more about it <a href='https://coherent-labs.com/Documentation/cpp-gameface/de/d94/_h_t_m_l_feature_support.html'>here (under Experimental inline layout for P elements)</a>." />}}
 
-To enable it we just need to add `coh-inline` to our `<p>` tag. Inside the paragraph we can add the current health and the HP text. 
+To enable it we just need to add `cohinline` to our `<p>` tag. Inside the paragraph we can add the current health and the HP text. 
 
 {{< alert icon="❗" text="Note: in the code we are using <code>$nbsp;</code> which is a non-breaking white space to give some space between the elements" />}}
 
 ```
-<p class="health-counter" coh-inline>
+<p class="health-counter" cohinline>
     <div class="current-health"></div>
     &nbsp;HP
 </p>

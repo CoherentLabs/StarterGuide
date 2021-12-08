@@ -99,24 +99,24 @@ const map = {
 	y: 0,
 	pointsOfInterest: [
 		{
-			x: 120,
-			y: 429,
+			x: 10.3004,
+			y: 45.7164,
 			icon: 'village',
 			title: 'Village',
 			description: 'The village where you were raised.',
 			locked: false
 		},
 		{
-			x: 289,
-			y: 121,
+			x: 22.6609,
+			y: 14.1493,
 			icon: 'town',
 			title: 'Town',
 			description: 'The town of Málhildur.',
 			locked: false
 		},
 		{
-			x: 968,
-			y: 409,
+			x: 74.9957,
+			y: 42.1492,
 			icon: 'statue',
 			title: 'Statue of Freya',
 			description: 'Statue of the goddess Freya. Only thing left from a sunken village.',
