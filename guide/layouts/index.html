@@ -6,9 +6,6 @@
     </div>
     <div class="col-lg-9 col-xl-8">
       <p class="lead">{{ .Params.lead | safeHTML }}</p>
-      <div class="text-center">
-        <a class="btn btn-dark btn-lg px-4 mb-4 mt-4 text-center" href="{{ "chapters/chapter-1" | relURL }}" role="button">Get started</a>
-      </div>
     </div>
   </div>
 </section>
@@ -17,6 +14,7 @@
 {{ define "sidebar-prefooter" }}
 <section class="section section-sm">
   <div class="container">
+    <h2 class="text-center">HTML, CSS and JavaScript</h2>
     <div class="row justify-content-center">
       <div class="col-lg-5">
         <div class="card">
@@ -127,6 +125,63 @@
       
       
     </div>
+  </div>
+</section>
+
+<section class="section section-sm">
+  <div class="container">
+    <h2 class="text-center">Unreal Engine</h2>
+    <div class="row justify-content-center">
+      <div class="col-lg-5">
+        <div class="card bg-dark">
+          <a href="{{ "unreal-chapters/ue-chapter-1" | relURL }}" class="card-body text-decoration-none text-reset pb-5 text-light">
+            <h5 class="card-title text-light">Chapter 1</h5>
+            <h6 class="card-subtitle mb-2 text-muted">Getting Started</h6>
+            <p class="card-text mt-4 text-light">Introduction</p>
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="card bg-dark">
+          <a href="{{ "unreal-chapters/ue-chapter-2" | relURL }}" class="card-body text-decoration-none text-reset pb-5">
+            <h5 class="card-title text-light">Chapter 2</h5>
+            <h6 class="card-subtitle mb-2 text-muted">Map</h6>
+            <p class="card-text mt-4 text-light">Setting up our map</p>
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="card bg-dark">
+          <a href="{{ "unreal-chapters/ue-chapter-3" | relURL }}" class="card-body text-decoration-none text-reset pb-5">
+            <h5 class="card-title text-light">Chapter 3</h5>
+            <h6 class="card-subtitle mb-2 text-muted">PlayerModel</h6>
+            <p class="card-text mt-4 text-light">Creating our player model</p>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="row justify-content-center">
+      <div class="col-lg-5">
+        <div class="card bg-dark">
+          <a href="{{ "unreal-chapters/ue-chapter-4" | relURL }}" class="card-body text-decoration-none text-reset pb-5">
+            <h5 class="card-title text-light">Chapter 4</h5>
+            <h6 class="card-subtitle mb-2 text-muted">MapModel</h6>
+            <p class="card-text mt-4 text-light">Creating the MapModel</p>
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="card bg-dark">
+          <a href="{{ "unreal-chapters/ue-chapter-5" | relURL }}" class="card-body text-decoration-none text-reset pb-5">
+            <h5 class="card-title text-light">Chapter 5</h5>
+            <h6 class="card-subtitle mb-2 text-muted">JavaScript Events</h6>
+            <p class="card-text mt-4 text-light">Handling JS events in C++</p>
+          </a>
+        </div>
+      </div>
+    </div>
+
+      
   </div>
 </section>
 {{ end }}
