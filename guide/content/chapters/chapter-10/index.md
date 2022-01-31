@@ -8,7 +8,7 @@ images: []
 menu:
     chapters:
         parent: "chapters"
-        weight: 0
+        weight: 2
 ---
 
 In this chapter we’ll go over how to use the Dev Tools to debug, profile and then optimize your UI. These concepts are a standard in web development and we'll focus on how to apply them to Gameface.

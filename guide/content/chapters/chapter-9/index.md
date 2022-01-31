@@ -319,32 +319,32 @@ The first thing we need to do is to decide on the type of data our custom data-b
 
 In our `MapModel` in `pointsOfInterest` we’ll add a couple of objects:
 ```
-    pointsOfInterest: [
-        {
-            x: 120,
-            y: 429,
-            icon: 'village',
-            title: 'Village',
-            description: 'The village where you were raised.',
-            locked: false
-        },
-        {
-            x: 289,
-            y: 121,
-            icon: 'town',
-            title: 'Town',
-            description: 'The town of Málhildur.',
-            locked: false
-        },
-        {
-            x: 968,
-            y: 409,
-            icon: 'statue',
-            title: 'Statue of Freya',
-            description: 'Statue of the goddess Freya. Only thing left from a sunken village.',
-            locked: false
-        }
-    ],
+	pointsOfInterest: [
+		{
+			x: 10.3004,
+			y: 45.7164,
+			icon: 'village',
+			title: 'Village',
+			description: 'The village where you were raised.',
+			locked: false
+		},
+		{
+			x: 22.6609,
+			y: 14.1493,
+			icon: 'town',
+			title: 'Town',
+			description: 'The town of Málhildur.',
+			locked: false
+		},
+		{
+			x: 74.9957,
+			y: 42.1492,
+			icon: 'statue',
+			title: 'Statue of Freya',
+			description: 'Statue of the goddess Freya. Only thing left from a sunken village.',
+			locked: true
+		}
+	],
 ```
 Now we can start making our tooltips. To start, we’ll create a couple of additional functions in the poi-data-binding:
 ```
@@ -366,8 +366,8 @@ We can now start adding logic to our init function and set the position and imag
 
 ```
     init(element, value) {
-        element.style.left = `${value.x}px`;
-        element.style.top = `${value.y}px`;
+        element.style.left = `${value.x}%`;
+        element.style.top = `${value.y}%`;
         element.style.backgroundImage = `url(./assets/map-${value.icon}-icon.png)`;
     }
 ```

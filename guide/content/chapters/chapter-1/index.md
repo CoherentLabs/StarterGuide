@@ -10,6 +10,22 @@ menu:
         parent: "chapters"
         weight: 1
 ---
+## Prerequisites:
+
+In order to be able to optimally leverage Gameface’s features, you will need a good understanding of modern HTML, CSS and JavaScript.
+
+## Who is this tutorial for:
+
+This tutorial is for Front End developers who are looking to quickly familiarize with Gameface and its features.
+
+## What is not covered in this tutorial:
+
+This tutorial focuses on Gameface and its features. You would not find any HTML, CSS or JavaScript-specific explanations here.
+
+## How is this tutorial structured:
+
+It’s separated in **10** different chapters, each chapter will go over a specific element of the UI and will demonstrate a feature of Gameface.
+
 ## Choosing the right fit for your project:
 As with any Front End project, there are numerous ways to create your project. Here we will go over the main supported ones in Gameface.
 

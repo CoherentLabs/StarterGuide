@@ -171,9 +171,9 @@ We’ll now be able to see the images of our inventory items in the Coherent Pla
 
 {{< img src="chapter-8_3.png" alt="chapter-8_3" caption="<em>We now have items in our inventory</em>" class="border-0" >}}
 
-Since some of the objects in the model are empty, their `data-bind-style-background-image-url` will be resolved as `‘./assets/undefined.png’`, which is fine for now, but may become an issue later on. In order to resolve that we’ll use `data-bind-if` to check if the entry is not `null` and if it isn’t to render the `.inventory-item`. We can do that in the following way:
+Since some of the objects in the model are empty, their `data-bind-style-background-image-url` will be resolved as `‘./assets/undefined.png’`, which is fine for now, but may become an issue later on. In order to resolve that we’ll use `data-bind-if` to check if the item's `count` property is greater than **0** and if it isn’t to render the `.inventory-item`. We can do that in the following way:
 ```
-<div class="inventory-item" data-bind-if="{{item}} !== null" data-bind-style-background-image-url="'./assets/' + {{item.image}} + '.png'"></div>
+<div class="inventory-item" data-bind-if="{{item.count}} > 0" data-bind-style-background-image-url="'./assets/' + {{item.image}} + '.png'"></div>
 ```
 Now there won’t be any items in the cells with `null` objects. 
 

@@ -20,7 +20,7 @@
 					 data-bind-class-toggle="health-warning:{{PlayerModel}}.shouldShowHealthWarning();health-danger:{{PlayerModel}}.shouldShowHealthDanger()">
 				</div>
 			</div>
-			<p class="health-counter" coh-inline>
+			<p class="health-counter" cohinline>
 				<div class="current-health" data-bind-value="{{PlayerModel.currentHealth}}"></div>
 				&nbsp;HP
 			</p>
@@ -82,7 +82,7 @@
 		<div class="inventory" data-bind-if="{{PlayerModel.activePauseMenu}} === 'inventory'">
 			<div class="inventory-grid">
 				<div class="inventory-grid-cell" data-bind-for="index, item: {{PlayerModel.inventoryItems}}">
-					<div class="inventory-item" data-bind-if="{{item}} !== null"
+					<div class="inventory-item" data-bind-if="{{item.count}} > 0"
 						 data-bind-style-background-image-url="'./assets/' + {{item.image}} + '.png'" data-bind-click="PlayerModel.itemSelect({{index}})"
 						 data-bind-class-toggle="selected-item:{{index}} === {{PlayerModel.selectedItem}}"></div>
 				</div>

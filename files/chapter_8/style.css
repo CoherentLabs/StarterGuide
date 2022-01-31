@@ -325,13 +325,16 @@ dropdown-option {
 	width: 65vw;
 	display: flex;
 	padding-top: 20px;
+	align-items: center;
+	justify-content: center;
 }
 
 .inventory-grid {
-	width: 60%;
+	width: 500px;
 	display: flex;
 	flex-wrap: wrap;
 	margin: -5px;
+	height: 586px;
 }
 
 .inventory-grid-cell {

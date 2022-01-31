@@ -41,19 +41,7 @@
 				<div class="my-n3"></div>
 			{{ end -}}
 
-			<div class="row mt-5">
-
-				<div class="col-8">
-					{{if .Prev -}}
-						<a class="btn btn-dark px-4 mb-4 mt-4 " href="{{with .Prev}}{{.Permalink}}{{end}}" role="button"> Previous Chapter </a>
-					{{end -}}
-				</div>
-				<div class="col-8 d-flex justify-content-end">
-					{{if .Next -}}
-						<a class="btn btn-dark px-4 mb-4 mt-4 " href="{{with .Next}}{{.Permalink}}{{end}}" role="button">Next Chapter</a>
-					{{end -}}
-				</div>
-			</div>
+			
 		</main>
 	</div>
 {{ end }}

@@ -5,8 +5,8 @@ class POIHandler {
 	}
 
 	init(element, value) {
-		element.style.left = `${value.x}px`;
-		element.style.top = `${value.y}px`;
+		element.style.left = `${value.x}%`;
+		element.style.top = `${value.y}%`;
 		element.style.backgroundImage = `url(./assets/map-${
 			!value.locked ? value.icon : "locked"
 		}-icon.png)`;

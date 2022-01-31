@@ -4,8 +4,21 @@
   identifier = "chapters"
   url = "/chapters/"
 
+[[unrealChapters]]
+  name = "Unreal Chapters"
+  weight = 10
+  identifier = "unreal-chapters"
+  url = "/unreal-chapters/"
 
+[[main]]
+  name = "FrontEnd"
+  url = "/chapters/"
+  weight = 10
 
+[[main]]
+  name = "Unreal Engine"
+  url = "/unreal-chapters/"
+  weight = 20
 
 # [[footer]]
 #   name = "Privacy"
