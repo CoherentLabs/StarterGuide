@@ -1,0 +1,175 @@
+<!doctype html><html lang=en-us><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="ie=edge"><meta name=viewport content="width=device-width,initial-scale=1,shrink-to-fit=no"><link rel=preload as=font href=https://starter.coherent-labs.com/fonts/vendor/jost/jost-v4-latin-regular.woff2 type=font/woff2 crossorigin><link rel=preload as=font href=https://starter.coherent-labs.com/fonts/vendor/jost/jost-v4-latin-700.woff2 type=font/woff2 crossorigin><link rel=stylesheet href=/main.a662bc8e4f8970ca3ed4c0b575059530e22afc4a615e0c418f4f4a8d03ad42b693e5a73b57997b2af4cbdd5185b3b5bb7e95a15b3f11d857533644f2c2436bba.css integrity="sha512-pmK8jk+JcMo+1MC1dQWVMOIq/EphXgxBj09KjQOtQraT5ac7V5l7KvTL3VGFs7W7fpWhWz8R2FdTNkTywkNrug==" crossorigin=anonymous><noscript><style>img.lazyload{display:none}</style></noscript><meta name=robots content="index, follow"><meta name=googlebot content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><meta name=bingbot content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><title>Unreal Engine Chapter 4: Creating the Map and Point of Interest - Gameface Starter Guide</title><meta name=description content><link rel=canonical href=https://starter.coherent-labs.com/unreal-chapters/ue-chapter-4/><meta property="og:locale" content="en_US"><meta property="og:type" content="article"><meta property="og:title" content="Unreal Engine Chapter 4: Creating the Map and Point of Interest"><meta property="og:description" content="In this chapter we will wrap up the data transitioning from JavaScript to Unreal C++. This will be marked by the implementation of the Map model.
+Overview of the required Map model data Looking at the data of the map object from the Chapter 9 model.js of the original Starter Guide, we will require another C++ class to be created from the Editor, called MapModel and once again, to spare us unnecessary code noise, we can set its parent class to be UObject."><meta property="og:url" content="https://starter.coherent-labs.com/unreal-chapters/ue-chapter-4/"><meta property="og:site_name" content="Gameface Starter Guide"><meta property="article:published_time" content="2021-12-04T01:44:53+02:00"><meta property="article:modified_time" content="2021-12-04T01:44:53+02:00"><meta property="og:image" content="https://starter.coherent-labs.com/doks.png"><meta property="og:image:alt" content="Gameface Starter Guide"><meta name=twitter:card content="summary_large_image"><meta name=twitter:site content="@getdoks"><meta name=twitter:creator content="@henkverlinde"><meta name=twitter:title content="Unreal Engine Chapter 4: Creating the Map and Point of Interest"><meta name=twitter:description content><meta name=twitter:image content="https://starter.coherent-labs.com/doks.png"><meta name=twitter:image:alt content="Unreal Engine Chapter 4: Creating the Map and Point of Interest"><script type=application/ld+json>{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://starter.coherent-labs.com/#/schema/organization/1","name":"Doks","url":"https://starter.coherent-labs.com/","sameAs":["https://twitter.com/getdoks","https://github.com/h-enk/doks"],"logo":{"@type":"ImageObject","@id":"https://starter.coherent-labs.com/#/schema/image/1","url":"https://starter.coherent-labs.com/logo-doks.png","width":512,"height":512,"caption":"Doks"},"image":{"@id":"https://starter.coherent-labs.com/#/schema/image/1"}},{"@type":"WebSite","@id":"https://starter.coherent-labs.com/#/schema/website/1","url":"https://starter.coherent-labs.com/","name":"Gameface Starter Guide","description":"","publisher":{"@id":"https://starter.coherent-labs.com/#/schema/organization/1"}},{"@type":"WebPage","@id":"https://starter.coherent-labs.com/unreal-chapters/ue-chapter-4/","url":"https://starter.coherent-labs.com/unreal-chapters/ue-chapter-4/","name":"Unreal Engine Chapter 4: Creating the Map and Point of Interest","description":"","isPartOf":{"@id":"https://starter.coherent-labs.com/#/schema/website/1"},"about":{"@id":"https://starter.coherent-labs.com/#/schema/organization/1"},"datePublished":"2021-12-04T01:44:53CET","dateModified":"2021-12-04T01:44:53CET","breadcrumb":{"@id":"https://starter.coherent-labs.com/unreal-chapters/ue-chapter-4/#/schema/breadcrumb/1"},"primaryImageOfPage":{"@id":"https://starter.coherent-labs.com/unreal-chapters/ue-chapter-4/#/schema/image/2"},"inLanguage":"en-US","potentialAction":[{"@type":"ReadAction","target":["https://starter.coherent-labs.com/unreal-chapters/ue-chapter-4/"]}]},{"@type":"BreadcrumbList","@id":"https://starter.coherent-labs.com/unreal-chapters/ue-chapter-4/#/schema/breadcrumb/1","name":"Breadcrumbs","itemListElement":[{"@type":"ListItem","position":1,"item":{"@type":"WebPage","@id":"https://starter.coherent-labs.com","url":"https://starter.coherent-labs.com","name":"Home"}},{"@type":"ListItem","position":3,"item":{"@type":"WebPage","@id":"https://starter.coherent-labs.com/unreal-chapters/","url":"https://starter.coherent-labs.com/unreal-chapters/","name":"Unreal Chapters"}},{"@type":"ListItem","position":4,"item":{"@id":"https://starter.coherent-labs.com/unreal-chapters/ue-chapter-4/"}}]},{"@context":"https://schema.org","@graph":[{"@type":"ImageObject","@id":"https://starter.coherent-labs.com/unreal-chapters/ue-chapter-4/#/schema/image/2","url":"https://starter.coherent-labs.com/doks.png","contentUrl":"https://starter.coherent-labs.com/doks.png","caption":"Unreal Engine Chapter 4: Creating the Map and Point of Interest"}]}]}</script><meta name=theme-color content="#fff"><link rel=apple-touch-icon sizes=180x180 href=https://starter.coherent-labs.com/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=https://starter.coherent-labs.com/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=https://starter.coherent-labs.com/favicon-16x16.png><link rel=manifest crossorigin=use-credentials href=https://starter.coherent-labs.com/site.webmanifest></head><body class="unreal-chapters single"><div class=header-bar></div><header class="navbar navbar-expand-md navbar-light doks-navbar"><nav class="container-xxl flex-wrap flex-md-nowrap" aria-label="Main navigation"><a class="navbar-brand p-0 me-auto" href=/ aria-label=Bootstrap>Gameface Starter Guide</a>
+<button class="btn btn-menu d-block d-md-none order-5" type=button data-bs-toggle=offcanvas data-bs-target=#offcanvasDoks aria-controls=offcanvasDoks aria-label="Open main menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button><div class="offcanvas offcanvas-start border-0 py-md-1" tabindex=-1 id=offcanvasDoks data-bs-backdrop=true aria-labelledby=offcanvasDoksLabel><div class="header-bar d-md-none"></div><div class="offcanvas-header d-md-none"><h2 class="h5 offcanvas-title ps-2" id=offcanvasDoksLabel><a class=text-dark href=/>Gameface Starter Guide</a></h2><button type=button class="btn-close text-reset me-2" data-bs-dismiss=offcanvas aria-label="Close main menu"></button></div><div class="offcanvas-body px-4"><h3 class="h6 text-uppercase mb-3 d-md-none">Main</h3><ul class="nav flex-column flex-md-row ms-md-n3"><li class=nav-item><a class="nav-link ps-0 py-1" href=/chapters/>FrontEnd</a></li><li class=nav-item><a class="nav-link ps-0 py-1" href=/unreal-chapters/>Unreal Engine</a></li></ul><hr class="text-black-50 my-4 d-md-none"><h3 class="h6 text-uppercase mb-3 d-md-none">Socials</h3><ul class="nav flex-column flex-md-row ms-md-auto me-md-n5 pe-md-2"></ul></div></div></nav></header><div class="wrap container" role=document><div class=content><div class="row flex-xl-nowrap"><div class="col-lg-5 col-xl-4 docs-sidebar"><nav class=docs-links aria-label="Main navigation"><ul class="list-unstyled collapsible-sidebar"><li class=mb-1><button class="btn btn-toggle align-items-center rounded collapsed" data-bs-toggle=collapse data-bs-target=#section-unreal-chapters aria-expanded=true>
+Unreal Chapters</button><div class="collapse show" id=section-unreal-chapters><ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small"><li><a class="docs-link rounded" href=/unreal-chapters/ue-chapter-1/>Unreal Engine Chapter 1: Getting Started</a></li><li><a class="docs-link rounded" href=/unreal-chapters/ue-chapter-2/>Unreal Engine Chapter 2: Map setup</a></li><li><a class="docs-link rounded" href=/unreal-chapters/ue-chapter-3/>Unreal Engine Chapter 3: Creating the Player Model, Minimap and Inventory</a></li><li><a class="docs-link rounded active" href=/unreal-chapters/ue-chapter-4/>Unreal Engine Chapter 4: Creating the Map and Point of Interest</a></li><li><a class="docs-link rounded" href=/unreal-chapters/ue-chapter-5/>Unreal Engine Chapter 5: Handling events received from JavaScript</a></li></ul></div></li></ul></nav></div><nav class="docs-toc d-none d-xl-block col-xl-3" aria-label="Secondary navigation"><div class=page-links><h3>On this page</h3><nav id=TableOfContents><ul><li><ul><li><a href=#overview-of-the-required-map-model-data>Overview of the required Map model data</a></li><li><a href=#implementing-the-map-model>Implementing the Map model</a></li><li><a href=#registering-the-map-model>Registering the Map model</a></li></ul></li></ul></nav></div></nav><main class="docs-content col-lg-11 col-xl-9 mx-xl-auto"><nav aria-label=breadcrumb><ol class=breadcrumb><li class=breadcrumb-item><a href=/>Home</a></li><li class=breadcrumb-item><a href=/unreal-chapters/>Unreal Chapters</a></li><li class="breadcrumb-item active" aria-current=page>Unreal Engine Chapter 4: Creating the Map and Point of Interest</li></ol></nav><h1>Unreal Engine Chapter 4: Creating the Map and Point of Interest</h1><p class=lead></p><nav class=d-xl-none aria-label="Quaternary navigation"><div class=page-links><h3>On this page</h3><nav id=TableOfContents><ul><li><ul><li><a href=#overview-of-the-required-map-model-data>Overview of the required Map model data</a></li><li><a href=#implementing-the-map-model>Implementing the Map model</a></li><li><a href=#registering-the-map-model>Registering the Map model</a></li></ul></li></ul></nav></div></nav><p>In this chapter we will wrap up the data transitioning from JavaScript to Unreal C++. This will be marked by the implementation of the Map model.</p><h3 id=overview-of-the-required-map-model-data>Overview of the required Map model data<a href=#overview-of-the-required-map-model-data class=anchor aria-hidden=true>#</a></h3><p>Looking at the data of the <code>map</code> object from the <a href=https://starter.coherent-labs.com/chapters/chapter-9/>Chapter 9</a> <code>model.js</code> of the original Starter Guide, we will require another C++ class to be created from the Editor, called <code>MapModel</code> and once again, to spare us unnecessary code noise, we can set its parent class to be <code>UObject</code>.</p><p>Now let&rsquo;s go over the things we will need:</p><ul><li>We want to once again include the three binders - <code>CohtmlUTypeBinder.h</code>,<code>CohtmlFStringBinder.h</code> and <code>CohtmlTArrayBinder.h</code></li><li>We want to specify our class constructor</li><li>We want a <code>zoom</code>, <code>x</code> and <code>y</code> variable of type <code>float</code></li><li>We want a <code>pointsOfInterest</code> variable, which will be a <code>TArray</code> of <code>PointOfInterest</code> objects<ul><li><code>PointOfInterest</code> will be a <code>USTRUCT</code>, which requires:<ul><li>A <code>x</code> and <code>y</code> variable of type <code>float</code></li><li>An <code>icon</code>, <code>title</code> and <code>description</code> variable of type <code>FString</code></li><li>A <code>locked</code> variable of type <code>bool</code></li></ul></li></ul></li><li>We want a <code>mapTiles</code> variable, which is going to be another <code>TArray</code>, containing <code>MapTile</code> objects<ul><li>This will be a dummy <code>USTRUCT</code>, that will contain no data, but is required since the <code>data-bind-for</code> expression in the <code>index.html</code> depends on its existance the way it is implemented, but essentially does nothing. It is a struct, because the <code>data-bind-for</code> won&rsquo;t generate the tiles if the array consists of primitive types</li><li>We will also add a <code>const</code> <code>uint32</code> variable for the tile size</li></ul></li></ul><p>Once again, all of these member variables will be exposed by using the <code>UPROPERTY</code> macro.</p><h3 id=implementing-the-map-model>Implementing the Map model<a href=#implementing-the-map-model class=anchor aria-hidden=true>#</a></h3><p>Now that we have a list of the data that we need, we can start going over the actual code. Let&rsquo;s start with the <code>MapModel.h</code>:</p><pre><code>#pragma once
+
+#include &lt;CohtmlUTypeBinder.h&gt;
+#include &lt;CohtmlFStringBinder.h&gt;
+#include &lt;CohtmlTArrayBinder.h&gt;
+
+#include &quot;MapModel.generated.h&quot;
+
+USTRUCT()
+struct FPointOfInterest
+{
+    GENERATED_BODY()
+
+    FPointOfInterest()
+        : x(0.0f)
+        , y(0.0f)
+        , locked(false)
+    {
+    }
+
+    FPointOfInterest(float X, float Y, FString Icon, FString Title, FString Description, bool Locked)
+        : x(X)
+        , y(Y)
+        , icon(Icon)
+        , title(Title)
+        , description(Description)
+        , locked(Locked)
+    {
+    }
+    
+    UPROPERTY()
+    float x;
+
+    UPROPERTY()
+    float y;
+
+    UPROPERTY()
+    FString icon;
+
+    UPROPERTY()
+    FString title;
+
+    UPROPERTY()
+    FString description;
+
+    UPROPERTY()
+    bool locked;
+};
+
+// This struct is needed for the automatic generation of the
+// map tiles, through the usage of the data-bind-for expression
+// in the index.html.
+USTRUCT()
+struct FMapTile
+{
+    GENERATED_BODY()
+
+    int32 id;
+};
+
+UCLASS()
+class COHERENTSAMPLE_API UMapModel : public UObject
+{
+    GENERATED_BODY()
+
+public:
+    UMapModel();
+
+    UPROPERTY()
+    float zoom;
+
+    UPROPERTY()
+    float x;
+
+    UPROPERTY()
+    float y;
+
+    UPROPERTY()
+    TArray&lt;FPointOfInterest&gt; pointsOfInterest;
+
+    UPROPERTY()
+    TArray&lt;FMapTile&gt; mapTiles;
+
+private:
+    const uint32 MAP_TILES_SIZE = 64;
+};
+</code></pre><p>Evidently it is as simple as can be. Same goes for the <code>MapModel.cpp</code>, where we just need to perform the variable initialization and add the 3 &ldquo;<em>points of interest</em>":</p><pre><code>#include &quot;StarterGuide/MapModel.h&quot;
+
+UMapModel::UMapModel()
+    : zoom(1.0f)
+    , x(0.0f)
+    , y(0.0f)
+{
+    pointsOfInterest.Add(FPointOfInterest(10.3004f, 45.7164f, &quot;village&quot;, &quot;Village&quot;, &quot;The village where you were raised.&quot;, false));
+    pointsOfInterest.Add(FPointOfInterest(22.6609f, 14.1493f, &quot;town&quot;, &quot;Town&quot;, TEXT(&quot;The town of Málhildur.&quot;), false));
+    pointsOfInterest.Add(FPointOfInterest(74.9957f, 42.1492f, &quot;statue&quot;, &quot;Statue of Freya&quot;, &quot;Statue of the goddess Freya. Only thing left from a sunken village.&quot;, true));
+
+    mapTiles.SetNum(MAP_TILES_SIZE);
+}
+</code></pre><h3 id=registering-the-map-model>Registering the Map model<a href=#registering-the-map-model class=anchor aria-hidden=true>#</a></h3><p>The final step is of course to register the <code>MapModel</code> class we just created. This is as simple as it sounds - we will add the object, initialize it and use the <code>View</code> to create the model.</p><p>The <code>StarterGuideHUD.h</code> should now look like this:</p><pre><code>class UPlayerModel;
+class UMapModel;
+
+UCLASS()
+class COHERENTSAMPLE_API AStarterGuideHUD : public ACohtmlGameHUD
+{
+    GENERATED_BODY()
+
+public:
+    AStarterGuideHUD(const FObjectInitializer&amp; PCIP);
+
+    virtual void BeginPlay() override;
+
+    void BindUI();
+
+    UFUNCTION()
+    void UpdateItemSelect();
+
+    UPROPERTY()
+    UPlayerModel* model;
+
+    UPROPERTY()
+    UMapModel* map;
+
+private:
+    cohtml::View* View;
+};
+</code></pre><p>And lastly, the <code>StarterGuideHUD.cpp</code> should look like this:</p><pre><code>#include &quot;StarterGuide/StarterGuideHUD.h&quot;
+#include &quot;StarterGuide/PlayerModel.h&quot;
+#include &quot;StarterGuide/MapModel.h&quot;
+
+#include &quot;CohtmlGameHUD.h&quot;
+
+AStarterGuideHUD::AStarterGuideHUD(const FObjectInitializer&amp; PCIP)
+    : Super(PCIP)
+{
+    GetCohtmlHUD()-&gt;ReadyForBindings.AddDynamic(this, &amp;AStarterGuideHUD::BindUI);
+}
+
+void AStarterGuideHUD::BeginPlay()
+{
+    Super::BeginPlay();
+    model = NewObject&lt;UPlayerModel&gt;();
+    map = NewObject&lt;UMapModel&gt;();
+}
+
+void AStarterGuideHUD::BindUI()
+{
+    View = GetCohtmlHUD()-&gt;GetView();
+    if (!View)
+    {
+        UE_LOG(LogTemp, Error, TEXT(&quot;Failed to retrieve View!&quot;));
+        return;
+    }
+
+    View-&gt;CreateModel(&quot;PlayerModel&quot;, model);
+    View-&gt;CreateModel(&quot;MapModel&quot;, map);
+    View-&gt;SynchronizeModels();
+
+    model-&gt;ItemSelectDelegate.AddDynamic(this, &amp;AStarterGuideHUD::UpdateItemSelect);
+
+    UE_LOG(LogTemp, Log, TEXT(&quot;UI is bound!&quot;));
+}
+
+void AStarterGuideHUD::UpdateItemSelect()
+{
+    View-&gt;UpdateWholeModel(model);
+    View-&gt;SynchronizeModels();
+}
+</code></pre><p>And here is the result:
+<img class="img-simple img-fluid lazyload blur-up border-0" src=/unreal-chapters/ue-chapter-4/ue-chapter-4_1_hu37e14e0fc36a976ad1f078483a7115ac_696470_20x0_resize_box_3.png data-src=/unreal-chapters/ue-chapter-4/ue-chapter-4_1.png width=1612 height=878 alt=ue-chapter-4_1></p><img class="img-simple img-fluid lazyload blur-up border-0" src=/unreal-chapters/ue-chapter-4/ue-chapter-4_2_hudbd215b61be28e646961c728d5989765_122876_20x0_resize_box_3.png data-src=/unreal-chapters/ue-chapter-4/ue-chapter-4_2.png width=1612 height=873 alt=ue-chapter-4_2><p>In the last chapter of this guide, we will implement the handling of events triggered from JavaScript.</p><div class=my-n3></div></main></div></div></div><footer class="footer text-muted"><div class=container-xxl><div class=row><div class="col-lg-8 order-last order-lg-first"><ul class=list-inline><li class=list-inline-item>Powered by <a href=https://gohugo.io/>Hugo</a>, and <a href=https://getdoks.org/>Doks</a></li></ul></div><div class="col-lg-8 order-first order-lg-last text-lg-end"><ul class=list-inline></ul></div></div></div></footer><script src=/js/bootstrap.min.592b9faf6c83a2bda564a377cf82f9a67546b198510a93fdb0728f9622ec22729d44be02fb2ea16c3fe5365ae1806259cd111932ca28e68b66462d6937635bab.js integrity="sha512-WSufr2yDor2lZKN3z4L5pnVGsZhRCpP9sHKPliLsInKdRL4C+y6hbD/lNlrhgGJZzREZMsoo5otmRi1pN2Nbqw==" crossorigin=anonymous defer></script>
+<script src=/js/highlight.min.88df7ec5d9693ad9d3c4f131a6974c6b0d00561526e939ea196b4f198ecdcfbac25d69d58367fde8df923823110dba6d1a7eabe44b7ea52559e92d0751b17869.js integrity="sha512-iN9+xdlpOtnTxPExppdMaw0AVhUm6TnqGWtPGY7Nz7rCXWnVg2f96N+SOCMRDbptGn6r5Et+pSVZ6S0HUbF4aQ==" crossorigin=anonymous defer></script>
+<script src=/main.min.dabf7f45921a731f1f8e566e38aed10bb67fb15f4056a8d7e7b56548bb63e1242016c0d83ab86eefab01a24933f8aa4f6e183ba127726dcb59f051ed0ec9f345.js integrity="sha512-2r9/RZIacx8fjlZuOK7RC7Z/sV9AVqjX57VlSLtj4SQgFsDYOrhu76sBokkz+KpPbhg7oSdybctZ8FHtDsnzRQ==" crossorigin=anonymous defer></script></body></html>
