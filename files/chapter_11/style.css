@@ -15,7 +15,7 @@
 body {
 	font-size: 2.5vh;
 	color: white;
-	background-color: transparent;
+	background-color: black;
 	font-family: "Jost*";
 	height: 100vh;
 	margin: 0;
@@ -253,18 +253,18 @@ dropdown-option {
 	justify-content: center;
 }
 
-.checkbox-wrapper {
+.guic-checkbox-wrapper {
 	margin-top: 0;
 }
 
-.checkbox-background {
+.guic-checkbox-background {
 	background-image: url(./assets/check-empty.png);
 	background-size: contain;
 	border: 0;
 }
 
 
-.check-mark {
+.guic-check-mark {
 	background-image: url(./assets/check-mark.png);
 	background-size: contain;
 	width: 30px;
@@ -273,26 +273,30 @@ dropdown-option {
 	left: 0;
 }
 
-.horizontal-rangeslider-wrapper {
+.guic-checkbox-label {
+	display: none;
+}
+
+.guic-horizontal-rangeslider-wrapper {
 	width: 100%;
 	margin: 0;
 }
 
-.horizontal-rangeslider {
+.guic-horizontal-rangeslider {
 	background-color: rgba(255, 255, 255, 0.1);
 }
 
-.horizontal-rangeslider-wrapper:hover .horizontal-rangeslider {
+.guic-horizontal-rangeslider-wrapper:hover .guic-horizontal-rangeslider {
 	background-color: rgba(255, 255, 255, 0.2);
 }
 
-.horizontal-rangeslider-handle {
+.guic-horizontal-rangeslider-handle {
 	border-radius: 0;
 	transform: translateX(-50%) rotate(45deg);
 	background-color: white;
 }
 
-.horizontal-rangeslider-bar {
+.guic-horizontal-rangeslider-bar {
 	background-color: var(--primary);
 }
 
@@ -325,13 +329,16 @@ dropdown-option {
 	width: 65vw;
 	display: flex;
 	padding-top: 20px;
+	align-items: center;
+	justify-content: center;
 }
 
 .inventory-grid {
-	width: 60%;
+	width: 500px;
 	display: flex;
 	flex-wrap: wrap;
 	margin: -5px;
+	height: 586px;
 }
 
 .inventory-grid-cell {
