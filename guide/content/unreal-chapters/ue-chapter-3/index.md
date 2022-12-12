@@ -23,26 +23,26 @@ If you've followed the original guide, the JavaScript `model` object should be q
 
 Looking at the `model.js` file, let's quickly go over what kind of data we require:
 
-* We want to include `CohtmlUTypeBinder.h`, `CohtmlFStringBinder.h` and `CohtmlTArrayBinder.h`
-* We want to specify our class constructor
-* We want a `time` variable, which is a string that holds the current time, so we will declare it as an `FString`
-* We want `currentHealth` and `maxHealth` variables, which will be `int32`s
-* We want two methods returning `bool` - `shouldShowHealthWarning` and `shouldShowHealthDanger`
-* We want a `minimap` object, which will be a `USTRUCT`
-  * It requires:
-    * An `id` variable, which will be of type `int32`
-    * An `x`, `y` and `angle` variable, which can will of type `float`
-    * A `label`, which will be an `FString`
-* We want a `isPaused` `bool` variable
-* We want a `activePauseMenu` `FString` variable
-* We want `inventoryItems`, which is going to be a `TArray` containing `InventoryItem` objects (another `USTRUCT`)
-  * The `InventoryItem` requires:
-    * A `title`, `image` and `description` variable, all of which will be `FString`
-    * A `count` variable, which will be `int32`
-* We want `selectedItem`, which will be an `int32` variable
-* We want an `itemSelect` `void` method
-* Additionally, we will also declare a `const` `uint32` variable for the "inventory size", as well as an `FItemSelectDelegate` (this one will be explained [later](#registering-the-player-model))
-* Lastly, for the C++ implementation, we also want an `itemToDisplay` variable of type `FInventoryItem`, which we will use to create a synchronization dependency so that we won't have to update the currently selected inventory item every time a different one is selected.
+- We want to include `CohtmlUTypeBinder.h`, `CohtmlFStringBinder.h` and `CohtmlTArrayBinder.h`
+- We want to specify our class constructor
+- We want a `time` variable, which is a string that holds the current time, so we will declare it as an `FString`
+- We want `currentHealth` and `maxHealth` variables, which will be `int32`s
+- We want two methods returning `bool` - `shouldShowHealthWarning` and `shouldShowHealthDanger`
+- We want a `minimap` object, which will be a `USTRUCT`
+  - It requires:
+    - An `id` variable, which will be of type `int32`
+    - An `x`, `y` and `angle` variable, which can will of type `float`
+    - A `label`, which will be an `FString`
+- We want a `isPaused` `bool` variable
+- We want a `activePauseMenu` `FString` variable
+- We want `inventoryItems`, which is going to be a `TArray` containing `InventoryItem` objects (another `USTRUCT`)
+  - The `InventoryItem` requires:
+    - A `title`, `image` and `description` variable, all of which will be `FString`
+    - A `count` variable, which will be `int32`
+- We want `selectedItem`, which will be an `int32` variable
+- We want an `itemSelect` `void` method
+- Additionally, we will also declare a `const` `uint32` variable for the "inventory size", as well as an `FItemSelectDelegate` (this one will be explained [later](#registering-the-player-model))
+- Lastly, for the C++ implementation, we also want an `itemToDisplay` variable of type `FInventoryItem`, which we will use to create a synchronization dependency so that we won't have to update the currently selected inventory item every time a different one is selected.
 
 {{< alert icon="❗" text="Keep in mind, that we need to preserve the same variable name casing, so that the interaction with the frontend code will happen correctly. You can alternatively visit your Gameface settings and toggle the <a href='https://coherent-labs.com/Documentation/UnrealEngine4-gameface/db/d1c/_java_script_interactions.html#lowercase_in_automatic_binding'>lowercase name exposure option</a>."/>}}
 
@@ -54,13 +54,14 @@ As mentioned previously in order for all of this to work, we utilize Unreal's re
 
 Before we start implementing the Player model, let's first do a quick setup in our `StarterGuideHUD` class. We need to add a couple of things:
 
-* We want to include the `CohtmlUTypeBinder.h`
-* We want to specify our class constructor
-* We want to override our `BeginPlay` method
-* We want to add a `BindUI` method
-* We want to have a pointer to the `View` that we are going to use
+- We want to include the `CohtmlUTypeBinder.h`
+- We want to specify our class constructor
+- We want to override our `BeginPlay` method
+- We want to add a `BindUI` method
+- We want to have a pointer to the `View` that we are going to use
 
 Considering all of these, our `StarterGuideHUD.h` needs to look like this in the end:
+
 ```
 #pragma once
 
@@ -90,8 +91,8 @@ private:
 
 Ok, now let's go over to the `StarterGuideHUD.cpp` side:
 
-* Because it takes around 2-3 frames for the View to be ready to do data-binding and we don't want people to implement waiting logic for this themselves, we have a convenient event available (an `Unreal Signature`), to which we can subscribe our `BindUI` method.
-* In the `BindUI` body, we want to retrieve the View and assign it to our pointer. By including `CohtmlGameHUD.h`, we will have access to a very convenient method called `GetCohtmlHUD`, which does exactly what its name implies. Not only that, but it also holds the aforementioned signature, to which we can subscribe our `BindUI` method.
+- Because it takes around 2-3 frames for the View to be ready to do data-binding and we don't want people to implement waiting logic for this themselves, we have a convenient event available (an `Unreal Signature`), to which we can subscribe our `BindUI` method.
+- In the `BindUI` body, we want to retrieve the View and assign it to our pointer. By including `CohtmlGameHUD.h`, we will have access to a very convenient method called `GetCohtmlHUD`, which does exactly what its name implies. Not only that, but it also holds the aforementioned signature, to which we can subscribe our `BindUI` method.
 
 With all of this explained, this is how all of this looks actually in code:
 
@@ -128,7 +129,7 @@ And that's it! We can now continue further.
 
 On to the actual code of the `PlayerModel.h` now:
 
-* This is the code for the includes and a delegate declaration (once again, will be explained [later](#registering-the-player-model)):
+- This is the code for the includes and a delegate declaration (once again, will be explained [later](#registering-the-player-model)):
 
 ```
 #pragma once
@@ -143,7 +144,7 @@ On to the actual code of the `PlayerModel.h` now:
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FItemSelectDelegate);
 ```
 
-* Next comes the minimap `USTRUCT`:
+- Next comes the minimap `USTRUCT`:
 
 ```
 USTRUCT()
@@ -177,7 +178,7 @@ struct FSGMinimap
 };
 ```
 
-* Next is the inventory item `USTRUCT`:
+- Next is the inventory item `USTRUCT`:
 
 ```
 USTRUCT()
@@ -212,7 +213,7 @@ struct FInventoryItem
 };
 ```
 
-* And lastly the Player model `UCLASS`:
+- And lastly the Player model `UCLASS`:
 
 ```
 UCLASS()
@@ -325,9 +326,9 @@ Now we need to add the `PlayerModel` object to the `StarterGuideHUD` and use the
 
 This is needed for when the inventory items get clicked and the currently-selected item has to be changed:
 
-* First the `PlayerModel`'s `itemSelect` method gets invoked from the frontend
-* We successfully update the `PlayerModel`'s `selectedItem` variable with the new `index` that is provided
-* Lastly, we update the `itemToDisplay`
+- First the `PlayerModel`'s `itemSelect` method gets invoked from the frontend
+- We successfully update the `PlayerModel`'s `selectedItem` variable with the new `index` that is provided
+- Lastly, we update the `itemToDisplay`
 
 One problem remains, however - for this change to be reflected in the frontend, we need to **update** the JavaScript model and **synchronize**. This is done by the `View`, and only the HUD has access to the it.
 

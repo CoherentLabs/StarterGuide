@@ -19,17 +19,17 @@ Looking at the data of the `map` object from the [Chapter 9](https://starter.coh
 
 Now let's go over the things we will need:
 
-* We want to once again include the three binders - `CohtmlUTypeBinder.h`,`CohtmlFStringBinder.h` and `CohtmlTArrayBinder.h`
-* We want to specify our class constructor
-* We want a `zoom`, `x` and `y` variable of type `float`
-* We want a `pointsOfInterest` variable, which will be a `TArray` of `PointOfInterest` objects
-  * `PointOfInterest` will be a `USTRUCT`, which requires:
-    * A `x` and `y` variable of type `float`
-    * An `icon`, `title` and `description` variable of type `FString`
-    * A `locked` variable of type `bool`
-* We want a `mapTiles` variable, which is going to be another `TArray`, containing `MapTile` objects
-  * This will be a dummy `USTRUCT`, that will contain no data, but is required since the `data-bind-for` expression in the `index.html` depends on its existance the way it is implemented, but essentially does nothing. It is a struct, because the `data-bind-for` won't generate the tiles if the array consists of primitive types
-  * We will also add a `const` `uint32` variable for the tile size
+- We want to once again include the three binders - `CohtmlUTypeBinder.h`,`CohtmlFStringBinder.h` and `CohtmlTArrayBinder.h`
+- We want to specify our class constructor
+- We want a `zoom`, `x` and `y` variable of type `float`
+- We want a `pointsOfInterest` variable, which will be a `TArray` of `PointOfInterest` objects
+  - `PointOfInterest` will be a `USTRUCT`, which requires:
+    - A `x` and `y` variable of type `float`
+    - An `icon`, `title` and `description` variable of type `FString`
+    - A `locked` variable of type `bool`
+- We want a `mapTiles` variable, which is going to be another `TArray`, containing `MapTile` objects
+  - This will be a dummy `USTRUCT`, that will contain no data, but is required since the `data-bind-for` expression in the `index.html` depends on its existance the way it is implemented, but essentially does nothing. It is a struct, because the `data-bind-for` won't generate the tiles if the array consists of primitive types
+  - We will also add a `const` `uint32` variable for the tile size
 
 Once again, all of these member variables will be exposed by using the `UPROPERTY` macro.
 
@@ -228,6 +228,7 @@ void AStarterGuideHUD::UpdateItemSelect()
 ```
 
 And here is the result:
+
 {{< img-simple src="ue-chapter-4_1.png" alt="ue-chapter-4_1" caption="<em></em>" class="border-0" >}}
 
 {{< img-simple src="ue-chapter-4_2.png" alt="ue-chapter-4_2" caption="<em></em>" class="border-0" >}}

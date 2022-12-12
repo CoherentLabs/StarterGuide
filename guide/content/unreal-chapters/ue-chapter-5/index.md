@@ -19,11 +19,11 @@ To implement these events, we need to check what kind of data some will be passi
 
 For each event that we will handle, we will create a corresponding C++ method in our `StarterGuideHUD` class. We will trivially name them as their JavaScript counterparts:
 
-* `PauseToggle` - no parameters will be passed
-* `ChangeMenu` - a `string` parameter will be passed with the menu setting name, which we will expect as an `FString`
-* `MapMove` - two `number` parameters will be passed for the `x` and `y` coordinates, which we will expect as `float`s
-* `MapZoom` - a number parameter will be passed for the zoom amount, which we will expect as a `float`
-* All of the methods will be marked as `UPROPERTY`
+- `PauseToggle` - no parameters will be passed
+- `ChangeMenu` - a `string` parameter will be passed with the menu setting name, which we will expect as an `FString`
+- `MapMove` - two `number` parameters will be passed for the `x` and `y` coordinates, which we will expect as `float`s
+- `MapZoom` - a number parameter will be passed for the zoom amount, which we will expect as a `float`
+- All of the methods will be marked as `UPROPERTY`
 
 The `PauseToggle` and `ChangeMenu` methods will both perform make a `View->TriggerEvent` call, which will be caught in JavaScript, in our `script.js` file, where we will have an `engine.on` function, which will invoke the `attachSliderListeners` function.
 
@@ -84,7 +84,7 @@ private:
 
 Now over in the `StarterGuideHUD.cpp`:
 
-* In the `BindUI` method we will do the aforementioned event registering:
+- In the `BindUI` method we will do the aforementioned event registering:
 
 ```
 void AStarterGuideHUD::BindUI()
@@ -111,7 +111,7 @@ void AStarterGuideHUD::BindUI()
 }
 ```
 
-* And here is the translated logic that we had in the `script.js` file by the end of [Chapter 9](https://starter.coherent-labs.com/chapters/chapter-9/) for the events that we will be handling in the `StarterGuideHUD.cpp`:
+- And here is the translated logic that we had in the `script.js` file by the end of [Chapter 9](https://starter.coherent-labs.com/chapters/chapter-9/) for the events that we will be handling in the `StarterGuideHUD.cpp`:
 
 ```
 void AStarterGuideHUD::PauseToggle()
