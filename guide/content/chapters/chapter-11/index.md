@@ -15,7 +15,7 @@ With our UI complete we can now start integrating it into our game. But before w
 
 ## Setting our body to be transparent
 
-For the purpose of this guide we made our UI to have a black background. This allowed us to be able to demonstrate the different features that we made more easily. 
+For the purpose of this guide we made our UI to have a black background. This allowed us to be able to demonstrate the different features that we made more easily.
 
 This however won't allow us to use the same UI in a game, as it won't show the game underneath. To fix that we'll change the `body` background-color to transparent in our `style.css` file:
 
@@ -76,7 +76,7 @@ engine.whenReady.then(() => {
 
 ## Removing the mocked event listeners
 
-In the previous chapters of the guide we demonstrated how to trigger and listen for events. Since we want to integrate our UI with a game engine we need to remove some of them as the engine will have to handle them now. 
+In the previous chapters of the guide we demonstrated how to trigger and listen for events. Since we want to integrate our UI with a game engine we need to remove some of them as the engine will have to handle them now.
 
 In the `script.js` file we'll start by removing the `pause_toggle` event.
 

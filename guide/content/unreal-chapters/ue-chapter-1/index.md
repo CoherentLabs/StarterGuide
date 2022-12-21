@@ -22,11 +22,11 @@ Unlike the Front End guide where you were supposed to implement the logic on you
 
 Reading this, you should have obtained our Unreal Engine plugin already, which will contain the assets (located in our CoherentSample directory that is included in the archive, or alternatively installed through our installer) that we will go over in this guide. These assets include:
 
-* A `StarterGuide` map, located under `'CoherentSample/Content/Maps/StarterGuide.umap'`.
-* `StarterGuideGameMode` Blueprint, located under `'CoherentSample/Content/MapAssets/StarterGuideGameModeBP.uasset'`.
-* Frontend resources, located under `'CoherentSample/Content/uiresources/StarterGuide'`. These include the same HTML/CSS/JS files from the original guide, with some minor alterations to be suitable for our C++ data models.
-  * Alternatively obtainable from this [link](https://github.com/CoherentLabs/StarterGuide/raw/master/files/chapter_11/chapter_11.zip).
-  * These are based off the state in which they were set up in [Chapter 11](https://starter.coherent-labs.com/chapters/chapter-11/), which explains how to prepare them for a backend.
-* C++ files that contain logic for the HUD and different models (`Map`, `Player`, `Minimap` and `Inventory`).
+- A `StarterGuide` map, located under `'CoherentSample/Content/Maps/StarterGuide.umap'`.
+- `StarterGuideGameMode` Blueprint, located under `'CoherentSample/Content/MapAssets/StarterGuideGameModeBP.uasset'`.
+- Frontend resources, located under `'CoherentSample/Content/uiresources/StarterGuide'`. These include the same HTML/CSS/JS files from the original guide, with some minor alterations to be suitable for our C++ data models.
+  - Alternatively obtainable from this [link](https://github.com/CoherentLabs/StarterGuide/raw/master/files/chapter_11/chapter_11.zip).
+  - These are based off the state in which they were set up in [Chapter 11](https://starter.coherent-labs.com/chapters/chapter-11/), which explains how to prepare them for a backend.
+- C++ files that contain logic for the HUD and different models (`Map`, `Player`, `Minimap` and `Inventory`).
 
 {{< alert icon="❗" text="Note: The Unreal assets will work with Unreal Engine versions >= 4.25" />}}
