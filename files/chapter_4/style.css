@@ -153,6 +153,7 @@ body {
 	width: 200%;
 	height: 200%;
 	background-size: cover;
+	transform: translateX(25%) translateY(25%);
 }
 
 .marker {
@@ -244,6 +245,11 @@ body {
 dropdown-option {
 	display: flex;
 	justify-content: center;
+	background-color: transparent;
+}
+
+.options {
+	background-color: transparent;
 }
 
 .checkbox-component {
@@ -270,6 +276,11 @@ dropdown-option {
 	height: 30px;
 	top: 0;
 	left: 0;
+	background-color: transparent;
+}
+
+.guic-checkbox-wrapper-inner {
+	background-color: transparent;
 }
 
 .guic-checkbox-label {
