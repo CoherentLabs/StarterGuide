@@ -457,10 +457,12 @@ Before we use it, we need to make a few structural changes to our html. In the `
 
 This will allow us to place our points of interest relative to the grid, so that when we make any changes (e.g. scale, move), it will affect them as well.
 
-We can now add a `.point-of-interest` element inside the `map-tile-grid`; using `data-bind-for`, we’ll multiply it to the number of points in our model and then our custom data-binding should position it correctly on the map:
+We can now add a `.point-of-interest-container` element inside the `map-tile-grid`; using `data-bind-for`, we’ll multiply it to the number of points in our model and then we'll add a `.point-of-interest`  our custom data-binding should position it correctly on the map:
 
 ```
-<div class="point-of-interest" data-bind-for="poi:{{MapModel.pointsOfInterest}}" data-bind-poi="{{poi}}"></div>
+<div class="point-of-interest-container" data-bind-for="poi:{{MapModel.pointsOfInterest}}">
+	<div class="point-of-interest"  data-bind-poi="{{poi}}"></div>
+</div>
 ```
 
 If we open the Player, we should see the icons positioned correctly:
