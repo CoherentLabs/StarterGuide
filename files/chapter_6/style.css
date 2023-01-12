@@ -1,319 +1,334 @@
 @font-face {
-	font-family: "Jost*";
-	src: url(./assets/Jost-400-Book.ttf);
+    font-family: 'Jost*';
+    src: url(./assets/Jost-400-Book.ttf);
 }
 
 :root {
-	--primary: #29c379;
-	--secondary: #585453;
-	--inactive: #313131;
-	--danger: #f85b4a;
-	--warning: #d7ba45;
-	--scroll-width: 5px;
+    --primary: #29c379;
+    --secondary: #585453;
+    --inactive: #313131;
+    --danger: #f85b4a;
+    --warning: #d7ba45;
+    --scroll-width: 5px;
 }
 
 body {
-	font-size: 2.5vh;
-	color: white;
-	background-color: black;
-	font-family: "Jost*";
-	height: 100vh;
-	margin: 0;
+    font-size: 2.5vh;
+    color: white;
+    background-color: black;
+    font-family: 'Jost*';
+    height: 100vh;
+    margin: 0;
 }
 
 .hud {
-	width: 100vw;
-	height: 100vh;
-	position: relative;
+    width: 100vw;
+    height: 100vh;
+    position: relative;
 }
 
 .button {
-	padding: 1vh 2vh;
-	border: 0.3vh solid #313131;
-	color: var(--secondary);
-	margin: 0 1vh;
+    padding: 1vh 2vh;
+    border: 0.3vh solid #313131;
+    color: var(--secondary);
+    margin: 0 1vh;
 }
 
 .button:hover {
-	border-color: #524f4e;
-	background-color: var(--secondary);
-	color: white;
+    border-color: #524f4e;
+    background-color: var(--secondary);
+    color: white;
 }
 
 .active {
-	border-color: #29c379;
-	background-color: var(--primary);
-	color: white;
+    border-color: #29c379;
+    background-color: var(--primary);
+    color: white;
 }
 
 .health-bar-container {
-	position: absolute;
-	top: 2vh;
-	left: 5vh;
-	display: flex;
-	align-items: center;
+    position: absolute;
+    top: 2vh;
+    left: 5vh;
+    display: flex;
+    align-items: center;
 }
 
 .health-bar {
-	width: 45vh;
-	height: 1vh;
-	background-color: var(--secondary);
-	margin: 0 2vh;
+    width: 45vh;
+    height: 1vh;
+    background-color: var(--secondary);
+    margin: 0 2vh;
 }
 
 .health-bar-fill {
-	height: 100%;
-	width: 100%;
-	background-color: var(--primary);
-	transition: width 0.6s;
+    height: 100%;
+    width: 100%;
+    background-color: var(--primary);
+    transition: width 0.6s;
 }
 
 .health-danger {
-	background-color: var(--danger);
+    background-color: var(--danger);
 }
 
 .health-warning {
-	background-color: var(--warning);
+    background-color: var(--warning);
 }
 
 .slider {
-	font-size: 0.8rem;
+    font-size: 0.8rem;
 }
 
 .rangeslider {
-	width: 45vh;
-	height: 5px;
-	position: relative;
+    width: 45vh;
+    height: 5px;
+    position: relative;
 }
 
 .rangeslider:hover {
-	background-color: var(--secondary);
+    background-color: var(--secondary);
 }
 
 .rangeslider-handle {
-	width: 15px;
-	height: 15px;
-	top: -5px;
-	background-color: white;
-	position: relative;
-	transform: rotate(45deg);
+    width: 15px;
+    height: 15px;
+    top: -5px;
+    background-color: white;
+    position: relative;
+    transform: rotate(45deg);
 }
 
 .rangeslider-handle-fill {
-	width: 45vh;
-	height: 5px;
-	background-color: var(--primary);
-	transform-origin: left;
-	position: absolute;
+    width: 45vh;
+    height: 5px;
+    background-color: var(--primary);
+    transform-origin: left;
+    position: absolute;
 }
 
 .flex-space-between {
-	display: flex;
-	width: 45vh;
-	justify-content: space-between;
-	align-items: center;
+    display: flex;
+    width: 45vh;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .option {
-	padding: 1px 4px;
+    padding: 1px 4px;
 }
 
 .checkbox {
-	width: 30px;
-	height: 30px;
-	background-image: url(./assets/check-empty.png);
-	background-size: contain;
+    width: 30px;
+    height: 30px;
+    background-image: url(./assets/check-empty.png);
+    background-size: contain;
 }
 
 .checked {
-	background-image: url(./assets/check-mark.png);
+    background-image: url(./assets/check-mark.png);
 }
 
 .label {
-	font-size: 0.8rem;
+    font-size: 0.8rem;
 }
 
 .minimap-container {
-	width: 25vh;
-	height: 25vh;
-	border: 5px solid white;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	position: absolute;
-	bottom: 3vh;
-	left: 3vh;
-	overflow: hidden;
+    width: 25vh;
+    height: 25vh;
+    border: 5px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: 3vh;
+    left: 3vh;
+    overflow: hidden;
 }
 
 .minimap {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 200%;
-	height: 200%;
-	background-size: cover;
-	transform: translateX(25%) translateY(25%);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 200%;
+    background-size: cover;
+    transform: translateX(25%) translateY(25%);
 }
 
 .marker {
-	height: 15px;
-	width: 10px;
-	border-left: 5px solid transparent;
-	border-right: 5px solid transparent;
-	border-bottom: 15px solid white;
-	z-index: 2;
+    height: 15px;
+    width: 10px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 15px solid white;
+    z-index: 2;
 }
 
 .map-label {
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	font-size: 0.9rem;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    font-size: 0.9rem;
 }
 
 .clock {
-	font-size: 1.5rem;
-	position: absolute;
-	bottom: 5vh;
-	right: 5vh;
+    font-size: 1.5rem;
+    position: absolute;
+    bottom: 5vh;
+    right: 5vh;
 }
 
 .pause-menu {
-	width: 100vw;
-	height: 100vh;
-	background-color: black;
-	overflow-y: scroll;
-	position: absolute;
-	display: flex;
-	align-items: center;
-	flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+    background-color: black;
+    overflow-y: scroll;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
 }
 
 .settings-menu {
-	width: 50vw;
-	padding: 20px;
+    width: 50vw;
+    padding: 20px;
 }
 
 .settings-heading {
-	padding-bottom: 10px;
-	font-size: 1.8rem;
-	border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-	margin-bottom: 30px;
+    padding-bottom: 10px;
+    font-size: 1.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 30px;
 }
 
 .settings-option-row {
-	display: flex;
-	justify-content: space-between;
-	margin-bottom: 10px;
-	align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    align-items: center;
 }
 
 .settings-option-column {
-	display: flex;
-	flex-direction: column;
-	margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
 }
 
 .scrollable-container-component {
-	height: 100px;
+    height: 100px;
 }
 
-.selected {
-	display: flex;
-	justify-content: center;
-	background-color: #313131;
+.guic-dropdown-selected {
+    display: flex;
+    justify-content: center;
+    background-color: #313131;
 }
 
-.selected:hover {
-	border: 0;
+.guic-dropdown-selected:hover {
+    border: 0;
 }
 
-.options-container {
-	border: 0;
-	position: absolute;
-	top: 100%;
-	background-color: #313131;
-	border-top: rgba(255, 255, 255, 0.7);
-	z-index: 2;
+.guic-dropdown-options-container {
+    border: 0;
+    position: absolute;
+    top: 100%;
+    border-top: rgba(255, 255, 255, 0.7);
+    z-index: 2;
 }
 
 .dropdown {
-	position: relative;
+    position: relative;
 }
 
 dropdown-option {
-	display: flex;
-	justify-content: center;
-	background-color: transparent;
+    display: flex;
+    justify-content: center;
+    background-color: black;
 }
 
-.options {
-	background-color: transparent;
+dropdown-option:hover {
+    background-color: #313131;
+}
+
+.guic-dropdown-options {
+    background-color: transparent;
+}
+
+.guic-dropdown-selected-option {
+    border-color: transparent;
+    background-color: #313131;
+}
+
+.guic-dropdown-selected-option:hover {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+
+.guic-dropdown-option-active {
+    background-color: #313131;
 }
 
 .checkbox-component {
-	width: 150px;
-	display: flex;
-	justify-content: center;
+    width: 150px;
+    display: flex;
+    justify-content: center;
 }
 
 .guic-checkbox-wrapper {
-	margin-top: 0;
+    margin-top: 0;
 }
 
 .guic-checkbox-background {
-	background-image: url(./assets/check-empty.png);
-	background-size: contain;
-	border: 0;
+    background-image: url(./assets/check-empty.png);
+    background-size: contain;
+    border: 0;
 }
 
-
 .guic-check-mark {
-	background-image: url(./assets/check-mark.png);
-	background-size: contain;
-	width: 30px;
-	height: 30px;
-	top: 0;
-	left: 0;
-	background-color: transparent;
+    background-image: url(./assets/check-mark.png);
+    background-size: contain;
+    width: 30px;
+    height: 30px;
+    top: 0;
+    left: 0;
+    background-color: transparent;
 }
 
 .guic-checkbox-wrapper-inner {
-	background-color: transparent;
+    background-color: transparent;
 }
 
 .guic-checkbox-label {
-	display: none;
+    display: none;
 }
 
 .guic-horizontal-rangeslider-wrapper {
-	width: 100%;
-	margin: 0;
+    width: 100%;
+    margin: 0;
 }
 
 .guic-horizontal-rangeslider {
-	background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .guic-horizontal-rangeslider-wrapper:hover .guic-horizontal-rangeslider {
-	background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 .guic-horizontal-rangeslider-handle {
-	border-radius: 0;
-	transform: translateX(-50%) rotate(45deg);
-	background-color: white;
+    border-radius: 0;
+    transform: translateX(-50%) rotate(45deg);
+    background-color: white;
 }
 
 .guic-horizontal-rangeslider-bar {
-	background-color: var(--primary);
+    background-color: var(--primary);
 }
 
 .volume-value {
-	width: 150px;
-	display: flex;
-	justify-content: center;
+    width: 150px;
+    display: flex;
+    justify-content: center;
 }
 
 .difficulty-value {
@@ -323,153 +338,152 @@ dropdown-option {
 }
 
 .tabs {
-	width: 50vw;
-	display: flex;
+    width: 50vw;
+    display: flex;
 }
 
 .tab {
-	padding: 10px 20px;
+    padding: 10px 20px;
 }
 
 .active-tab {
-	border-bottom: 3px solid #29c379;
+    border-bottom: 3px solid #29c379;
 }
 
 .inventory {
-	width: 65vw;
-	display: flex;
-	padding-top: 20px;
-	align-items: center;
-	justify-content: center;
+    width: 65vw;
+    display: flex;
+    padding-top: 20px;
+    align-items: center;
+    justify-content: center;
 }
 
 .inventory-grid {
-	width: 500px;
-	display: flex;
-	flex-wrap: wrap;
-	margin: -5px;
-	height: 586px;
+    width: 500px;
+    display: flex;
+    flex-wrap: wrap;
+    margin: -5px;
+    height: 586px;
 }
 
 .inventory-grid-cell {
-	width: 80px;
-	height: 80px;
-	margin: 5px;
-	border: 1px solid rgba(255, 255, 255, 0.3);
+    width: 80px;
+    height: 80px;
+    margin: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .inventory-item {
-	width: 100%;
-	height: 100%;
-	background-size: contain;
-	background-repeat: no-repeat;
-	border: 3px solid transparent;
+    width: 100%;
+    height: 100%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    border: 3px solid transparent;
 }
 
 .selected-item {
-	border-color: #29c379;
+    border-color: #29c379;
 }
 
 .inventory-details {
-	width: 40%;
-	display: flex;
-	justify-content: center;
-	flex-direction: column;
-	height: 80vh;
+    width: 40%;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    height: 80vh;
 }
 
 .inventory-details-wrapper {
-	padding: 20px;
-	width: 100%;
-	background-color: var(--inactive);
-
+    padding: 20px;
+    width: 100%;
+    background-color: var(--inactive);
 }
 
 .inventory-row {
-	display: flex;
-	padding-bottom: 20px;
-	border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-	margin-bottom: 10px;
+    display: flex;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    margin-bottom: 10px;
 }
 
 .inventory-details-image {
-	width: 55px;
-	height: 55px;
-	background-size: contain;
-	background-repeat: no-repeat;
-	margin-right: 20px;
-	border: 2px solid rgba(255, 255, 255, 0.5)
+    width: 55px;
+    height: 55px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    margin-right: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
 .inventory-details-title {
-	text-transform: uppercase;
+    text-transform: uppercase;
 }
 
 .inventory-details-count {
-	color: rgba(255, 255, 255, 0.5);
-	font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.9rem;
 }
 
 .inventory-details-description {
-	min-height: 200px;
-	font-size: 0.9rem;
-	color: rgba(255, 255, 255, 0.5);
+    min-height: 200px;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.5);
 }
 
 .map-tile {
-	width: 100%;
-	padding-bottom: 75%;
-	background-size: contain;
-	background-repeat: no-repeat;
+    width: 100%;
+    padding-bottom: 75%;
+    background-size: contain;
+    background-repeat: no-repeat;
 }
 
 .map {
-	width: 100vw;
-	height: 93%;
-	overflow: hidden;
+    width: 100vw;
+    height: 93%;
+    overflow: hidden;
 }
 
-.map-tile-grid{
-	width: 100%;
-	margin: 0;
-	padding: 0;
-	transform-origin: left top;
-	position: relative;
+.map-tile-grid {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    transform-origin: left top;
+    position: relative;
 }
 
 .guic-row {
-	margin: 0;
+    margin: 0;
 }
 
 .automatic-grid-cell {
-	height: auto;
+    height: auto;
 }
 
 .point-of-interest {
-	width: 45px;
-	height: 45px;
-	position: absolute;
-	background-repeat: no-repeat;
-	background-size: contain;
+    width: 45px;
+    height: 45px;
+    position: absolute;
+    background-repeat: no-repeat;
+    background-size: contain;
 }
 
 .tooltip {
-	position: absolute;
-	left: 100%;
-	top: 50%;
-	background-color: rgba(0, 0, 0, 0.7);
-	min-width: 200px;
-	min-height: 100px;
-	padding: 5px;
-	display: none;
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    background-color: rgba(0, 0, 0, 0.7);
+    min-width: 200px;
+    min-height: 100px;
+    padding: 5px;
+    display: none;
 }
 
 .tooltip-title {
-	font-size: 0.8rem;
-	margin-bottom: 10px;
+    font-size: 0.8rem;
+    margin-bottom: 10px;
 }
 
 .tooltip-description {
-	font-size: 0.7rem;
-	color: rgba(255, 255, 255, 0.7);
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.7);
 }

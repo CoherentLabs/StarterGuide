@@ -11,9 +11,9 @@
     "lib": "lib"
   },
   "dependencies": {
-    "coherent-gameface-checkbox": "^1.0.9",
-    "coherent-gameface-components": "^1.0.9",
-    "coherent-gameface-dropdown": "^1.0.7",
+    "coherent-gameface-checkbox": "^1.1.0",
+    "coherent-gameface-components": "^1.1.0",
+    "coherent-gameface-dropdown": "^1.2.0",
     "coherent-gameface-rangeslider": "^1.0.6"
   },
   "devDependencies": {},
