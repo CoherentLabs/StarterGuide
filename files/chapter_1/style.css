@@ -465,6 +465,12 @@ dropdown-option:hover {
 	height: auto;
 }
 
+.point-of-interest-container {
+	width: 100%;
+	height: 100%;
+	position: absolute;
+}
+
 .point-of-interest {
 	width: 45px;
 	height: 45px;

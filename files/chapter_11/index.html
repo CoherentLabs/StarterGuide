@@ -109,7 +109,9 @@
 						<div class="map-tile" data-bind-style-background-image-url="'./assets/map-1_'+ ({{index}} + 1) +'.jpg'"></div>
 					</component-slot>
 				</gameface-automatic-grid>
-				<div class="point-of-interest" data-bind-for="poi:{{MapModel.pointsOfInterest}}" data-bind-poi="{{poi}}"></div>
+				<div class="point-of-interest-container" data-bind-for="poi:{{MapModel.pointsOfInterest}}" >
+					<div class="point-of-interest" data-bind-poi="{{poi}}"></div>
+				</div>
 			</div>
 		</div>
 	</div>
