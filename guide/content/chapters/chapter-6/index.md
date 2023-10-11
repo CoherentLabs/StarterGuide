@@ -48,10 +48,10 @@ npm install coherent-gameface-rangeslider
 Now we can include them in our project. To do that we need to add their respective script, style files and coherent-components script. Each component’s script is located inside the umd folder and follows the naming convention: `<component_name>.production.min.js`. The components script is found in `/umd/components.production.min`. To include all of the scripts we’ll add the following code to the bottom of our index.html body after the other scripts:
 
 ```
-<script src="./node_modules/coherent-gameface-components/umd/components.production.min.js"></script>
-<script src="./node_modules/coherent-gameface-checkbox/umd/checkbox.production.min.js"></script>
-<script src="./node_modules/coherent-gameface-dropdown/umd/dropdown.production.min.js"></script>
-<script src="./node_modules/coherent-gameface-rangeslider/umd/rangeslider.production.min.js"></script>
+<script src="./node_modules/coherent-gameface-components/dist/components.production.min.js"></script>
+<script src="./node_modules/coherent-gameface-checkbox/dist/checkbox.production.min.js"></script>
+<script src="./node_modules/coherent-gameface-dropdown/dist/dropdown.production.min.js"></script>
+<script src="./node_modules/coherent-gameface-rangeslider/dist/rangeslider.production.min.js"></script>
 ```
 
 After the scripts, we need to add the styles as well. These are the default styles of the elements, some of which will be overridden by the `style.css` we already have in place. To add the styles we need to add the following code in the head tag of our index.html (above the style.css) like this:
