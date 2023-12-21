@@ -56,7 +56,7 @@ inventoryItems: [
 
 ## Building the inventory grid
 
-We can now start building our Inventory grid - we will first add a new screen in the `index.html` file called “inventory” and data-bind it like we did for the Settings Menu in the previous chapter. This time, however, the `activePauseMenu` should be inventory instead of settings.
+We can now start building our Inventory grid - we will first add a new screen in the `index.html` file in the `.pause-menu` beneath the `.settings-menu` called “inventory” and data-bind it like we did for the Settings Menu in the previous chapter. This time, however, the `activePauseMenu` should be inventory instead of settings.
 
 ```
 <div class="inventory" data-bind-if="{{PlayerModel.activePauseMenu}} === 'inventory'">
@@ -81,11 +81,13 @@ To build the grid, we’ll use another data-binding called `data-bind-for`. This
 
 The syntax for data-bind-for is `“iterator:{{Model}}”`, which is quite similar to `data-bind-class-toggle`. Here we have an iterator and the model; optionally, we can also use the index of the looped element if we need it - `“index, iterator:{{Model}}”`. We can then leverage the iterator or index as a separate model that corresponds to that array item.
 
-In our case we’ll make a div element with the `.inventory-grid-cell` class and inside we’ll add another with the `.inventory-item` one:
+In our case we’ll make a div element with the `.inventory-grid-cell` class and inside we’ll add another with the `.inventory-item` one and place them in the `.inventory-grid` element:
 
 ```
-<div class="inventory-grid-cell">
-    <div class="inventory-item"></div>
+<div class="inventory-grid">
+    <div class="inventory-grid-cell">
+        <div class="inventory-item"></div>
+    </div>
 </div>
 ```
 
@@ -267,7 +269,7 @@ While this works, it’s not an ideal solution for when we have large codebases 
 
 An `Observable model` is a smart object which will automatically push itself for update when some of its properties are changed. This is especially useful in situations where we need to keep an active state (as is our case in the inventory active item).
 
-To create an Observable model, we’ll just need to add the following code in our `model.js` file:
+To create an Observable model, we’ll just need to create the `observableModel` in our `model.js` file in the `engine.whenReady`:
 
 ```
     engine.createJSModel("PlayerModel", model);

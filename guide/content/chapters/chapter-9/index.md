@@ -29,7 +29,7 @@ const map = {
 }
 ```
 
-Then in our `whenReady` promise resolve, we’ll register the new model
+Then in our `whenReady` promise resolve, we’ll register the new model next to our `PlayerModel` and we also need to make sure it's before the `engine.synchronizeModels`
 
 ```
 engine.createJSModel("MapModel", map);
@@ -58,7 +58,7 @@ And then in our index.html we’ll add the style for the `grid` and the `automat
 Plus the script for the `automatic-grid`:
 
 ```
-<script src="./node_modules/coherent-gameface-automatic-grid/umd/automatic-grid.production.min.js"></script>
+<script src="./node_modules/coherent-gameface-automatic-grid/dist/automatic-grid.production.min.js"></script>
 ```
 
 To create our automatic grid, we just need to add the `automatic-grid` element to our `html`. Before that, however, we need to create a new tab, just like we did for the inventory and settings:
@@ -428,11 +428,13 @@ We can now start adding logic to our init function and set the position and imag
 
 ```
     init(element, value) {
-        element.style.left = `${value.x}%`;
-        element.style.top = `${value.y}%`;
+        element.parentNode.style.left = `${value.x}%`;
+        element.parentNode.style.top = `${value.y}%`;
         element.style.backgroundImage = `url(./assets/map-${value.icon}-icon.png)`;
     }
 ```
+
+As you can see we are adding the position to the poi parent, rather than the element. This is because, we need to separate the element with the `data-bind-for` from the other `data-binded` elements as the order of evaluations might be incorrect, but we need to change it's position, rather than the childs.
 
 Let’s test if everything we’ve done so far works. We’ll first need to register our custom data-binding attribute. In the `model.js` file (in the `engine.whenReady`, above the part where we register our model), we’ll add the following:
 
@@ -480,7 +482,7 @@ Next we’ll add a tooltip and event listeners that will show or hide the toolti
     }
 ```
 
-And in our update function, we can add the following code:
+And in our init function, we can add the following code:
 
 ```
 this._tooltip = this.createTooltip(value.title, value.description, value.locked);
@@ -488,11 +490,15 @@ this._tooltip = this.createTooltip(value.title, value.description, value.locked)
 
 This will make the tooltip available in other functions as well - namely the onMouseEnter and onMouseLeave.The reason why we don’t add it to the init function is that the update function always fires on `synchronizeModels`, hence we don’t need to run it twice.
 
-With our tooltip created, we can append it to our element. First, however, we need to clear any other tooltips in order not to have multiple tooltips inside the element.
+With our tooltip created, we can append it to our element. 
+```
+    element.appendChild(this._tooltip);
+```
+
+Then in the `update` function we need to update the tooltip with the new data, whenever it has been updated. We also :
 
 ```
-    element.innerHTML = '';
-    element.appendChild(this._tooltip);
+this._tooltip.innerHTML = `<div class="tooltip-title">${value.title}</div><div class="tooltip-description">${value.description}</div>`;
 ```
 
 Now, we can attach our event listeners to the element in the `init` function, and remove them in the `deinit`:
@@ -502,6 +508,9 @@ Now, we can attach our event listeners to the element in the `init` function, an
         element.style.left = `${value.x}px`;
         element.style.top = `${value.y}px`;
         element.style.backgroundImage = `url(./assets/map-${value.icon}-icon.png)`;
+
+        this._tooltip = this.createTooltip(value.title, value.description, value.locked);
+        element.appendChild(this._tooltip);
  
         element.addEventListener('mouseenter', this.onMouseEnter);
         element.addEventListener('mouseleave', this.onMouseLeave);
@@ -555,6 +564,12 @@ We’ll also change the code of the `createTooltip` function to be:
         }
         return tooltip;
     }
+```
+
+And inside the `update` function we need to add the following check so that whenever we update the model data, the poi doesn't fill the tooltip.
+
+```
+if (value.locked) return;
 ```
 
 The last thing to complete is to change some of the points of interest in our model to be locked, like the statue for example:

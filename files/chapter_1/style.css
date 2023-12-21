@@ -150,10 +150,9 @@ body {
 	position: absolute;
 	top: 0;
 	left: 0;
-	width: 200%;
-	height: 200%;
 	background-size: cover;
-	transform: translateX(25%) translateY(25%);
+	height: 100%;
+	width: 100%;
 }
 
 .marker {

@@ -107,29 +107,32 @@ And in the Player:
 
 Up next is the show subtitles `checkbox`. We’ll add another `.settings-option-row` div and inside we’ll add the label ‘Enable Subtitles’ again in a `div` and the `checkbox` component. To add the component, you simply need to add the `<gameface-checkbox></gameface-checkbox>` element to the `index.html`. Inside this element you can add two slots with the `<gameface-checkbox></gameface-checkbox>` element -
 
-- One for the checkbox background, which is the checkmark:
+- We'll add only a single one for the checkbox background, which is the checkmark:
 
 ```
 <component-slot data-name="checkbox-background"></component-slot>
 ```
 
-- And another one for the label:
-
-```
-<component-slot data-name="label"></component-slot>
-```
-
-Since we already have a label, we’ll add the component slot for the label with an empty span tag. We’ll then add the one for the `checkbox background` and inside - a `div` with a class `.checkbox-background`
+We’ll then add it and then put inside - a `div` with a class `.checkbox-background`
 
 ```
 <gameface-checkbox class="checkbox-component">
-   <component-slot data-name="checkbox-background">
-       <div class="checkbox-background"></div>
-   </component-slot>
-   <component-slot data-name="label">
-       <span></span>
-   </component-slot>
+    <component-slot data-name="checkbox-background">
+        <div class="guic-checkbox-background"></div>
+    </component-slot>
 </gameface-checkbox>
+```
+
+In the end the code should look like this:
+```
+<div class="settings-option-row">
+    <div>Enable Subtitles</div>
+    <gameface-checkbox class="checkbox-component">
+        <component-slot data-name="checkbox-background">
+            <div class="guic-checkbox-background"></div>
+        </component-slot>
+    </gameface-checkbox>
+</div>
 ```
 
 The checkbox-background has already been set in our style.css, so if we open the Player we’ll see the following:

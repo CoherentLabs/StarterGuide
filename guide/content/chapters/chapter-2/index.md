@@ -49,7 +49,7 @@ engine.whenReady.then(() => {
 
 This is because we need to wait for Gameface to load before registering our model. To do that we need to use `engine.whenReady` which will return a Promise. After that promise is resolved in our `then()` function, we can register and start using our models.
 
-{{< alert icon="❗" text="A quick note before continuing - as you might have already noticed, every function that we use to leverage Gameface’s features starts with engine. The reason is that the cohtml.js file exports the engine module that contains all of the functions we need to communicate with the backend. You can read more about what the engine module does in our <a href='https://coherent-labs.com/Documentation/cpp-gameface/df/d01/javascript_virtual_machine.html'>documentation</a>." />}}
+{{< alert icon="❗" text="A quick note before continuing - as you might have already noticed, every function that we use to leverage Gameface’s features starts with engine. The reason is that the cohtml.js file exports the engine module that contains all of the functions we need to communicate with the backend. You can read more about what the engine module does in our <a href='https://docs.coherent-labs.com/cpp-gameface/integration/optional_features/javascript_native/'>documentation</a>." />}}
 
 Now that we know Gameface is ready, we can register our model. This happens by using the engine.createJSModel function:
 
