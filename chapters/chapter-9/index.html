@@ -7,12 +7,12 @@ Chapters</button><div class="collapse show" id=section-chapters><ul class="btn-t
     pointsOfInterest: [],
     mapTiles: Array.from(Array(64))
 }
-</code></pre><p>Then in our <code>whenReady</code> promise resolve, we’ll register the new model</p><pre><code>engine.createJSModel(&quot;MapModel&quot;, map);
+</code></pre><p>Then in our <code>whenReady</code> promise resolve, we’ll register the new model next to our <code>PlayerModel</code> and we also need to make sure it&rsquo;s before the <code>engine.synchronizeModels</code></p><pre><code>engine.createJSModel(&quot;MapModel&quot;, map);
 </code></pre><p>While all of the values are pretty self explanatory, the <code>mapTiles</code> seems out of place as it’s just an array of empty values. While it is indeed not necessary to have this value, we’ll be using it to avoid having to manually set up each map tile. The tiles we have provided in the assets folder are for an <strong>8 x 8</strong> map, or <strong>64</strong> tiles in total. So instead of having to write an element for each tile, we can now easily write one with <code>data-bind-for</code> and create all <strong>64</strong> tiles at once.</p><h2 id=adding-a-grid-of-tiles>Adding a grid of tiles<a href=#adding-a-grid-of-tiles class=anchor aria-hidden=true>#</a></h2><p>To do that we’ll use another component called <code>automatic-grid</code>, which will allow us to create an <strong>8x8</strong> grid easily. To install it, we’ll do the same thing we did in <a href=/chapters/chapter-6/#adding-the-dependencies>Chapter 6</a> and use the node package manager. For this particular component we’ll also need to use the grid component style as it’s built on top of it.</p><p>To install both components we’ll use:</p><pre><code>npm install coherent-gameface-automatic-grid
 npm install coherent-gameface-grid
 </code></pre><p>And then in our index.html we’ll add the style for the <code>grid</code> and the <code>automatic-grid</code>.</p><pre><code>&lt;link rel=&quot;stylesheet&quot; href=&quot;./node_modules/coherent-gameface-grid/style.css&quot;&gt;
 &lt;link rel=&quot;stylesheet&quot; href=&quot;./node_modules/coherent-gameface-automatic-grid/style.css&quot;&gt;
-</code></pre><p>Plus the script for the <code>automatic-grid</code>:</p><pre><code>&lt;script src=&quot;./node_modules/coherent-gameface-automatic-grid/umd/automatic-grid.production.min.js&quot;&gt;&lt;/script&gt;
+</code></pre><p>Plus the script for the <code>automatic-grid</code>:</p><pre><code>&lt;script src=&quot;./node_modules/coherent-gameface-automatic-grid/dist/automatic-grid.production.min.js&quot;&gt;&lt;/script&gt;
 </code></pre><p>To create our automatic grid, we just need to add the <code>automatic-grid</code> element to our <code>html</code>. Before that, however, we need to create a new tab, just like we did for the inventory and settings:</p><pre><code>&lt;div class=&quot;tab&quot; data-bind-class-toggle=&quot;active-tab:{{PlayerModel.activePauseMenu}} === 'map'&quot;&gt;Map&lt;/div&gt;
 
 &lt;div class=&quot;map&quot; data-bind-if=&quot;{{PlayerModel.activePauseMenu}} === 'map'&quot;&gt;
@@ -156,11 +156,11 @@ MapModel.y = clamp(MapModel.y + event.clientY - startY - offsetY, -limitY, 0);
  
     }
 </code></pre><p>The <code>createTooltip</code> will create the tooltip that will show when we hover over a POI and the <code>onMouseEnter</code> and <code>onMouseLeave</code> will be responsible for showing and hiding the tooltip.</p><p>We can now start adding logic to our init function and set the position and images of our points:</p><pre><code>    init(element, value) {
-        element.style.left = `${value.x}%`;
-        element.style.top = `${value.y}%`;
+        element.parentNode.style.left = `${value.x}%`;
+        element.parentNode.style.top = `${value.y}%`;
         element.style.backgroundImage = `url(./assets/map-${value.icon}-icon.png)`;
     }
-</code></pre><p>Let’s test if everything we’ve done so far works. We’ll first need to register our custom data-binding attribute. In the <code>model.js</code> file (in the <code>engine.whenReady</code>, above the part where we register our model), we’ll add the following:</p><pre><code>engine.registerBindingAttribute('poi', POIHandler);
+</code></pre><p>As you can see we are adding the position to the poi parent, rather than the element. This is because, we need to separate the element with the <code>data-bind-for</code> from the other <code>data-binded</code> elements as the order of evaluations might be incorrect, but we need to change it&rsquo;s position, rather than the childs.</p><p>Let’s test if everything we’ve done so far works. We’ll first need to register our custom data-binding attribute. In the <code>model.js</code> file (in the <code>engine.whenReady</code>, above the part where we register our model), we’ll add the following:</p><pre><code>engine.registerBindingAttribute('poi', POIHandler);
 </code></pre><p>We can now use our custom data-binding attribute as: <code>data-bind-poi</code>.</p><p>Before we use it, we need to make a few structural changes to our html. In the <code>index.html</code>, we’ll wrap the <code>automatic-grid</code> in a new div that will have the same class and data-binding as the grid:</p><pre><code>&lt;div class=&quot;map-tile-grid&quot;
      data-bind-style-transform2d=&quot;{{MapModel.zoom}} + ', 0, 0,' + {{MapModel.zoom}} + ',' + {{MapModel.x}} + ',' + {{MapModel.y}}&quot;&gt;
      &lt;gameface-automatic-grid columns=&quot;8&quot; rows=&quot;8&quot;&gt;
@@ -178,13 +178,16 @@ MapModel.y = clamp(MapModel.y + event.clientY - startY - offsetY, -limitY, 0);
         tooltip.innerHTML = `&lt;div class=&quot;tooltip-title&quot;&gt;${title}&lt;/div&gt;&lt;div class=&quot;tooltip-description&quot;&gt;${description}&lt;/div&gt;`;
         return tooltip;
     }
-</code></pre><p>And in our update function, we can add the following code:</p><pre><code>this._tooltip = this.createTooltip(value.title, value.description, value.locked);
-</code></pre><p>This will make the tooltip available in other functions as well - namely the onMouseEnter and onMouseLeave.The reason why we don’t add it to the init function is that the update function always fires on <code>synchronizeModels</code>, hence we don’t need to run it twice.</p><p>With our tooltip created, we can append it to our element. First, however, we need to clear any other tooltips in order not to have multiple tooltips inside the element.</p><pre><code>    element.innerHTML = '';
-    element.appendChild(this._tooltip);
+</code></pre><p>And in our init function, we can add the following code:</p><pre><code>this._tooltip = this.createTooltip(value.title, value.description, value.locked);
+</code></pre><p>This will make the tooltip available in other functions as well - namely the onMouseEnter and onMouseLeave.The reason why we don’t add it to the init function is that the update function always fires on <code>synchronizeModels</code>, hence we don’t need to run it twice.</p><p>With our tooltip created, we can append it to our element.</p><pre><code>    element.appendChild(this._tooltip);
+</code></pre><p>Then in the <code>update</code> function we need to update the tooltip with the new data, whenever it has been updated. We also :</p><pre><code>this._tooltip.innerHTML = `&lt;div class=&quot;tooltip-title&quot;&gt;${value.title}&lt;/div&gt;&lt;div class=&quot;tooltip-description&quot;&gt;${value.description}&lt;/div&gt;`;
 </code></pre><p>Now, we can attach our event listeners to the element in the <code>init</code> function, and remove them in the <code>deinit</code>:</p><pre><code>    init(element, value) {
         element.style.left = `${value.x}px`;
         element.style.top = `${value.y}px`;
         element.style.backgroundImage = `url(./assets/map-${value.icon}-icon.png)`;
+
+        this._tooltip = this.createTooltip(value.title, value.description, value.locked);
+        element.appendChild(this._tooltip);
  
         element.addEventListener('mouseenter', this.onMouseEnter);
         element.addEventListener('mouseleave', this.onMouseLeave);
@@ -214,6 +217,7 @@ MapModel.y = clamp(MapModel.y + event.clientY - startY - offsetY, -limitY, 0);
         }
         return tooltip;
     }
+</code></pre><p>And inside the <code>update</code> function we need to add the following check so that whenever we update the model data, the poi doesn&rsquo;t fill the tooltip.</p><pre><code>if (value.locked) return;
 </code></pre><p>The last thing to complete is to change some of the points of interest in our model to be locked, like the statue for example:</p><pre><code>{
    x: 968,
    y: 409,
