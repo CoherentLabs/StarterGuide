@@ -440,6 +440,7 @@ dropdown-option:hover {
 	padding-bottom: 75%;
 	background-size: contain;
 	background-repeat: no-repeat;
+	coh-rendering-option: aa-off snap-off;
 }
 
 .map {
