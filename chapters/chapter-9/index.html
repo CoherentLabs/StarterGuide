@@ -62,8 +62,8 @@ npm install coherent-gameface-grid
     document.addEventListener(&quot;mouseup&quot;, mapDragEnd);
 }
 </code></pre><p>And in the <code>mapDrag</code> function we’ll use these variables to change the model and create the dragging motion:</p><pre><code>function mapDrag(event) {
-    PlayerModel.map.x += event.clientX - startX;
-    PlayerModel.map.y += event.clientY - startY - offsetY;
+    MapModel.x += event.clientX - startX;
+    MapModel.y += event.clientY - startY - offsetY;
  
     startX = event.clientX;
     startY = event.clientY - offsetY;
