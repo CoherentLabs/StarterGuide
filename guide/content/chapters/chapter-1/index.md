@@ -55,7 +55,7 @@ TypeScript is a superset of JavaScript, meaning that it contains all of the func
 
 TypeScript inherits major pros of JavaScript, but also offers additional benefits coming from static typing and other concepts specific to TS. These are especially useful when multiple people work on the same project, as TypeScript is predictable and can catch bugs earlier in the development process.
 
-To learn more about how to use TypeScript in Gameface, you can check out our [documentation](https://coherent-labs.com/Documentation/cpp-gameface/d8/d44/typescript_in_cohtml.html).
+To learn more about how to use TypeScript in Gameface, you can check out our [documentation](https://docs.coherent-labs.com/cpp-gameface/content_development/typescript/).
 
 ### React
 
@@ -65,7 +65,7 @@ The biggest advantage of React is that it allows you to create reusable UI compo
 
 It’s worth noting however that the React ecosystem is very large and can be easily bloated with unnecessary code, and hence impact the performance of your UI.
 
-You can read more about how to set up a React toolchain with Gameface [here](https://coherent-labs.com/Documentation/cpp-gameface/d3/d76/javascript_react_support.html).
+You can read more about how to set up a React toolchain with Gameface [here](https://docs.coherent-labs.com/cpp-gameface/content_development/reactsupport/).
 
 ### Preact
 
@@ -73,7 +73,7 @@ Preact is a fast 3kB alternative to React with the same modern API.
 
 Compared to React, Preact is a smaller and more performance-optimized library that includes most of React's features.
 
-You can check how to build a Preact app for Gameface using our command line tool [here](https://coherent-labs.com/Documentation/cpp-gameface/d0/d5e/javascript_preact_support.html).
+You can check how to build a Preact app for Gameface using our command line tool [here](https://docs.coherent-labs.com/cpp-gameface/content_development/preactsupport/).
 
 ## Setting up our project
 
@@ -93,7 +93,7 @@ Auto complete is a feature present in code editors that suggests ways to complet
 
 Since the default auto complete features do not always provide meaningful suggestions, we have used the Language Server Protocol developed by Microsoft to extend the functionalities of built-in auto complete features.
 
-You can see how to install and configure it in our [documentation](https://coherent-labs.com/Documentation/cpp-gameface/d6/d12/auto_complete.html).
+You can see how to install and configure it in our [documentation](https://docs.coherent-labs.com/cpp-gameface/content_development/autocomplete/).
 
 ### Linters
 
@@ -101,13 +101,13 @@ You can see how to install and configure it in our [documentation](https://coher
 
 The HTML linter is designed to help you reduce the most common syntax errors that happen with data-binding. It catches errors caused by misspelled data-binding attributes, wrong syntax or accessing non-existent properties from the model. It uses HTMLHint - an HTML linter and extends its rules.
 
-You can learn more about how to use it from our [documentation](https://coherent-labs.com/Documentation/cpp-gameface/d0/d25/html_linting.html)
+You can learn more about how to use it from our [documentation](https://docs.coherent-labs.com/cpp-gameface/content_development/htmllint/)
 
 #### CSS Lint
 
 The CSS linter is designed to allow you to identify unsupported css rules at runtime. It is based on Stylelint which uses PostCSS underneath.
 
-You can see how to install and use it in our [documentation](https://coherent-labs.com/Documentation/cpp-gameface/d0/d25/html_linting.html).
+You can see how to install and use it in our [documentation](https://docs.coherent-labs.com/cpp-gameface/content_development/csslinting/).
 
 ## Getting started
 

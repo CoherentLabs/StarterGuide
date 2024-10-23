@@ -203,8 +203,8 @@ And in the `mapDrag` function we’ll use these variables to change the model an
 
 ```
 function mapDrag(event) {
-    PlayerModel.map.x += event.clientX - startX;
-    PlayerModel.map.y += event.clientY - startY - offsetY;
+    MapModel.x += event.clientX - startX;
+    MapModel.y += event.clientY - startY - offsetY;
  
     startX = event.clientX;
     startY = event.clientY - offsetY;

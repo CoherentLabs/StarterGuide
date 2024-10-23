@@ -202,7 +202,7 @@ Now there won’t be any items in the cells with `null` objects.
 
 We have now created our inventory grid and displayed our items. The last thing we need to do for this chapter is to display a selected item’s information.
 
-This can easily be done by using data-binding again, but this time we’ll data-bind an event to our inventory item. We are using data-binding instead of just adding an event so we can have access to our model and use the index of each item to select it. To add a data-binding event all we need to do is write `data-bind-[event]`, where event is one of the supported events in [Gameface](https://coherent-labs.com/Documentation/cpp-gameface/d1/ddb/data_binding.html#HTMLDataBinding_Native_Data_binding_events).
+This can easily be done by using data-binding again, but this time we’ll data-bind an event to our inventory item. We are using data-binding instead of just adding an event so we can have access to our model and use the index of each item to select it. To add a data-binding event all we need to do is write `data-bind-[event]`, where event is one of the supported events in [Gameface](https://docs.coherent-labs.com/cpp-gameface/integration/optional_features/htmldatabinding_native/#data-binding-events).
 
 The function that we’ll attach to our data-bound event will be in the model, as the purpose of data-bound events is to allow you to execute code from the backend more easily.
 
@@ -265,7 +265,7 @@ Since we have already set up our logic for changing the selected item, if we cli
 
 {{< img src="chapter-8_6.png" alt="chapter-8_6" caption="<em>We have two beers, nice!</em>" class="border-0" >}}
 
-While this works, it’s not an ideal solution for when we have large codebases or models, as it will make our code harder to read and increase the chance of making mistakes. This is why Gameface allows the use of something called an [Observable model (*Under Observable Model*)](https://coherent-labs.com/Documentation/cpp-gameface/d1/ddb/data_binding.html).
+While this works, it’s not an ideal solution for when we have large codebases or models, as it will make our code harder to read and increase the chance of making mistakes. This is why Gameface allows the use of something called an [Observable model](https://docs.coherent-labs.com/cpp-gameface/integration/optional_features/htmldatabinding_native/#observable-models).
 
 An `Observable model` is a smart object which will automatically push itself for update when some of its properties are changed. This is especially useful in situations where we need to keep an active state (as is our case in the inventory active item).
 
