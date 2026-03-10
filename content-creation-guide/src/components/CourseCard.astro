@@ -1,0 +1,79 @@
+---
+import { Card, Icon } from '@astrojs/starlight/components';
+const { title, link, current } = Astro.props;
+---
+
+<style is:global>
+    .card-wrapper {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        text-decoration: none;
+        transition: all 0.15s ease-out;
+    }
+
+    .card-wrapper.current {
+        border: 1px solid var(--gameface-cyan);
+    }
+
+    .card-wrapper.current::after {
+        content: "In Progress";
+        position: absolute;
+        top: 0;
+        right: 0;
+        text-transform: uppercase;
+        font-size: 0.8em;
+        font-weight: bold;
+        padding: 0.25rem 0.75rem;
+        background-color: var(--gameface-cyan);
+        color: black;
+    }
+
+    .card-wrapper:focus-within {
+        outline: 1px solid var(--gameface-cyan);
+    }
+
+    .card-wrapper:hover,
+    .card-wrapper:focus-within {
+        transform: translateY(-4px);
+        box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
+    }
+
+    .card {
+        background-color: var(--gameface-text-body);
+        padding: 1.5rem clamp(1rem, calc(0.125rem + 3vw), 2.5rem);
+        margin: 0;
+    }
+
+    .card .body {
+        color: var(--sl-color-gray-2);
+    }
+
+    .card-resume-label {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        color: var(--sl-color-white);
+        margin-top: clamp(0.5rem, calc(0.125rem + 1vw), 1rem);
+        font-size: 1.1em;
+        font-weight: 600;
+    }
+
+    @media (max-width: 480px) {
+        .card-wrapper.current::after {
+            padding-block: 0;
+        }
+    }
+
+</style>
+
+<a href={link} class=`card-wrapper ${current ? 'current' : ''}`>
+    <Card title={title}>
+        <slot />
+        {current && 
+            <div class="card-resume-label">
+                <span>Continue Reading</span>
+                <Icon name='right-arrow' label='Arrow pointing right' size='1.5rem' />
+            </div>}
+    </Card>
+</a>

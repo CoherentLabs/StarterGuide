@@ -1,0 +1,45 @@
+---
+title: Mastering Gameface
+description: Your step-by-step journey to building high-performance, cinematic game interfaces using HTML5 technology!.
+template: splash
+hero:
+  tagline: Your step-by-step journey to building high-performance, cinematic game interfaces using HTML5 technology!
+  actions:
+    - text: Get started
+      link: /introduction/hello-world
+      icon: right-arrow
+    - text: Resume
+      link: https://starlight.astro.build
+      icon: external
+      variant: secondary
+---
+import { Card, CardGrid, Steps } from '@astrojs/starlight/components';
+import CourseCard from '../../components/CourseCard.astro';
+import {content} from '../../data/content.ts';
+
+<div class="aurora-glow glow-blue"></div>
+<div class="aurora-glow glow-cyan"></div>
+<div class="aurora-glow glow-gradient"></div>
+
+<div class="timeline-wrapper">
+	{content.map(({ heading, desc, link, current }, index) => {
+		return (
+			<div class="timeline-row">
+				
+				<div class="timeline-node-container">
+					<div class="diamond">
+						<span>{index + 1}</span>
+					</div>
+				</div>
+
+				<CourseCard 
+					title={`0${index + 1}. ${heading}`} 
+					link={link}
+					current={current || false}>
+					{desc}
+				</CourseCard>
+
+			</div>
+		)
+	})}
+</div>
