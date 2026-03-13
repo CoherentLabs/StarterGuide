@@ -1,7 +1,3 @@
-main:has(.hero) {
-    background-color: var(--gameface-bg-panel);
-}
-
 main:has(.hero) footer {
     display: none;
 }
@@ -11,7 +7,6 @@ main:has(.hero) footer {
     z-index: 1;
     display: flex;
     justify-content: center;
-    border-bottom: 1px solid var(--sl-color-hairline);
 }
 
 .hero h1 {
