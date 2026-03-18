@@ -16,30 +16,43 @@ hero:
 import { Card, CardGrid, Steps } from '@astrojs/starlight/components';
 import CourseCard from '../../components/CourseCard.astro';
 import {content} from '../../data/content.ts';
+import AuroraGlowBg from '../../components/AuroraGlowBg.astro';
+import CoursesTimeline from '../../components/CoursesTimeline.astro';
 
-<div class="aurora-glow glow-blue"></div>
-<div class="aurora-glow glow-cyan"></div>
-<div class="aurora-glow glow-gradient"></div>
+<style>
+{`	
+main:has(.hero) footer {
+    display: none;
+}
 
-<div class="timeline-wrapper">
-	{content.map(({ heading, desc, link, current }, index) => {
-		return (
-			<div class="timeline-row">
-				
-				<div class="timeline-node-container">
-					<div class="diamond">
-						<span>{index + 1}</span>
-					</div>
-				</div>
+.hero {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+}
 
-				<CourseCard 
-					title={`0${index + 1}. ${heading}`} 
-					link={link}
-					current={current || false}>
-					{desc}
-				</CourseCard>
+.hero h1 {
+    font-size: clamp(3rem, 10vw, 5rem);
+    line-height: var(--sl-line-height-headings);
+    letter-spacing: -0.1rem;
+    font-weight: 900;
+    background: linear-gradient(to right, var(--sl-color-white) 50%, var(--gameface-cyan) 60%, var(--gameface-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
 
-			</div>
-		)
-	})}
-</div>
+.hero .stack,
+.hero .copy {
+    align-items: center;
+}
+
+.hero .tagline {
+    text-align: center;
+}
+`}
+</style>
+
+<AuroraGlowBg />
+<CoursesTimeline />

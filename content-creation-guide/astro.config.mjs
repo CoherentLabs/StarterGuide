@@ -7,14 +7,24 @@ import { content } from './src/data/content';
 export default defineConfig({
 	integrations: [
 		starlight({
-			title: 'My Docs',
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
+			title: 'UI workflow guide',
+			social: [  
+				{  
+					icon: 'laptop',  
+					label: 'Site',  
+					href: 'https://coherent-labs.com/',  
+				},  
+				{  
+					icon: 'email',  
+					label: 'Email',  
+					href: 'https://coherent-labs.com/get-in-touch'  
+				},  
+			],
 			plugins: [
 			...coherentTheme({
-				documentationSearchTag: 'Gameface content guide',
+				documentationSearchTag: 'UI workflow guide',
 				showPageProgress: true,
 			})],
-			customCss: ['./src/styles/custom.css'],
 			sidebar: content.map((topic) => {
 				return {
 					label: topic.heading,
