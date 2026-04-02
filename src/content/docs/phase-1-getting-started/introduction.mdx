@@ -1,0 +1,103 @@
+---
+title: "Introduction: Welcome to the UI workflow guide"
+description: "Your first steps into the world of Gameface development. Learn how to set up your environment, create a simple 'Hello World' interface, and understand the basics of Gameface's architecture."
+sidebar:
+    order: 1
+---
+
+import Summary from '../../../components/Summary.astro';
+import Highlight from '../../../components/Highlight.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+<Summary>
+    Welcome to the <Highlight>Gameface UI workflow guide</Highlight>! 
+
+    This guide is designed to take you from zero to hero in Gameface development, covering everything from the basics of setting up your environment to advanced performance optimization techniques. 
+    Whether you're a seasoned front-end developer, a game designer, or a gameplay programmer stepping into the UI world, this guide will provide you with the exact knowledge and tools you need to create stunning, high-performance interfaces for games.
+</Summary>
+
+## What to Expect in This Guide
+
+This guide is structured chronologically to match the typical phases of the development process. Each phase builds on the previous one, so it's recommended to follow along in order. 
+
+Here's a brief overview of what we'll cover in each phase:
+
+<Steps>
+
+1. #### **Phase 1: Getting Started**
+    Introduction to the guide and Gameface. Get a hands-on demo with the <Highlight>Player</Highlight>, the primary tool for running and testing your UI without needing to compile a game engine.
+
+2. #### **Phase 2: Planning & Setup**
+    Configuring your development environment, establishing your <Highlight>recommended tech stack</Highlight> (like SolidJS and Vite), and understanding how data flows between the game and the UI. 
+    
+    This phase covers <Highlight>core concepts</Highlight> like "push vs. fetch", how to organize your views, and bridging the gap between design and development 
+    using tools like the [Figma Exporter](https://www.figma.com/community/plugin/1595556380268929590/coherent-gameface-exporter). 
+    
+    We also bridge to prototyping by introducing [Gameface UI](https://gameface-ui.coherent-labs.com/)—our component library that makes prototyping fast and easy.
+
+3. #### **Phase 3: Layout, Assets & Styling**
+    The fun part! We cover how to translate designs into clean, scalable game UIs. 
+    
+    You will learn when to use absolute versus flex layouts, write maintainable and performant CSS using BEM & SCSS, and build interfaces that scale perfectly across <Highlight>different aspect ratios</Highlight>. 
+    
+    We also explore best practices for handling complex typography, rendering <Highlight>vector graphics</Highlight> and assets, and bringing your UI to life with high-performance <Highlight>animations</Highlight>.
+
+4. #### **Phase 4: Logic & Interactions**
+    Now that you have a beautiful UI, it's time to make it interactive! 
+    
+    In this phase, we bridge the gap between static UI and information-rich, dynamic interfaces.
+    
+    We cover how to <Highlight>mock real game data</Highlight> to test your UI independently, 
+    manage local versus game state using <Highlight>data-binding</Highlight>, 
+    and handle complex user inputs like <Highlight>gamepad, touch support, and spatial navigation</Highlight> using the [Interaction Manager](https://frontend-tools.coherent-labs.com/interaction-manager/getting-started/).
+
+5. #### **Phase 5: Polishing & Debugging**
+    The final 10%. We cover how to polish your UI to make it feel smooth, accessible, bug-free, and most importantly, performant. 
+    
+    Learn how to implement native <Highlight>localization and accessibility</Highlight> features, master the performance profiler, and write high-performance CSS. 
+    
+    We also deep-dive into advanced, Gameface-exclusive rendering features like <Highlight>Live Views, Compositor effects, and backdrop filters</Highlight>.
+</Steps>
+
+## What You Won't Find in This Guide
+
+To keep this guide lean and focused on UI creation, we have intentionally excluded backend development. You <Highlight>will not</Highlight> find:
+* C++ tutorials or engine-specific integration steps (Unreal, Unity, or custom engines).
+* Deep dives into the Gameface API.
+* Instructions on how to compile or initialize the Gameface library within your game.
+
+*If you are a backend programmer looking for engine integration, please refer to the [official Gameface technical documentation](https://docs.coherent-labs.com/cpp-gameface/).*
+
+## Your Content Creation Reference
+
+Think of this guide as your long-term UI playbook. While it is structured as a chronological course for beginners, it is ultimately designed to be your <Highlight>daily reference manual</Highlight>. 
+
+Want to localize your UI? Jump straight to the *Localization* section. 
+Trying to remember how to handle ultrawide monitors? Check the *Scalability* page. 
+Need to set up a new animation library? Head over to *Animations*. 
+
+Keep this guide bookmarked and refer back to it whenever you hit a UI roadblock.
+
+:::note[Structure is not mandatory]
+While the guide is structured in a way that builds on previous knowledge, feel free to jump around and explore the sections that interest you the most. 
+
+Each section is designed to be self-contained, so you can pick and choose the topics that are most relavant to your current project's progress or just for quick reference.
+:::
+
+## Who Is This Guide For?
+
+**Short answer**: <Highlight>Everyone</Highlight> working with Gameface!
+
+Because team structures vary wildly, we built this guide for a wide range of skill sets. 
+Whether you are a seasoned front-end developer using Gameface for the first time, a UI/UX designer looking to understand the engine's capabilities, or a Unity/Unreal gameplay programmer 
+who has never worked with web technologies before—this guide has something for you.
+
+## Next Steps
+
+Ready to dive in? Proceed to the [next topic](/phase-1-getting-started/getting-started-with-the-player) where we will introduce you to the Player. 
+We will get our hands dirty with a quick demo showcasing how to run, test, and update <Highlight>game data</Highlight> in your UI without needing a backend engine!
+
+### Need more convincing?
+
+- Read more about what [Gameface is](https://docs.coherent-labs.com/cpp-gameface/what_is_gfp/overview/) - for a technical overview.
+- Check out the main differences between Gameface and a traditional browser environment in our [Differences to traditional browsers](https://docs.coherent-labs.com/cpp-gameface/what_is_gfp/htmlfeaturesupport/) documentation.

@@ -1,0 +1,127 @@
+---
+title: "Setting up the Gameface Stack"
+description: "Learn how to scaffold a modern Vite + SolidJS project and configure it to run perfectly within the Gameface engine."
+sidebar:
+    order: 2
+---
+
+import Summary from '../../../../components/Summary.astro';
+import Highlight from '../../../../components/Highlight.astro';
+import Link from '../../../../components/Link.astro';
+import { Steps } from '@astrojs/starlight/components';
+import { Code } from '@astrojs/starlight/components';
+import { Icon } from '@astrojs/starlight/components';
+
+<Summary>
+    To get you up and running immediately, we have created pre-configured templates that bypass the manual setup of Vite and SolidJS.
+
+    These templates come with the gameface-specific configurations already applied so your code will render perfectly in the Gameface Player right out of the box.
+</Summary>
+
+## Prerequisites
+
+Before we begin, ensure you have the following installed on your machine:
+* **Node.js:** We recommend the latest <Link href="https://nodejs.org/en/download">LTS version</Link>.
+* **A Package Manager:** `npm`, `yarn`, or `pnpm`.
+* **VS Code:** Or your preferred text editor.
+
+## Choose Your Starting Point
+
+Depending on your project requirements, you can either start with a structured blank project or a fully development ready UI component library. 
+
+To download these starter projects, we use a command line tool called `degit`. 
+This tool simply grabs a clean copy of the template files from our repository and places them on your computer, without bringing along any messy version control history.
+
+### Option A: Blank Vite & SolidJS Template
+This template includes only the core recommended stack: 
+<Highlight>Vite, SolidJS, TypeScript & SASS</Highlight>. 
+It is completely clean, making it the perfect choice if you want to build your own UI architecture and components entirely from scratch.
+
+Run this command in your terminal to create a new folder called `my-game-ui` and install the blank template:
+
+```bash
+npx degit CoherentLabs/gameface-solid-template my-game-ui
+cd my-game-ui
+npm install
+```
+
+Once the installation is complete, you can see how to [preview the project in gameface](#connect-to-the-gameface-player) in the next section.
+
+### Option B: The Gameface UI project
+
+If you have limited web experience or want to skip the component creation process, we highly recommend starting with our pre-built
+<Link href="https://gameface-ui.coherent-labs.com/">Gameface UI template</Link>.
+It includes the exact same core technologies, 
+but comes pre-loaded with a massive library of ready-to-use game components (like buttons, grids, and sliders), layout components for quick prototyping, and others.
+
+We actively support and maintain this library, adding new components and features based on community feedback. 
+This is our <Highlight>go to choice for starting new UI projects</Highlight>, and we highly recommend it for prototyping and production projects alike.
+
+:::note
+We will explore more of the features and components of this library in-depth in a later articles.
+:::
+
+To get started with the Gameface UI template, run this command in your terminal:
+
+```bash
+npx degit CoherentLabs/gameface-ui-boilerplate my-game-ui
+cd my-game-ui
+npm install
+```
+
+This will create a new folder called `my-game-ui` with the boilerplate code, install all dependencies, and get you ready to start developing your game UI.
+
+## Connect to the Gameface Player
+
+Regardless of which option you chose above, the steps to start your local server and view your UI in the Player are exactly the same.
+
+<Steps>
+
+1. #### Start the Development Server
+    Open your terminal inside your new `my-game-ui` folder and run:
+
+    ```bash
+    npm run dev
+    ```
+
+    This will start a local web server, usually at `http://localhost:3000`. 
+    
+2. #### Launch the Player
+    Instead of viewing your UI in a standard web browser like Chrome, you should view it directly in the Gameface Player to ensure 100% engine accuracy. 
+    
+    Locate the `Player.bat` file included in your Gameface package. Open the file in a text editor,
+    scroll down until you see a similar command:
+    
+    ```bat 
+    start "Player" /d "%wd%" "..\Player\Player.exe" --player %*"
+    ```
+
+    and add the following parameter to the end of the line:
+
+    <Code 
+        code={`start "Player" /d "%wd%" "..\Player\Player.exe" --player "--url=http://localhost:3000/"`}
+        lang="bat"
+        ins={' "--url=http://localhost:3000/"'}
+     />
+    
+
+    Save the file and double-click the `.bat` file to launch the Player. It will open and display your SolidJS application.
+    Because our setup supports Hot Module Replacement (HMR), every time you save a file in your code editor, the Player will instantly update!
+
+    :::caution[Gameface UI URL]
+    Gameface UI comes with 2 pre built in samples.
+    If you went with the Gameface UI template, make sure to change the url to `http://localhost:3000/menu` or `/hud` depending on which preset sample you wish to preview.
+    Otherwise you will see a blank page.
+    :::
+
+</Steps>
+
+## Next Steps
+
+Your local environment is now running smoothly inside the Gameface Player! Where you go next depends on which starter project you chose:
+
+* **If you chose Option A (The Blank Starter):** Move on to [Workflow Planning](../../workflow-planning).
+We will discuss setting up your IDE, version control, and how to translate your mindset from UMG/Unity to web & Gameface technologies.
+
+* **If you chose Option B (The Gameface UI Library):** Jump right into [Prototyping and Developing (Gameface UI)](../../prototyping-and-developing). 
+We will explore the Gameface UI's file structure and show you how to rapidly prototype a view using the pre-made components.

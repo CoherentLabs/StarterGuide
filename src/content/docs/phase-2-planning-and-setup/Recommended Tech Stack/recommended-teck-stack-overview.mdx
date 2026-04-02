@@ -1,0 +1,98 @@
+---
+title: "Recommended Tech Stack Overview"
+description: "Discover the core technologies behind Gameface UI development. Learn why we recommend SolidJS, Vite, SCSS, and TypeScript for maximum game UI performance."
+sidebar:
+    order: 1
+---
+import Summary from '../../../../components/Summary.astro';
+import Highlight from '../../../../components/Highlight.astro';
+import Link from '../../../../components/Link.astro';
+import { Icon } from '@astrojs/starlight/components';
+
+<Summary>
+    The choice of technology stack is a critical decision at the outset of any project, as it can influence multiple factors including performance, development time, and scalability. 
+    
+    While traditional web developers often default to frameworks like React or Angular, game UI requires a different approach. Heavy runtimes, Virtual DOM diffing, and CSS-in-JS libraries can steal precious milliseconds from the game engine. 
+    
+    To achieve the perfect balance between modern developer experience and raw performance, our <Highlight>officially recommended tech stack</Highlight> is 
+    
+    <Link href="https://www.solidjs.com/">SolidJS</Link>,
+    <Link href="https://vite.dev/">Vite</Link>, 
+    <Link href="https://sass-lang.com/">SCSS</Link> (with <Link href="https://getbem.com/">BEM</Link>), 
+    and <Link href="https://www.typescriptlang.org/docs/handbook/typescript-from-scratch.html">TypeScript</Link>. 
+</Summary>
+
+## Why Not Vanilla JavaScript?
+
+Choosing between using vanilla JavaScript (plain JavaScript) and a JavaScript framework is an important decision when starting your project. Vanilla JavaScript gives you complete control over the code, which can be an advantage for fine-tuning performance and behavior. 
+
+However, as your project grows, building complex features from scratch can be time-consuming, potentially extending project timelines. Managing and maintaining a large codebase can become challenging without the organization and structure provided by a framework. Frameworks offer tools and features that streamline development and speed up the creation of complex applications. They also provide predefined architecture and patterns that help maintain a well-organized codebase. 
+
+To get the organization of a framework without sacrificing the speed of Vanilla JS, we rely on <Highlight>SolidJS</Highlight>.
+
+## The Framework: SolidJS
+
+Our research and testing have revealed that <Link href="https://www.solidjs.com/">SolidJS</Link> currently stands out as the optimal choice for achieving both <Highlight>high performance and scalability</Highlight>.
+
+If you are coming from traditional web development, SolidJS has a very similar syntax to React. However, under the hood, it operates entirely differently to maximize efficiency:
+
+* **No Virtual DOM:** Unlike React, SolidJS does not use a virtual DOM. Instead, it compiles templates to real DOM operations, leading to better performance and more predictable behavior.
+* **Fine-Grained Reactivity:** SolidJS is engineered for high performance. It employs fine-grained reactivity, updating only the necessary parts of the DOM, resulting in faster rendering and lower memory usage compared to frameworks like React.
+* **Vanilla-Like Speed:** Because it skips the Virtual DOM overhead, SolidJS achieves a level of performance that is incredibly close to writing pure vanilla JavaScript.
+
+:::note[Alternative Frameworks]
+While Gameface does support other frameworks like React, Vue, and Preact, they rely on Virtual DOMs or heavier runtimes that can impact game performance. You can find setup guides for these in the 
+[Alternative Frameworks section]().
+:::
+
+## The Bundler: Vite
+
+A bundler is a tool or software application that is used to combine multiple source files into a single, optimized bundle. For Gameface, our build tool of choice is <Link href="https://vite.dev/">Vite</Link>. 
+
+Vite is a modern build tool and development server designed for web development. We chose it over older tools like Webpack for several key reasons:
+* **Native ESM:** Vite natively supports ES modules without bundling during development, resulting in quicker build times.
+* **Instant Updates:** Vite offers HMR by default, making it easy for developers to see changes in real-time during development.
+* **Plugin System**: Vite provides a flexible plugin system, enabling customization and extensibility.
+
+## Styling: SCSS, BEM, and Modularity
+
+In a game engine, complex (hierarchical) selectors are expensive to match. To maintain high frame rates, your CSS classes need to be as "flat" as possible.
+
+We tackle this using a combination of <Link href="https://sass-lang.com/">SCSS</Link> and the <Link href="https://getbem.com/">BEM (Block Element Modifier)</Link> methodology:
+
+* **The BEM Methodology:** The BEM methodology is recommended for writing HTML classes, as it promotes style isolation and helps reduce CSS conflicts. Additionally, it can help prevent performance issues that may arise from writing too many complex CSS selectors in Gameface. 
+* **SCSS & Flat Selectors:** To write clearer and more concise selectors, consider using a CSS preprocessor with the BEM methodology. SASS is a recommended option that has a syntax similar to traditional CSS. It also offers highly useful features like variables and functions, and has a large community with many resources.
+
+:::note[Alternative Styling Approaches]
+In general, strict BEM can result in longer class names, which might affect code readability in your HTML. You can opt for a more relaxed version of BEM that allows for shorter class names and clean nesting.
+
+For example, instead of writing `.dropdown__option--active`, you could write `.dropdown-option--active` or even `.dropdown-option-active`. 
+You can leverage scoped SolidJS [CSS Modules](https://docs.solidjs.com/guides/styling-components/css-modules) and SCSS's nesting capabilities to keep your styles scoped and organized while still compiling down to engine-friendly flat selectors.
+
+```scss
+.dropdown {
+    &-option {
+        /* Compiles to .dropdown-option */
+        &--active {
+            /* Compiles to .dropdown-option--active */
+            color: red;
+        }
+    }
+}
+```
+
+We will deep-dive into the nuances of BEM, CSS Modules, and writing high-performance styles later in [Phase 3: Layout, Assets & Styling](#).
+:::
+
+## The Safety Net: TypeScript
+
+Finally, we highly recommend writing your UI logic in  <Link href="https://www.typescriptlang.org/">TypeScript</Link>. 
+
+TypeScript definitions and documentation provide strong typing and enhanced tooling for your JavaScript code within the Gameface environment. 
+Because your UI will be communicating heavily with a C++ backend via data-binding, this ensures you catch data-shape errors in your IDE before your UI ever touches the game engine.
+
+## Next Steps
+
+Now that you understand the <Highlight>"Why"</Highlight> behind our tech stack, it is time for the <Highlight>"How"</Highlight>. 
+
+In the next article, we will walk through setting up your development environment and initializing your first <Highlight>Vite + SolidJS</Highlight> project specifically configured for the Gameface engine.
