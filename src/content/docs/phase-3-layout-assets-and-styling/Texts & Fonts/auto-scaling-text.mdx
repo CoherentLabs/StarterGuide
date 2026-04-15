@@ -1,0 +1,15 @@
+---
+title: "Auto-Scaling Text for Localization"
+description: Coming soon!
+sidebar:
+    order: 3
+draft: true
+---
+
+When a short English word translates into a massive German word, it can break your UI layout. Gameface provides a native auto-scaling CSS property to ensure translated text always fits gracefully inside its container.
+
+## Topics
+
+* **Setting up `coh-font-fit-mode`:** * **How-to:** Provide the CSS snippet to apply `coh-font-fit-mode: fit` to a UI container, allowing the engine to automatically shrink or grow the text font size to fit the parent.
+* **Defining Boundaries:** * **How-to:** Show how to enforce limits using the `coh-font-fit-min-size` and `coh-font-fit-max-size` properties. This ensures text never shrinks so much that it becomes illegible to the player.
+* **The Performance Fix (Gotcha):** * **Gotcha:** Give the actionable rule: *Always* set a base `font-size` on the element that is close to the expected final size. If you don't, the `coh-font-fit-mode` algorithm uses a heavy linear loop starting from the default size to calculate the exact fit, which can severely impact frame rate.

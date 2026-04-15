@@ -1,0 +1,21 @@
+---
+title: "Animated Assets: GIFs & Videos"
+description: Coming soon!
+sidebar:
+    order: 6
+draft: true
+---
+
+Motion brings a UI to life, but using the wrong asset type will quickly drain your game's memory budget. This article covers the harsh realities of GIFs, how to use WebM videos, and when you should offload media entirely to the engine or sprite sheets.
+
+## Topics
+
+* **The Reality of GIFs (Avoid When Possible):** * **Concept:** Explain why GIFs are generally a terrible idea for modern game UI. They are restricted to 256 colors, lack semi-transparency (pixels are either 100% opaque or 0% transparent), and use outdated compression that makes them 5-10x larger than equivalent efficiently encoded videos. 
+    * **Gotcha:** Warn developers that Gameface preloads GIFs to avoid decoding them at runtime. This means high-res or high-framerate GIFs will cause massive memory spikes as the entire animation is unpacked into RAM. 
+* **Safe GIF Usage (Emojis Only):** * **How-to:** If developers *must* use a GIF, explain it should be restricted to small, animated emojis in standard `<img>` tags. Recommend keeping them under 128x128 pixels and strictly below 30 frames.
+    * **Gotcha:** Note that Gameface does not support GIFs for `background-image`, `border-image`, or `mask-image` CSS properties.
+* **Playing Videos (`<video>`):** * **Concept:** Detail Gameface's native video support. Explain that the standard `<video>` tag works flawlessly for WebM formats (specifically VP8/VP9 video with Vorbis audio). 
+    * **How-to:** Briefly note that it supports both opaque and transparent videos, standard attributes (`autoplay`, `loop`, `muted`), and event listeners (`ended`, `loadstart`), but clarify that the engine handles routing the actual audio data.
+* **The High-Performance Alternatives:** * **Concept:** Warn against treating the UI like a heavy media player. For UI animations, complex 3D character portraits, or inventory item previews, recommend much more performant alternatives.
+    * **Sprite Sheets:** Explain that for 2D UI animations (like a glowing icon or a simple character idle), developers should use Sprite Sheet animations. Link forward to the upcoming "Sprite Sheet Animations" article.
+    * **Live Views:** For 3D elements, recommend streaming the visual directly from the C++ engine to the UI. Link forward to the "Live Views" article in the Polishing Phase, pitching it as the ultimate high-performance alternative to importing heavy video files.

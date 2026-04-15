@@ -1,0 +1,14 @@
+---
+title: "Dynamic Styling in JavaScript: Classes, Typed OM, and Extensions"
+description: Coming soon!
+sidebar:
+    order: 1
+draft: true
+---
+
+## Topics
+
+* **The "Classes-First" Approach:** The author should explain that developers must prioritize toggling simple classes (e.g., `is-hidden`, `is-active`) for discrete UI state changes. The intent here is to clarify that relying on pre-compiled CSS is highly performant and keeps the JS clean, *provided* the classes are kept flat and don't trigger massive layout recalculations.
+* **The Cost of Inline String Styles:** The author needs to clearly break down *why* standard vanilla JS styling (e.g., `element.style.left = value + "px"`) is a performance killer in a game loop. Detail the expensive pipeline: JavaScript converts the number to a string, appends "px", sends it to the native C++ engine, and then C++ has to parse that string *back* into a number. Explain how this creates JavaScript garbage and wastes CPU cycles every single frame.
+* **Standard CSS Typed Object Model (Typed OM):** Introduce the standard CSS Typed OM API as the modern web solution to the string parsing problem. The author should explain how it allows developers to interact with styles using meaningful JavaScript objects and raw numbers instead of strings, significantly reducing runtime overhead.
+* **Gameface Custom DOM Extensions:** The author must highlight Gameface's proprietary `StylePositioningAttributes` as the ultimate performance shortcut. Explain that Gameface provides direct DOM API extensions like `leftPX`, `topVW`, and `heightVMAX` to set values immediately and efficiently. Provide clear examples of when to use these custom APIs (e.g., dragging an element, updating a speedometer) instead of standard styling to guarantee maximum FPS.

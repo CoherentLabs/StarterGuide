@@ -1,0 +1,22 @@
+---
+title: "UI Animations: Transitions, Keyframes, and JS Control"
+description: Coming soon!
+sidebar:
+    order: 1
+draft: true
+---
+
+Smooth animations are essential for game feel. This article breaks down the three primary ways to animate your UI—CSS Transitions, CSS Animations (Keyframes), and JavaScript—and when to use each for maximum performance.
+
+## Topics
+
+* **The Golden Rule (CSS vs. JS):** * **Concept:** Establish the baseline rule: CSS3 animations should always be the preferred choice over JavaScript animations. 
+    * **Why:** Explain that CSS animations are evaluated natively in C++, making them significantly faster and keeping the main JavaScript thread free.
+* **CSS Transitions vs. Keyframes:** * **Concept:** Break down the difference in usage. Use CSS Transitions for simple A-to-B state changes (like hovering a button). Use CSS Animations (`@keyframes`) for complex, multi-step sequences or infinite loops (like a glowing active state).
+    * **Gotcha:** Warn developers that CSS keyframes *always* override transitions in Gameface. If a transition config changes mid-flight, the engine ignores it.
+* **Mounting Animations (`@starting-style`):** * **Concept:** Explain that standard CSS transitions fail to trigger if an element's `display` property changes or if it is newly inserted into the DOM.
+    * **How-to:** Introduce `@starting-style` as the ultimate zero-JS tool for animating elements as they mount into the UI (e.g., a modal popping open).
+    * **Gotcha:** Warn that `@starting-style` fails on empty pseudo-elements because the engine calculates them instantly.
+* **Controlling Animations with JS:** * **Concept:** Explain that while CSS is faster, JavaScript is sometimes needed for playback control. 
+    * **How-to:** Introduce the subset of the Web Animations API supported by Gameface. Show how developers can use `Node.getAnimations()` to retrieve resolved animations and use `.play()`, `.pause()`, or `.currentTime` to control them.
+    * **Gameface API:** Highlight the custom Gameface `playFromTo(startTimeMs, pauseTimeMs)` method for easy, precise timeline seeking.

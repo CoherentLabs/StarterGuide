@@ -3,4 +3,34 @@ title: Laying out the screen
 description: Learn how to lay out your game UI using Gameface's powerful layout system. This section covers best practices for structuring your HTML, using CSS for responsive and scalable layouts, and managing assets like images and fonts to create visually stunning interfaces that perform well across different devices and aspect ratios.
 sidebar:
     order: 1
+draft: true
 ---
+
+import Summary from '../../../components/Summary.astro';
+import Highlight from '../../../components/Highlight.astro';
+
+<Summary>
+In game UI, layout isn't just about making things look good, it's about performance and predictability. 
+
+In this article, we will explore when to use anchored layouts (Absolute) versus continuous dependent flow (Flexbox), and how combining them creates the ultimate high-performance UI architecture.
+</Summary>
+
+## Topics to cover
+
+- The Cost of Layout Calculations: Briefly explain how the engine handles DOM updates. Introduce the concept of "layout thrashing" and why recalculating the entire screen hurts the game's FPS.
+
+- Absolute Positioning for Anchoring: Explain that position: absolute takes elements out of the standard document flow. Discuss why this is the best choice for top-level HUD elements (like a minimap or ammo counter) so that updating one widget doesn't force the engine to recalculate the position of everything else on the screen.
+
+- Flexbox for Content Alignment: Detail when display: flex shines—specifically for elements that need to relate to each other or rely on dynamic data. Use examples like inventory grids, a row of action buttons, or aligning text inside a container.
+
+- Using flexbox for everything: Address a common mistake web devs make: wrapping the entire screen in a massive 100vw/100vh flex container to push widgets to the corners. 
+Explain the performance penalty this incurs in a game engine.
+
+- Combining Both Approaches (Best Practice): Show when and how to use them together. 
+Provide a concise code example of a layout that takes advantage of both layout systems for optimal performance and maintainability.
+
+### When explaining the concepts include simple examples of common UI scenarios:
+- anchoring something to UI element
+- anchoring something to 3D object
+- centering on screen
+- centering within control

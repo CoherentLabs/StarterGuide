@@ -1,0 +1,16 @@
+---
+title: "Building Rich Text: Inline Layouts & Emojis"
+description: Coming soon!
+sidebar:
+    order: 2
+draft: true
+---
+
+Classic game UI elements like Quest Logs, Chat Boxes, and Kill Feeds frequently mix text with icons and emojis. Standard CSS Flexbox struggles with this, but Gameface provides custom inline solutions.
+
+## Topics
+
+* **The Problem with Flexbox:** * **Concept:** Explain why using standard Flexbox to wrap text mixed with images fails. When space runs out, Flexbox treats the elements as separate boxes, causing the text to wrap between the HTML nodes rather than naturally between words.
+* **How to Use `cohinline`:** * **How-to:** Demonstrate the Gameface-specific `cohinline` attribute. Show a practical example of building a Quest Log row by placing a `<p cohinline>` tag around a mix of text `<span>` elements and `<img>` icons. Provide the HTML/CSS snippet to show how smoothly it flows.
+* **Adding Emojis & Fallbacks:** * **Concept:** Highlight that Gameface natively supports modern COLR V0 and COLR V1 emoji fonts.
+    * **How-to:** Show developers how to set up a CSS font-family fallback array (e.g., `font-family: Droid Sans, EmojiTwo;`). Explain that the engine will use the primary font for standard text and automatically drop back to the emoji font only when it hits an emoji unicode character.

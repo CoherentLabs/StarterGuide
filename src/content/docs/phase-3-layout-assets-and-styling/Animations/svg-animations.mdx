@@ -1,0 +1,18 @@
+---
+title: "SVG Animations: Vector Motion and Effects"
+description: Coming soon!
+sidebar:
+    order: 2
+draft: true
+---
+
+Animating scalable vector graphics allows you to build stunning, high-fidelity UI elements like interactive skill trees, dynamic minimaps, and precise progress bars without relying on heavy sprite sheets. 
+
+## Topics
+
+* **Animating Fills and Strokes:** * **Concept:** Explain that inline SVGs can be targeted directly with CSS. 
+    * **How-to:** Provide practical examples of using standard CSS Transitions to animate the `fill` or `stroke` colors of an SVG path (e.g., making a weapon icon glow gold when upgraded).
+* **Line Drawing Effects (Progress & Paths):** * **How-to:** Showcase the classic vector UI trick: using CSS `@keyframes` to manipulate `stroke-dasharray` and `stroke-dashoffset`. Explain how this is used to create circular health bars that fill up smoothly or connecting lines that draw themselves between nodes on a tech tree.
+* **Dynamic ViewBox Panning:** * **Concept:** Explain how manipulating the `<svg viewBox="...">` attribute via JavaScript creates a panning or zooming effect.
+    * **How-to:** Briefly note how this can be tied to player input to build a functional, zoomable minimap without physically resizing the DOM node.
+* **The Animation Library Gotcha:** * **Gotcha:** Explicitly warn developers that while JavaScript animation libraries are supported for standard DOM elements, animating SVGs using Anime.js is *not* supported in Gameface. Developers must rely on pure CSS or manual JS manipulation for SVG properties.

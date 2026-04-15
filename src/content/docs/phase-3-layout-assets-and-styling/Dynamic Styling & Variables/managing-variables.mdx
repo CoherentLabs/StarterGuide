@@ -1,0 +1,13 @@
+---
+title: "Managing Variables: CSS Custom Properties vs. SCSS"
+description: Coming soon!
+sidebar:
+    order: 2
+draft: true
+---
+
+## Topics
+
+* **The Reality of Native CSS Variables:** The author should explain how runtime variable resolution actually works in the engine. The intent is to warn developers that updating a global (`:root`) variable via JS forces the engine to recalculate styles for *every element* that inherits from it, causing severe layout thrashing and FPS drops.
+* **The SCSS Alternative:** The author should strongly recommend build-time preprocessors (SASS/SCSS) as the primary way to manage design tokens. Explain that compiling `$sass-variables` for colors and typography gives the team all the organizational benefits of variables with absolutely zero runtime performance cost.
+* **Safe Usage of CSS Variables:** The author should provide clear rules for when CSS Custom Properties *are* acceptable. For example, if they are used for user-driven dynamic theming (like changing a crosshair color), they must be scoped as tightly as possible to specific components rather than the global root to minimize recalculation penalties.
