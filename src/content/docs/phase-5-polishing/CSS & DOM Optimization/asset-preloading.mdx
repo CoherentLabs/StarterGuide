@@ -1,0 +1,18 @@
+---
+title: "Asset Preloading & Bundler Config"
+description: Coming soon!
+sidebar:
+    order: 5
+draft: true
+---
+
+To hit instant load times, the C++ engine caches your UI files. However, modern JavaScript bundlers often ruin this by injecting inline code.
+
+## Topics
+
+* **The Golden Rule of Preloading:**
+    * **Context:** Explain the engine-level preloading rules. The C++ engine *cannot* cache inline `<style>` or `<script>` tags injected directly into the HTML. If a frontend dev allows inline assets, it bypasses the cache and destroys the Instaload performance boost.
+* **Preloading Heavy Media:**
+    * **Context:** Briefly explain that the engine can also preload heavy UI textures (like 4K character portraits) into memory. Frontend devs just need to ensure their paths map correctly to the engine's expected asset directory.
+* **Bundler Configuration (Vite/Webpack):**
+    * **Context:** Provide the exact Vite config snippet (e.g., `assetsInlineLimit: 0` and disabling CSS code splitting) to ensure the bundler spits out clean, external `.css` and `.js` files that the engine can actually cache.

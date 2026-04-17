@@ -1,0 +1,20 @@
+---
+title: "Accessibility (A11y) Features"
+description: Coming soon!
+sidebar:
+    order: 2
+draft: true
+---
+
+Building an accessible game UI is critical for reaching a wider audience. Gameface provides native tools and architectural patterns to ensure your UI can be navigated and understood by all players, covering Text-to-Speech and visual impairments.
+
+## Topics
+
+* **The Text-To-Speech (TTS) Architecture:**
+    * **Context:** The Gameface TTS module bridges the UI with the engine's audio output. On the frontend, this consists of a JS library for managing priority queues and an ARIA JS library for declarative UI plugins. 
+* **Combining ARIA with Plugins:**
+    * **How-to:** Developers don't need to write complex TTS logic from scratch. By including the pre-built ARIA plugins, the UI can automatically read out content. 
+    * **Examples:** `CohtmlARIAHoverReadPlugin` speaks hovered elements using `aria-label`, `CohtmlARIAFocusChangePlugin` reads focused elements (vital for gamepad users), and `CohtmlARIALiveRegionsPlugin` announces dynamic updates like notifications.
+* **Color Blindness & Theming:**
+    * **Context:** Supporting color blindness should be built into your styling architecture from day one. 
+    * **How-to:** Provide high-level tips and methods for setting up flexible theming. Briefly discuss how leveraging SCSS variables and semantic class names allows the UI to easily swap standard red/green elements for colorblind-safe palettes without duplicating style logic.

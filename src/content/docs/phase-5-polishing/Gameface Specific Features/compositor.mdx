@@ -1,0 +1,16 @@
+---
+title: "The Compositor & 3D UI"
+description: Coming soon!
+sidebar:
+    order: 2
+draft: true
+---
+
+Gameface doesn't just render flat overlays. The Compositor allows you to project UI panels onto 3D surfaces in the game world, like a holographic sci-fi computer terminal.
+
+## Topics
+
+* **Understanding the Compositor:**
+    * **Context:** Give a high-level explanation of how Gameface splits UI rendering into separate layers that the C++ engine can manipulate, bend, and project in 3D space.
+* **The Frontend Developer's Role:**
+    * **Context:** Show the exact CSS required to enable this. Instruct developers on how to assign a `coh-composition-id` property to a layer, and apply `transform-style: preserve-3d` to the parent container so the engine knows exactly how to map the surface.

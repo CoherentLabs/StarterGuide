@@ -1,0 +1,21 @@
+---
+title: "Debugging Tools & VS Code Integration"
+description: Coming soon!
+sidebar:
+    order: 1
+draft: true
+---
+
+This article provides an overview of the core debugging tools available in Gameface. We will cover the built-in DevTools panels, how to configure your source maps to work with the engine's custom protocols, and how to attach Visual Studio Code directly to the Player.
+
+## Topics
+
+* **The Built-in Panels:**
+    * **Context:** Gameface's DevTools are based on Google Chrome, giving you a familiar inspection environment by simply pressing `F12` in the Player.
+    * **Supported Tabs:** Briefly list the available panels so developers know their toolset: Elements (DOM/CSS manipulation), Console, Sources (JavaScript debugging), Network (asset loading), and Performance.
+* **VS Code Integration:**
+    * **Context:** Developers do not have to rely solely on the browser-based Sources tab to debug their logic.
+    * **How-to:** Explain how developers can configure a standard launch configuration to attach the Visual Studio Code debugger directly to the Gameface Player instance. This allows them to set breakpoints and step through JavaScript directly inside their editor.
+* **The Source Maps Gotcha:**
+    * **Context:** Because Gameface loads files using its custom `coui://` protocol, the DevTools (and VS Code) cannot natively fetch external `.map` files over the network.
+    * **How-to:** Instruct developers to configure their bundlers (like Webpack or Vite) to embed source maps directly as inline data URIs. This is a mandatory step to ensure that TypeScript and SCSS files map correctly during debugging.

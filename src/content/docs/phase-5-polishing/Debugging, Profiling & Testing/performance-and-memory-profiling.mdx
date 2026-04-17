@@ -1,0 +1,20 @@
+---
+title: "Performance & Memory Profiling"
+description: Coming soon!
+sidebar:
+    order: 3
+draft: true
+---
+
+When your UI drops frames, the Performance tab is your best friend. Gameface provides deeply integrated trace markers to help you pinpoint the exact CSS property or JS function causing the bottleneck.
+
+## Topics
+
+* **Reading the Timeline Markers:**
+    * **Context:** Explain how to record a performance trace and read the engine-specific markers.
+        * **Advance:** Look for `Execute Timers` to track JS execution time, and `Recalculate Styles` to see how many nodes were affected by a CSS change.
+        * **Layout:** Differentiate between `Solve Flex Layout` (a heavy, full layout calculation) and `Update Node Transforms` (a fast, lightweight update).
+* **Connecting GPU Markers to the DOM:**
+    * **Context:** Highlight a massive quality-of-life feature. If you hover over a `Process Layer` or `Draw Stacking Context` marker in the timeline, Gameface physically highlights the exact DOM node responsible in the viewport, allowing you to instantly identify the offending UI element.
+* **Tracking Texture Thrashing:**
+    * **Context:** Show how to enable the "Counters" and "Memory" checkboxes to monitor GPU object creation. Explain how to read the "Scratch Texture Manager" charts to see if the engine is desperately creating and destroying temporary GPU textures every frame (thrashing), which usually indicates too many expensive `backdrop-filter` or opacity layers.
