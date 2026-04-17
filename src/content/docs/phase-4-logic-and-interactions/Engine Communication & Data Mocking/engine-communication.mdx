@@ -1,0 +1,20 @@
+---
+title: "Engine Communication: Setup & Events"
+description: Coming soon!
+sidebar:
+    order: 1
+draft: true
+---
+
+Before your UI can display player health or register a button click, it needs to talk to the game engine. This article covers the essential `cohtml.js` bridge, the initialization flow, and how to send and receive events safely.
+
+## Topics
+
+* **The `cohtml.js` Bridge:** * **Concept:** Explain that `cohtml.js` is the mandatory library that makes the binding layer work between the HTML frontend and the C++ backend. It must be included in the HTML page to access the global `engine` object.
+    * **How-to:** Show how to import it into your project structure (alongside its TypeScript definitions for autocomplete support).
+* **The Initialization Flow (`engine.whenReady`):** * **Gotcha:** A massive source of bugs is trying to communicate with the engine before the view is ready. 
+    * **How-to:** Instruct developers to *always* wrap their initialization logic inside `engine.whenReady.then(() => { ... })`. Note that while `engine.on('Ready')` exists, `engine.whenReady` is a Promise and is officially recommended to avoid race conditions.
+* **Listening to the Engine (Events):** * **How-to:** Show how to listen for data pushed by the game using `engine.on('EventName', callback)`. Also, briefly show how to clean up listeners using `engine.off` to prevent memory leaks.
+* **Talking to the Engine (Triggers & Calls):** * **Concept:** Explain the difference between triggering an action and calling for data.
+    * **How-to (`engine.trigger`):** Use `engine.trigger('EventName', data)` when you just need to send data to the game (like "Quit Button Clicked") and don't expect a response.
+    * **How-to (`engine.call`):** Use `engine.call('EventName', data).then(callback)` when you need to ask the game for information (like requesting a player name) and wait for the C++ promise to resolve.

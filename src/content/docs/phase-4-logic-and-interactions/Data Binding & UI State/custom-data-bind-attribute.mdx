@@ -1,0 +1,17 @@
+---
+title: "Custom Data-Bind Attributes"
+description: Coming soon!
+sidebar:
+    order: 3
+draft: true
+---
+
+When the default data-binding attributes aren't enough, Gameface allows you to register your own custom behaviors. Here is how to build, register, and optimize them.
+
+## Topics
+
+* **Anatomy of a Custom Binder:** * **Concept:** Explain the class structure required for a custom attribute handler (`init`, `update`, and `deinit`). 
+* **Tutorial (The Capitalize Attribute):** * **How-to:** Walk through the complete code of creating a custom `coh-capitalize` attribute. Show how it intercepts the value in the `update` method, transforms the string using `.toUpperCase()`, and applies it to the DOM. Show the `engine.registerBindingAttribute` call.
+* **The Performance Gotcha (When NOT to use them):** * **Gotcha:** Standard data-binding is evaluated rapidly in C++. 
+Custom attributes force expensive JavaScript evaluation. Warn developers to only use them when absolutely necessary (like complex text localization formatting), 
+rather than replacing native style or class bindings.

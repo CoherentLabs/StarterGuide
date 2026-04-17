@@ -1,0 +1,17 @@
+---
+title: "Routing Input: UI vs. The 3D World"
+description: Coming soon!
+sidebar:
+    order: 1
+draft: true
+---
+
+A game UI is just a transparent overlay sitting on top of a 3D world. This article covers how to route clicks between the UI and the game, and how to manage standard browser inputs like cursors and text selection.
+
+## Topics
+
+* **The Gatekeeper Concept:** * **Context:** Unlike a normal website, a game engine captures OS events first and forwards them to the UI. The C++ engine acts as a gatekeeper via the `OnNodeMouseEvent` callback, deciding whether to evaluate the click (`ContinueHandling`) or pass it down to the 3D world (`InterruptHandling`).
+* **Hybrid Input & Interception:** * **Context:** In games like RTS or MOBAs, clicking empty UI space should move a unit, but clicking a button should execute UI logic. 
+    * **How-to:** Instruct frontend developers to coordinate with the C++ team. The easiest method is to mark transparent elements with specific CSS classes (e.g., `.ui-transparent`). The C++ handler can inspect the clicked element's classes and instantly interrupt the handling to pass the click to the game world.
+* **Basic Web Inputs (Cursors & Selection):** * **Cursor Control:** Standard CSS `cursor: pointer` works, but developers can also use `cursor: url(myCursor.ani)` to load custom, animated, platform-specific cursors handled directly by the OS.
+    * **Text Selection:** Standard web text is strictly non-selectable by default in Gameface. To enable mouse drag selection, apply `user-select: text` via CSS.

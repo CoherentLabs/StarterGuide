@@ -1,0 +1,24 @@
+---
+title: "Mocking Data Models"
+description: Coming soon!
+sidebar:
+    order: 2
+draft: true
+---
+
+Frontend developers shouldn't have to launch a heavy 3D game engine just to test a UI layout. By mocking data models directly in JavaScript, you can build, test, and iterate on your UI completely independently.
+
+## Topics
+
+* **Creating & Connecting a Mocked Model:** * **Tutorial:** Show how to use `engine.createJSModel("PlayerModel", { health: 100 })` inside the auto-detection block. 
+    * **Connecting the Dots:** Show a 1-line HTML snippet (`<div data-bind-value="{{PlayerModel.health}}"></div>`) so the developer immediately understands *why* they are mocking the data.
+* **Synchronizing the Mocked Data:** * **Concept:** In a real game, the C++ engine pushes updates to the UI automatically. When mocking in JS, you have to tell the engine to manually sync the DOM.
+    * **Tutorial:** Show a script changing the mocked health value, followed by calls to `engine.updateWholeModel("PlayerModel")` and `engine.synchronizeModels()` to force the UI to visually update.
+* **Auto-Detecting the Environment:** * **Tutorial:** Show the ultimate workflow trick: automatically enabling mock data *only* if the UI is running in the browser/Player. Provide a snippet like:
+    ```javascript
+    engine.whenReady.then(() => {
+        engine.call("runningInGame").then((inGame) => {
+            if(!inGame) { // Enable mockings }
+        });
+    });
+    ```

@@ -1,0 +1,20 @@
+---
+title: "Spatial Navigation & Focus Management"
+description: Coming soon!
+sidebar:
+    order: 3
+draft: true
+---
+
+Moving between UI elements using a D-Pad or Arrow Keys requires the engine to calculate the physical layout of the DOM. Here is how to set up Spatial Navigation and guide players with HTML focus.
+
+## Topics
+
+* **Moving Without a Mouse (The Focus Link):** * **Context:** Explain that Spatial Navigation and HTML Focus are intrinsically linked. When a player presses "Right" on a D-Pad, the IM mathematically calculates which focusable geometry is closest to the right edge of the currently focused element, and physically moves the `:focus` state to it.
+* **Setting up IM Spatial Navigation:** * **Context:** Simply enabling it isn't enough; developers need to manage *groups*. 
+    * **How-to:** Provide a snippet demonstrating how to define navigation groups and trap focus. For example, if a "Settings" modal opens, Spatial Nav must be locked inside that modal so the gamepad doesn't accidentally navigate to buttons hidden behind it.
+* **Visualizing Focus:** * **Context:** Mouse users have a cursor; gamepad users are blind without focus states. 
+    * **How-to:** Emphasize the mandatory use of the `:focus` and `:focus-visible` CSS pseudo-selectors to create highly visible outlines or glowing borders around active UI elements.
+* **The Tabindex Fallback:** * **Context:** Sequential focusing (pressing `Tab` to jump to the next input) is not natively automatic.
+    * **How-to:** If a project specifically requires legacy browser `Tab` navigation, show how to include `<script src="coherent-tabindex-polyfill.js"></script>`. Warn developers to avoid non-integer tabindex values, which break the sequence.
+* **Gameface UI Navigation Component:** * **Context:** Mention that if the team is using the pre-built Gameface UI components, they can directly use the Navigation component which wraps the library's logic.

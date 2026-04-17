@@ -1,0 +1,19 @@
+---
+title: "Local State vs. Game State"
+description: Coming soon!
+sidebar:
+    order: 5
+draft: true
+---
+
+Just because you can send data to the game engine doesn't mean you should. Efficient UI architectures rely on handling temporary state locally in JavaScript and only communicating with the backend when necessary.
+
+## Topics
+
+* **The Golden Rule:** * **Concept:** Establish that the frontend should act as a shock absorber. Spamming the C++ engine with events 60 times a second for pure UI visuals is a major performance trap.
+* **Scenario 1: Interaction States (Modals & Dropdowns):** 
+    * **Tutorial:** When opening a settings dropdown or a modal, do not ask the engine to toggle a boolean. Manage the `isOpen` state entirely in a local JavaScript store or component.
+* **Scenario 2: Intermediate Input Values (Sliders):** 
+    * **Tutorial:** If a player is dragging an audio volume slider, update the visual fill of the slider locally in JS as they drag. Only trigger an `engine.call('SetVolume', finalValue)` when the `mouseup` or `touchend` event fires.
+* **Scenario 3: Transitory UI Effects (Toasts & Notifications):** 
+    * **Tutorial:** The game engine should trigger an event like `engine.trigger('ShowToast', 'Item Equipped')`. The JS should catch this, render the notification, handle the 3-second delay, and trigger the fade-out animation locally. The engine does not need to manage UI timers.

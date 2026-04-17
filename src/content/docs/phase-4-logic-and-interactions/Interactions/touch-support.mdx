@@ -1,0 +1,15 @@
+---
+title: "Touch Support & Mobile Inputs"
+description: Coming soon!
+sidebar:
+    order: 5
+draft: true
+---
+
+If your game is porting to mobile, tablets, or the Nintendo Switch, touch inputs need to be treated as first-class citizens alongside the mouse and gamepad.
+
+## Topics
+
+* **Standard Touch Events:** * **Context:** Native JavaScript touch events (`touchstart`, `touchend`, etc.) are fully supported by the engine right out of the box and can be targeted just like standard DOM events.
+* **IM Touch Integration:** * **Context:** While raw events work, translating a `touchstart` and `touchend` sequence into a unified "Tap" or "Click" action manually is annoying.
+    * **How-to:** Show how to initialize touch support within the Interaction Manager. Demonstrate how IM normalizes touch gestures so that a mobile "Tap" fires the exact same callback as a Mouse "Click" or Gamepad "A" button, preventing duplicated code.

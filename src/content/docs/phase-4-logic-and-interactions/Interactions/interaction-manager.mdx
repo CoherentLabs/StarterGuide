@@ -1,0 +1,17 @@
+---
+title: "The Interaction Manager: Actions & Gamepads"
+description: Coming soon!
+sidebar:
+    order: 2
+draft: true
+---
+
+Writing manual polling loops for gamepad input is tedious. Coherent Labs provides a standardized Interaction Manager (IM) library to handle gamepads, keyboards, and complex UI behaviors right out of the box.
+
+## Topics
+
+* **The Standard Solution:** * **Context:** Introduce the `coherent-gameface-interaction-manager` library. Explain that instead of writing dozens of custom `addEventListener` scripts, the IM serves as the unified hub for Keyboard mapping, Gamepad integration, Spatial Navigation, and Touch. Provide a quick installation snippet.
+* **Mapping Actions (Keyboard & Gamepad):** * **Context:** Show how the IM unifies input devices. 
+    * **How-to:** Provide a snippet showing how to create an "Action" (e.g., `onConfirm`). Map *both* the Keyboard "Enter" key and the Gamepad "A" button to this single action. This ensures the UI responds identically regardless of what peripheral the player uses.
+* **Why IM for Gamepads? (The Polling Problem):** * **Context:** Frontend developers used to the web expect to just write `window.addEventListener('gamepadbuttondown', ...)`—but that doesn't exist.
+    * **Concept:** Explain that gamepads require manual polling loops via the HTML `Navigator` API (usually synced to `requestAnimationFrame`). The IM's `Gamepad` class abstracts this entirely, saving the developer from writing a heavy, custom polling loop.

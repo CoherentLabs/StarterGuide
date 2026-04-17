@@ -1,0 +1,20 @@
+---
+title: "Data-Binding Basics: Values, Styles, and Classes"
+description: Coming soon!
+sidebar:
+    order: 1
+draft: true
+---
+
+Gameface's data-binding system eliminates the need for messy JavaScript DOM manipulation. By using declarative HTML attributes, the UI automatically synchronizes with the game's data model.
+
+## Topics
+
+* **The Syntax:** * **Concept:** Explain the `{{model.property}}` double-curly-brace syntax. 
+* **Binding Values & Text:** * **Tutorial:** Provide a hands-on example of a player stats panel using `data-bind-value` for standard text (like HP or Ammo) and `data-bind-html` for tooltips with embedded formatting.
+* **Binding Styles:** * **Tutorial:** Demonstrate how to build a dynamic health bar by updating CSS properties via `data-bind-style-width="{{Player.health}}"`. Note that numeric values default to pixels.
+* **Binding Classes:** * **Tutorial:** Show how to apply UI states cleanly. Provide an example of toggling a "low-health" red pulse effect using `data-bind-class-toggle="is-danger: {{Player.hasLowHealth}}"`.
+
+:::tip[For future me]
+Use the playground for the examples
+:::
