@@ -1,15 +1,164 @@
 ---
 title: "Building Scalable & Responsive Game UIs"
-description: Coming soon!
+description: "Learn how to build responsive game UIs that scale flawlessly across multiple resolutions using viewport units, REMs, and dynamic scale factors."
 sidebar:
     order: 2
-draft: true
 ---
 
-## Topics
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
 
-- **The Problem with Hardcoded Pixels**: Discuss why using strict px values breaks down when a game is played across multiple resolutions (e.g., 1080p vs. 4k).
-- **Viewport Units for Layouts**: Explain how to use vw and vh units so that layout containers, panels, and margins resize proportionally to the screen's dimensions.
-- **Scaling Typography with EM/REM**: Cover the best practices for setting a base font size and using em or rem to ensure text scales consistently with the rest of the UI without relying on expensive JavaScript calculations.
-- **Alternative Approaches**: Showcase alternative methods for scalable UI like the current example in our docs (dynamically calculating a scale factor and applying it to the root) and discuss the pros and cons of 
-each approach.
+<Summary>
+    A scalable UI is a UI that can dynamically scale up or down to fit bigger or smaller screens. A well-designed responsive interface ensures that components are not distorted or malformed from the scaling, and allows adjustments to fit the screen even if the aspect ratio changes.
+    
+    This guide explores the mechanics of scalable layouts in Gameface. We will cover the pitfalls of hardcoded pixels, how to leverage <Highlight>viewport units</Highlight> and <Highlight>REM scaling</Highlight>, and alternative approaches like calculating and applying dynamic scale factors based on a reference resolution.
+</Summary>
+
+## The Problem with Hardcoded Pixels
+
+When building a UI, it is tempting to measure and position elements using strict pixel (`px`) values based on a single target screen dimension. 
+The screen size for which the UI was originally designed is known as the <Highlight>reference resolution</Highlight>.
+
+However, pixels are absolute units. If your reference resolution is 1080p (1920x1080), a hardcoded `300px` minimap will look perfectly sized. But when the game is rendered on a 4K screen (3840x2160), 
+the screen has exactly twice the number of pixels in both width and height. Because the minimap remains strictly `300px`, 
+it will appear physically half the size on the 4K screen, making it incredibly difficult for the player to read. 
+
+:::danger[The 4K Pixel Trap]
+If a UI element needs to retain a constant physical size despite the screen resolution , 
+or if it needs to increase or decrease its size proportionally based on the screen size, you must abandon absolute units in favor of <Highlight>relative sizing</Highlight>.
+:::
+
+## Viewport Units for Layouts
+
+The most direct way to scale layout containers proportionally is by using **Viewport Units**: <Highlight>vw</Highlight> (viewport width) and <Highlight>vh</Highlight> (viewport height). 
+
+* `1vw` is equal to 1% of the total screen width.
+* `1vh` is equal to 1% of the total screen height.
+
+Because these units are intrinsically tied to the screen's actual dimensions, an element sized with `vw` or `vh` will always occupy the exact same relative physical space on the screen, 
+whether it is running on a 720p handheld or a 4K monitor.
+
+```css title="hud.css"
+/* This container will always take up exactly 30% of the screen's width 
+   and 100% of its height, regardless of the user's resolution. 
+*/
+.inventory-panel {
+    width: 30vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/* Margins and spacing can also use viewport units to maintain 
+   consistent relative spacing from the edge of the screen.
+*/
+.minimap {
+    width: 15vw;
+    height: 15vw; /* Using vw for both ensures the map stays a perfect square */
+    margin-top: 2vh;
+    margin-right: 2vw;
+}
+```
+
+## Global Layout Scaling with REM Units
+
+While viewport units (`vw` and `vh`) are excellent for massive layout blocks, using them for every single padding, margin, border, and font size can become tedious and hard to maintain.
+
+Instead, the most robust way to build a scalable UI is to author your internal component dimensions using <Highlight>rem</Highlight> units. The `rem` unit is a size unit used in CSS that is tied directly to the root (`html`) element's font size. 
+
+If you set the size of all UI elements using `rem` units, you can easily resize them globally by changing the font size of the HTML element. By scaling this single root value, the entire UI—text, buttons, margins, and containers—scales up or down in perfect unison.
+
+```css title="scalable-components.css"
+/* If the root font-size is 10px, this button is 200px wide.
+   If the root font-size changes to 20px, this button dynamically grows to 400px wide. */
+.action-button {
+    width: 20rem;
+    height: 5rem;
+    padding: 1rem;
+    font-size: 1.5rem;
+}
+```
+
+To make this actually responsive to the screen, we need a way to automatically adjust that root font size based on the player's resolution. 
+There are two main ways to achieve this: <Highlight> dynamically via JavaScript </Highlight>, or <Highlight> statically via CSS </Highlight>.
+
+### The Dynamic Scale Factor Method (JavaScript)
+
+The industry standard for game UI is to design the interface for a specific **reference resolution** (e.g., 1920x1080). 
+
+A user interface is scaled using a scale factor, which is a numeric value that determines how the size of the UI element will be affected. Comparing the current resolution to the reference resolution gives the scale factor. 
+
+When calculating the scale factor, the sides which are used determine the end result of the scaling. You can compare only the width, only the height, or both. For standard widescreen games, scaling based on the screen's **height** is often preferred to ensure vertical UI panels don't get cut off.
+
+Here is how you can use JavaScript to dynamically calculate this scale factor and apply it to the root element.
+
+```javascript title="scale-manager.js"
+// Grab the root HTML element to apply our dynamic font-size
+const rootElement = document.getElementsByTagName('html')[0];
+
+function resize() {
+    // Get the current physical height of the screen
+    const windowHeight = window.innerHeight; 
+    
+    // Compare the current height to our reference height of 1080
+    // If the player is on a 2160p (4K) screen, the factor is 2.0
+    const scaleFactorY = windowHeight / 1080; 
+    
+    // Multiply our base CSS design size (e.g., 16px) by the scale factor
+    const fontSize = 16 * scaleFactorY; 
+    
+    // Apply the newly calculated font size to the root element
+    rootElement.style.fontSize = `${fontSize}px`;
+}
+
+// Run once on initialization to set the initial scale
+resize();
+
+// Update the scale dynamically whenever the window resizes
+window.addEventListener('resize', resize);
+```
+
+:::note[The Tradeoffs]
+* **Pros:** This approach gives you absolute precision. It also makes developer handoff incredibly easy: if your UI designer builds a screen in Figma at 1080p, you can translate a `24px` Figma value directly to `1.5rem` (assuming a 16px base) in your CSS without any complex mental math.
+* **Cons:** It requires a JavaScript execution and a layout recalculation every time the window resizes. 
+:::
+
+### The CSS-Only Method (vh Math)
+
+If you want to avoid the JavaScript bottleneck entirely, you can manually calculate the <Highlight>Viewport Height (vh)</Highlight> equivalent of your base pixel size and apply it directly to your CSS.
+
+Assuming our reference wireframe was designed at 1920x1080, and we want our base `1rem` to equal `16px` at that resolution, we calculate the viewport height percentage: 
+`(16px / 1080px) * 100 = 1.4814vh`.
+
+Add this rule to the top of your `index.css`:
+
+```css title="index.css"
+html {
+  font-size: 1.4814vh;
+}
+```
+
+With this single rule applied, an element with `width: 2rem` will render at exactly 32px on a 1080p screen, but will dynamically scale up on a 1440p or 4K screen, maintaining its relative proportion to the height of the window.
+
+:::note[The Tradeoffs]
+* **Pros:** Extremely fast and avoids JS execution overhead during window resizing. Excellent for rapid prototyping.
+* **Cons:** Lacks the explicit control of a JavaScript scale manager and can behave unpredictably on extreme ultrawide monitors without additional constraints.
+:::
+
+## Finding the Balance
+
+There is no "one-size-fits-all" solution when it comes to building a responsive game UI. All of the aforementioned approaches have their benefits depending on your UI's specific needs.
+
+Using viewport units (`vh` and `vw`) is a fantastic way to ensure that your layout containers and margins scale proportionally to the screen size. 
+However, relying solely on viewport units for every single UI element can become unwieldy and difficult to maintain, especially for typography and smaller components or when trying to match the design 1:1.
+
+If you are prototyping quickly and want an easily scalable and responsive layout, the **CSS-only `vh` method** is incredibly efficient. 
+However, it can be somewhat vulnerable for a final production build when confronted with extreme edge cases, like super-ultrawide displays.
+
+The **Dynamic Scale Factor via JavaScript** method is highly consistent and provides precise control over how your UI scales. 
+While it does come with a slight performance trade-off whenever the window gets resized, it is worth noting that in a compiled game environment, players rarely resize their windows mid-gameplay.
+
+Our general recommendation is to evaluate these trade-offs and find the balance that best fits your project's technical requirements and production timeline.
+
+## Next Steps
+
+With your layouts smoothly scaling up and down based on raw screen size, the next challenge is dealing with screens that change shape entirely. Proceed to the [Handling Aspect Ratios with Media Queries](../handling-aspect-ratios-with-media-queries/) article to learn how to keep ultrawide monitors and handheld screens from stretching or breaking your UI components.
