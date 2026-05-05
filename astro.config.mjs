@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import coherentTheme from 'coherent-docs-theme';
 import { content } from './src/data/content';
+import starlightAutoSidebar from 'starlight-auto-sidebar'
 
 export default defineConfig({
 	integrations: [
@@ -21,10 +22,12 @@ export default defineConfig({
 				},  
 			],
 			plugins: [
-			...coherentTheme({
-				documentationSearchTag: 'UI workflow guide',
-				showPageProgress: true,
-			})],
+				...coherentTheme({
+					documentationSearchTag: 'UI workflow guide',
+					showPageProgress: true,
+				}),
+				starlightAutoSidebar()
+			],
 			customCss: ['./src/styles/custom.css'],
 			sidebar: content.map((topic) => {
 				return {
