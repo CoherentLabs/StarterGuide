@@ -2,27 +2,35 @@
 title: "Web Animations API (WAAPI)"
 description: Coming soon!
 sidebar:
-    order: 3
+    order: 4
 draft: true
 ---
 
-The Web Animations API (WAAPI) brings the performance of CSS animations directly into JavaScript. This article covers how to use WAAPI in Gameface to gain programmatic control over your UI motion without sacrificing frame rate.
+The Web Animations API (WAAPI) brings the performance of CSS animations directly into JavaScript. This article covers how to use WAAPI in Gameface to
+gain programmatic control over your UI motion without sacrificing frame rate.
 
 ## Topics
 
-* **What is WAAPI:** * **Concept:** Explain that WAAPI is a native browser API supported by Gameface. It allows developers to construct and trigger animations directly in JavaScript while still utilizing the engine's optimized CSS rendering pipeline.
-* **Setup & Initialization:** * **How-to:** Note that because WAAPI is native, absolutely zero installation or external libraries are required.
-* **Basic Usage Example:** * **How-to:** Provide a minimal, copy-pasteable example of triggering an animation using the `element.animate()` method. Show how to pass in an array of keyframes and an options object (duration, easing, iterations).
+- **What is WAAPI:** \* **Concept:** Explain that WAAPI is a native browser API supported by Gameface. It allows developers to construct and trigger
+  animations directly in JavaScript while still utilizing the engine's optimized CSS rendering pipeline.
+- **Setup & Initialization:** \* **How-to:** Note that because WAAPI is native, absolutely zero installation or external libraries are required.
+- **Basic Usage Example:** \* **How-to:** Provide a minimal, copy-pasteable example of triggering an animation using the `element.animate()` method.
+  Show how to pass in an array of keyframes and an options object (duration, easing, iterations).
 
 ```js
-    const panel = document.querySelector('.menu-panel');
-    panel.animate([
-        { transform: 'translateY(100px)', opacity: 0 },
-        { transform: 'translateY(0)', opacity: 1 }
-    ], {
+const panel = document.querySelector(".menu-panel");
+panel.animate(
+    [
+        { transform: "translateY(100px)", opacity: 0 },
+        { transform: "translateY(0)", opacity: 1 },
+    ],
+    {
         duration: 300,
-        easing: 'ease-out'
-    });
+        easing: "ease-out",
+    },
+);
 ```
 
-* **WAAPI Gotchas in Gameface:** * **Gotcha:** While WAAPI is highly performant, warn developers that continuously generating new animation objects on every frame (e.g., inside a game loop or `requestAnimationFrame`) will cause JavaScript garbage collection spikes. Encourage them to create the animation object once and use `.play()`, `.pause()`, and `.reverse()`.
+- **WAAPI Gotchas in Gameface:** \* **Gotcha:** While WAAPI is highly performant, warn developers that continuously generating new animation objects
+  on every frame (e.g., inside a game loop or `requestAnimationFrame`) will cause JavaScript garbage collection spikes. Encourage them to create the
+  animation object once and use `.play()`, `.pause()`, and `.reverse()`.

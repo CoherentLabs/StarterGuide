@@ -2,24 +2,29 @@
 title: "GSAP: Setup, Usage, and Gotchas"
 description: Coming soon!
 sidebar:
-    order: 5
+    order: 6
 draft: true
 ---
 
-GSAP is the industry heavyweight for complex, sequenced JavaScript animations. While incredibly powerful, it must be used carefully in a game engine to avoid performance drops.
+GSAP is the industry heavyweight for complex, sequenced JavaScript animations. While incredibly powerful, it must be used carefully in a game engine
+to avoid performance drops.
 
 ## Topics
 
-* **When to use GSAP:** * **Concept:** Explain that GSAP excels at complex timeline sequencing (e.g., an end-of-match screen where 15 different UI elements fade, slide, and bounce in a strict choreographed order).
-* **Installation & Setup:** * **How-to:** Briefly show how to import GSAP into the project via NPM or a standard script tag.
-* **Basic Usage Example:** * **How-to:** Provide a minimal example of a `gsap.to()` tween and how to chain animations together using a GSAP Timeline (`gsap.timeline()`).
+- **When to use GSAP:** \* **Concept:** Explain that GSAP excels at complex timeline sequencing (e.g., an end-of-match screen where 15 different UI
+  elements fade, slide, and bounce in a strict choreographed order).
+- **Installation & Setup:** \* **How-to:** Briefly show how to import GSAP into the project via NPM or a standard script tag.
+- **Basic Usage Example:** \* **How-to:** Provide a minimal example of a `gsap.to()` tween and how to chain animations together using a GSAP Timeline
+  (`gsap.timeline()`).
 
 ```js
-    gsap.to(".xp-bar-fill", { 
-        width: "100%", 
-        duration: 1.5, 
-        ease: "power2.out" 
-    });
+gsap.to(".xp-bar-fill", {
+    width: "100%",
+    duration: 1.5,
+    ease: "power2.out",
+});
 ```
 
-* **The Performance Gotcha:** * **Gotcha:** Reiterate the golden rule: GSAP relies heavily on the JavaScript thread to calculate values every single frame. Warn developers *never* to use GSAP for simple hover effects, infinite looping idle animations, or basic UI fades, as this steals CPU cycles from the game engine. Reserve GSAP strictly for complex choreographies.
+- **The Performance Gotcha:** * **Gotcha:** Reiterate the golden rule: GSAP relies heavily on the JavaScript thread to calculate values every single
+  frame. Warn developers *never\* to use GSAP for simple hover effects, infinite looping idle animations, or basic UI fades, as this steals CPU cycles
+  from the game engine. Reserve GSAP strictly for complex choreographies.

@@ -42,7 +42,7 @@ If you are coming from traditional web development, SolidJS has a very similar s
 
 :::note[Alternative Frameworks]
 While Gameface does support other frameworks like React, Vue, and Preact, they rely on Virtual DOMs or heavier runtimes that can impact game performance. You can find setup guides for these in the 
-[Alternative Frameworks section]().
+[Alternative Frameworks section](/phase-2-planning-and-setup/alternative-frameworks/).
 :::
 
 ## The Bundler: Vite
@@ -67,7 +67,7 @@ We tackle this using a combination of <Link href="https://sass-lang.com/">SCSS</
 In general, strict BEM can result in longer class names, which might affect code readability in your HTML. You can opt for a more relaxed version of BEM that allows for shorter class names and clean nesting.
 
 For example, instead of writing `.dropdown__option--active`, you could write `.dropdown-option--active` or even `.dropdown-option-active`. 
-You can leverage scoped SolidJS [CSS Modules](https://docs.solidjs.com/guides/styling-components/css-modules) and SCSS's nesting capabilities to keep your styles scoped and organized while still compiling down to engine-friendly flat selectors.
+You can leverage scoped SolidJS <Link href="https://docs.solidjs.com/guides/styling-components/css-modules">CSS Modules</Link> and SCSS's nesting capabilities to keep your styles scoped and organized while still compiling down to engine-friendly flat selectors.
 
 ```scss
 .dropdown {
