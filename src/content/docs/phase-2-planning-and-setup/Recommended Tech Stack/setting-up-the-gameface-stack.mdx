@@ -32,22 +32,7 @@ Depending on your project requirements, you can either start with a structured b
 To download these starter projects, we use a command line tool called `degit`. 
 This tool simply grabs a clean copy of the template files from our repository and places them on your computer, without bringing along any messy version control history.
 
-### Option A: Blank Vite & SolidJS Template
-This template includes only the core recommended stack: 
-<Highlight>Vite, SolidJS, TypeScript & SASS</Highlight>. 
-It is completely clean, making it the perfect choice if you want to build your own UI architecture and components entirely from scratch.
-
-Run this command in your terminal to create a new folder called `my-game-ui` and install the blank template:
-
-```bash
-npx degit CoherentLabs/gameface-solid-template my-game-ui
-cd my-game-ui
-npm install
-```
-
-Once the installation is complete, you can see how to [preview the project in gameface](#connect-to-the-gameface-player) in the next section.
-
-### Option B: The Gameface UI project
+### Option A: The Gameface UI project
 
 If you have limited web experience or want to skip the component creation process, we highly recommend starting with our pre-built
 <Link href="https://gameface-ui.coherent-labs.com/">Gameface UI template</Link>.
@@ -70,6 +55,21 @@ npm install
 ```
 
 This will create a new folder called `my-game-ui` with the boilerplate code, install all dependencies, and get you ready to start developing your game UI.
+
+### Option B: Blank Vite & SolidJS Template
+This template includes only the core recommended stack: 
+<Highlight>Vite, SolidJS, TypeScript & SASS</Highlight>. 
+It is completely clean, making it the perfect choice if you want to build your own UI architecture and components entirely from scratch.
+
+Run this command in your terminal to create a new folder called `my-game-ui` and install the blank template:
+
+```bash
+npx degit CoherentLabs/gameface-solid-template my-game-ui
+cd my-game-ui
+npm install
+```
+
+Once the installation is complete, you can see how to [preview the project in gameface](#connect-to-the-gameface-player) in the next section.
 
 ## Connect to the Gameface Player
 
@@ -120,8 +120,8 @@ Regardless of which option you chose above, the steps to start your local server
 
 Your local environment is now running smoothly inside the Gameface Player! Where you go next depends on which starter project you chose:
 
-* **If you chose Option A (The Blank Starter):** Move on to [Workflow Planning](../../workflow-planning).
+* **If you chose Option B (The Blank Starter):** Move on to [Workflow Planning](../../workflow-planning).
 We will discuss setting up your IDE, version control, and how to translate your mindset from UMG/Unity to web & Gameface technologies.
 
-* **If you chose Option B (The Gameface UI Library):** Jump right into [Prototyping and Developing (Gameface UI)](../../prototyping-and-developing). 
+* **If you chose Option A (The Gameface UI Library):** Jump right into [Prototyping and Developing (Gameface UI)](../../prototyping-and-developing). 
 We will explore the Gameface UI's file structure and show you how to rapidly prototype a view using the pre-made components.

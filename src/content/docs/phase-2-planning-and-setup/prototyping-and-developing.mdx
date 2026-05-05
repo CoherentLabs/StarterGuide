@@ -43,13 +43,13 @@ The boilerplate comes with a fully functioning `menu` view right out of the box 
     ```bash
     npm run dev
     ```
-    Your server is now running at `http://localhost:3000/menu`.
+    Your server is now running at `http://localhost:3000/menu/`.
 
 2. **Run the server in the player:** Locate the `Player.bat` file included in your Gameface package. Open the file in a text editor,
     scroll down until you see a similar command:
     
     ```bat 
-    start "Player" /d "%wd%" "..\Player\Player.exe" --player %*"
+    start "Player" /d "%wd%" "..\Player\Player.exe" --player
     ```
 
     and add the following parameter to the end of the line:
@@ -57,7 +57,7 @@ The boilerplate comes with a fully functioning `menu` view right out of the box 
     <Code 
         code={`start "Player" /d "%wd%" "..\Player\Player.exe" --player "--url=http://localhost:3000/menu"`}
         lang="bat"
-        ins={' "--url=http://localhost:3000/menu"'}
+        ins={' "--url=http://localhost:3000/menu/"'}
      />
 
 3. "Launch the Player:" Launch the `Player.bat` file and you should see a fully interactive menu screen rendered perfectly inside the game engine!
@@ -65,7 +65,7 @@ The boilerplate comes with a fully functioning `menu` view right out of the box 
 </Steps>
 
 <video autoplay loop muted>
-  <source src={menuPreviewVideo} type="video/mp4" />
+  <source src={menuPreviewVideo} type="video/webm" />
 </video>
 
 :::tip
@@ -243,7 +243,7 @@ Every time you save a file, the Player will instantly update with your changes w
 This allows for a super fast development iteration cycle, where you can see the impact of your code changes in real-time.
 
 <video autoplay loop muted>
-  <source src={hmrPreview} type="video/mp4" />
+  <source src={hmrPreview} type="video/webm" />
 </video>
 
 ### Alias imports
@@ -310,7 +310,7 @@ We have also integrated some of our own tools and libraries directly into the bo
 
 - <Link href='https://frontend-tools.coherent-labs.com/e2e/getting-started/'>The Gameface E2E</Link> testing library, which allows you to write end-to-end tests for your views using a simple and intuitive API.
 - <Link href="https://frontend-tools.coherent-labs.com/interaction-manager/getting-started/">The Interaction Manager library</Link>, which provides a powerful system for handling user navigation and input in your UI.
-- <Link>The Vite Gameface style transformer</Link>, a Vite plugin that transforms your inline styles to reusable CSS classes at build time to ensure optimal performance in Gameface.
+- <Link href="./">The Vite Gameface style transformer</Link>, a Vite plugin that transforms your inline styles to reusable CSS classes at build time to ensure optimal performance in Gameface.
 
 ## Next Steps
 

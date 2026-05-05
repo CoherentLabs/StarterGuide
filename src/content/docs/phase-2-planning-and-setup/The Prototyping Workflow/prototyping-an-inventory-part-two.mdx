@@ -318,7 +318,7 @@ To finish off the inspector, add this single rule to your `Inventory.module.scss
 
 ##### Results
 
-With that the final column of our prototype has been finished! The final resul:
+With that the final column of our prototype has been finished! The final result:
 
 <img src={itemInspectorThree.src} style={{'max-width': '320px'}} />
 
@@ -361,7 +361,7 @@ We will use an `::after` pseudo-element and a CSS `clip-path` to draw the arrow 
 
 Next, we need to create an <Highlight>"active"</Highlight> state for our inventory slots so the player knows exactly which item they have selected. 
 
-Because the styles for the active states of both the `equipped items` and the `grid items` are almost identical, we can laverage <Highlight>SCSS `@mixin`</Highlight>.
+Because the styles for the active states of both the `equipped items` and the `grid items` are almost identical, we can leverage <Highlight>SCSS `@mixin`</Highlight>.
 
 Think of a `mixin` as a reusable function for your CSS. Instead of copying and pasting the same block of styles across different classes, you define the rules once in a `mixin` and `@include` 
 them wherever needed. You can even pass arguments to them to handle minor variations!
