@@ -1,0 +1,17 @@
+---
+title: "Importing Fonts & Styling Text"
+description: Coming soon!
+sidebar:
+    order: 1
+draft: true
+---
+
+Getting your custom fonts into Gameface is straightforward, but the engine handles global scopes and complex layouts differently than a standard browser. This article covers how to load custom fonts, style them, and handle Right-to-Left (RTL) languages.
+
+## Topics
+
+* **Loading Custom Fonts (Global Scope):** * **How-to:** Provide a quick guide on using the standard `@font-face` declaration to load TrueType (`.ttf`) or OpenType (`.otf`) fonts. 
+    * **Concept:** Explain that in Gameface, fonts are global to the entire system. If you load a font in your Main Menu view, it stays in memory and can be used immediately in your HUD view without being re-downloaded or re-parsed.
+* **Text Effects & Outlines:** * **How-to:** Provide practical CSS snippets for styling game text. Show developers how to use standard CSS `text-shadow` to create crisp outlines, heavy drop shadows, and glowing text effects that are critical for HUD readability against complex 3D backgrounds.
+* **Handling RTL Languages:** * **How-to:** Briefly explain how to structure HTML for Right-to-Left languages (like Arabic or Hebrew) using standard attributes like `dir="rtl"`.
+    * **Concept:** Note that Gameface has built-in support for complex text shaping. Developers do not need to write custom JavaScript to reverse strings; the engine handles the correct glyph placement automatically.

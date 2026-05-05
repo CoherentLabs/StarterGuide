@@ -1,0 +1,27 @@
+---
+title: "DOM Size Management & Hiding Elements"
+description: Coming soon!
+sidebar:
+    order: 4
+draft: true
+---
+
+A massive DOM tree will severely impact your UI's initial load time and layout performance. This article covers advanced techniques for managing elements efficiently, grouping strategies by their ultimate optimization goal: from controlling visibility overhead to throttling tree mutations.
+
+## Topics
+
+* **Controlling Visibility: Hiding vs. Removing:**
+    * **Context:** Provide a definitive breakdown of the tradeoff between resting overhead and toggling cost.
+        * **CSS Hiding:** `opacity: 0` / `visibility: hidden` skip paint commands but remain in the layout tree and sync data-bindings. This has the highest resting overhead but is the cheapest to toggle on/off (no reflows). `display: none` detaches the element from the layout tree, but toggling it back causes an expensive layout reflow on worker threads.
+        * **Structural Removal:** Completely detaching nodes via `remove()` or Gameface's `data-bind-if` eliminates all resting overhead, but has the highest possible toggling cost, as attaching/detaching elements happens on the main game thread.
+* **Deferred & Partial Rendering (Initial Load Optimizations):**
+    * **Context:** Teach developers how to avoid loading a massive DOM tree all at once during startup.
+        * **Async Component Loading:** Use async imports and dynamic loading so heavy DOM branches (like a massive Skill Tree screen) only exist in memory when the player actually opens them.
+        * **The `<template>` Tag Hack:** Place non-immediate content (like secondary menus) inside a `<template>` tag. This parses the nodes instantly without rendering them into the active layout, saving precious CPU time during the game's initial startup sequence.
+* **Handling Massive Data & Spikes (Memory Management):**
+    * **Context:** How to keep the total active node count low during heavy gameplay.
+        * **DOM Node Pooling (Recycling):** Instead of constantly running `document.createElement()` and `element.remove()` for temporary UI (like floating damage numbers), create a "pool" of 20 invisible DOM nodes on startup. Grab a node, animate it, and return it to the pool to prevent massive garbage collection spikes.
+        * **Virtual Lists:** Cross-reference `engine.createVirtualList()` from Phase 4. Emphasize the golden rule: for a 10,000-item inventory, never render 10,000 DOM nodes.
+* **Rate-Limiting DOM Mutations (CPU Optimization):**
+    * **Context:** How to keep the DOM tree quiet to save CPU cycles.
+        * **Throttling Updates:** For rapidly changing data (like a DPS meter, a tachometer, or a ticking timer), developers shouldn't update the DOM text node on every single frame. Throttling the update to every 50ms or 100ms reduces tree mutations dramatically without the player ever noticing a visual difference.

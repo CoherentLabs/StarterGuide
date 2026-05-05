@@ -1,0 +1,20 @@
+---
+title: "Advanced UI Shapes: 9-Slice, Clipping, and Masking"
+description: Coming soon!
+sidebar:
+    order: 3
+draft: true
+---
+
+Game UIs require dynamic panels and non-standard shapes. Instead of relying on massive, hardcoded transparent PNGs for every single window size, developers can use 9-slice scaling, clipping, and masking to create flexible, high-performance UI elements.
+
+## Topics
+
+* **9-Slice Scaling with `border-image`:** * **Concept:** Explain the concept of 9-slice scaling: taking a small UI frame asset and slicing it into 9 quadrants so the corners stay crisp while the middle edges stretch to fit dynamic content (like a tooltip or a resizing dialog box).
+    * **How-to:** Show developers how to achieve this using the standard CSS `border-image` properties (`border-image-source`, `border-image-slice`, and `border-image-repeat`). 
+    **Use the playground example as showcase**.
+* **Hard Cuts with CSS `clip-path`:** * **Concept:** Explain that `clip-path` is highly performant and creates rigid, vector-based cutouts of an HTML element. 
+    * **How-to:** Showcase how to use `clip-path: polygon(...)` to carve out non-rectangular game UI elements. Provide practical snippet examples for cutting out hexagonal skill tree nodes or slanted, sci-fi health bars.
+* **Soft Blending with CSS `mask-image`:** * **Concept:** Explain how `mask-image` uses alpha channels to dictate transparency, allowing for soft edges and fading effects that `clip-path` cannot achieve.
+    * **How-to:** Demonstrate how to use a CSS radial gradient (or an external image) as an alpha mask to feather the edges of a minimap or smoothly fade a 3D character portrait into the HUD background.
+    * Or directly use the playground example as showcase.

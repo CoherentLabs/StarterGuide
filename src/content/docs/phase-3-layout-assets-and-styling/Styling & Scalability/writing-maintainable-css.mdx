@@ -1,0 +1,177 @@
+---
+title: "Writing Maintainable & High-Performance CSS"
+description: Coming soon!
+sidebar:
+    order: 1
+draft: true
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+
+## Topics 
+
+- **The Cost of Complex Selectors**: Briefly explain why deep, hierarchical CSS selectors are expensive to match in a game engine and can cause performance drops.
+
+- **The BEM Methodology**: Introduce BEM as a solution for keeping selectors flat, promoting style isolation, and reducing CSS conflicts.
+    - Provide examples of before and after refactoring to BEM, showing how it improves readability and maintainability.
+
+- **Leveraging SASS**: Discuss using a preprocessor like SASS to maintain consistency. 
+Cover how to use variables for standardizing UI colors and typography, and mixins for easily reusing common layout patterns without bloating the compiled CSS.
+    - Refactor said BEM example with SASS
+
+- **Alternative Approaches**: Briefly mention CSS modules or CSS-in-JS as modern alternatives for scoping styles, noting their pros and cons within the Gameface environment.
+    - Examples here as well
+
+import Link from '../../../../components/Link.astro';
+
+<Summary>
+    Writing CSS for a game engine requires a different mindset than standard web development. Because UI rendering shares resources with the game loop, unoptimized styles can quickly lead to frame drops and performance bottlenecks.
+
+    This guide covers how to optimize your CSS architecture for Gameface. We will explore the performance costs of complex selectors, how to use the <Highlight>BEM methodology</Highlight> and <Highlight>SASS</Highlight> to keep styles flat, and the pros and cons of modern alternatives like CSS Modules.
+</Summary>
+
+:::note[Author's Note]
+Because no engine-specific documentation was provided for this section, the following architectural guidelines are based on standard frontend performance best practices, rigorously adapted to fit known Gameface UI execution and styling constraints.
+:::
+
+## The Cost of Complex Selectors
+
+In web rendering engines, CSS selectors are evaluated **from right to left**. When the engine encounters a deeply nested selector, it must first find the target element (the rightmost selector) and then traverse all the way up the DOM tree to verify its parent lineage.
+
+Consider a hierarchical selector like this:
+
+```css
+/* The engine finds all 'a' tags being hovered, then checks if they are inside 'li', then 'ul', etc. */
+.main-menu .settings-panel ul li a:hover {
+    color: red;
+}
+```
+
+To apply this style, the engine finds every anchor tag in the document when hovered, checks if it is inside a list item, checks if that list item is in an unordered list, checks if that list is inside `.settings-panel`, and finally checks if it is inside `.main-menu`. 
+
+In a game engine environment, style recalculations happen frequently. Forcing the engine to constantly parse deep, complex selector chains for hundreds of UI elements will spike the CPU usage and cause noticeable frame drops. To maximize performance, **CSS selectors should be as flat as possible.**
+
+## The BEM Methodology
+
+To solve the problem of complex selectors while maintaining a clean codebase, we recommend using **BEM (Block, Element, Modifier)**. BEM is a naming convention that keeps your selectors incredibly flat—usually just a single class deep—while naturally preventing CSS conflicts through strict scoping.
+
+* **Block:** The standalone entity that is meaningful on its own (e.g., `button`, `menu`).
+* **Element:** A part of a block that has no standalone meaning and is semantically tied to its block (e.g., `menu__item`).
+* **Modifier:** A flag on a block or element used to change appearance or behavior (e.g., `button--disabled`).
+
+### Before vs. After BEM
+
+Here is how a standard, deeply nested CSS structure compares to a flat BEM structure:
+
+**Before (Deeply Nested & Expensive):**
+```css title="menu.css"
+/* Requires multiple node traversals during style recalculation */
+.nav-menu { background: #333; }
+.nav-menu ul { list-style: none; }
+.nav-menu ul li { padding: 10px; }
+.nav-menu ul li a { color: white; }
+.nav-menu ul li a.active { font-weight: bold; }
+```
+
+**After (BEM - Flat & Performant):**
+```css title="menu.css"
+/* Engine immediately identifies the target node without traversing parents */
+.nav-menu { background: #333; }
+.nav-menu__list { list-style: none; }
+.nav-menu__item { padding: 10px; }
+.nav-menu__link { color: white; }
+.nav-menu__link--active { font-weight: bold; }
+```
+
+By refactoring to BEM, the engine only needs to check for a single class name (`.nav-menu__link--active`) rather than traversing four levels of DOM nodes. This drastically reduces the time spent matching CSS rules.
+
+## Leveraging SASS
+
+While BEM is fantastic for performance, writing out long class names manually can become tedious. This is where a CSS preprocessor like **SASS** becomes invaluable. 
+
+SASS allows you to use the parent selector (`&`) to generate BEM class names dynamically, keeping your stylesheets clean and organized. Furthermore, SASS provides **variables** to standardize your UI colors and typography, and **mixins** to reuse layout patterns across different views without bloating the compiled CSS.
+
+### Refactoring BEM with SASS
+
+Let's rewrite the previous BEM example using SASS to see how it improves the developer experience:
+
+```scss title="menu.scss"
+// 1. Define Variables for UI consistency
+$bg-color: #333;
+$text-color: white;
+$spacing-md: 10px;
+
+// 2. Create a Mixin for common layout patterns
+@mixin flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+// 3. Use the parent selector (&) to dynamically compile flat BEM classes
+.nav-menu {
+    background: $bg-color;
+    
+    // Compiles to .nav-menu__list
+    &__list {
+        list-style: none;
+        @include flex-center;
+    }
+
+    // Compiles to .nav-menu__item
+    &__item {
+        padding: $spacing-md;
+    }
+
+    // Compiles to .nav-menu__link
+    &__link {
+        color: $text-color;
+
+        // Compiles to .nav-menu__link--active
+        &--active {
+            font-weight: bold;
+        }
+    }
+}
+```
+
+:::tip[SASS Compilation]
+Gameface's Vite boilerplate automatically compiles SASS/SCSS into highly optimized, flat CSS at build time. You get all the developer experience benefits without passing any runtime parsing overhead to the game engine.
+:::
+
+## Alternative Approaches
+
+If you prefer modern component-based styling over global BEM classes, there are two primary alternatives commonly used in frontend development. Here is how they stack up within the Gameface environment:
+
+### CSS Modules
+
+CSS Modules automatically generate unique class names for your styles at build time (e.g., `.button` becomes `_button_1x89f_1`). 
+
+* **Pros:** Excellent style isolation out of the box. Selectors remain completely flat, making them highly performant for Gameface. This is fully supported by the Vite boilerplate (just name your file `[name].module.css`).
+* **Cons:** You lose some of the global pattern reusability that SASS mixins provide natively, requiring you to structure your components carefully.
+
+```tsx title="Button.tsx"
+// Importing the CSS Module maps the local class name to the hashed build name
+import styles from './Button.module.css';
+
+const Button = () => {
+    // Renders as a flat selector: <button class="_btn_8fz2_1">
+    return <button class={styles.btn}>Click Me</button>; 
+};
+```
+
+### CSS-in-JS
+
+Libraries like Styled Components or Emotion allow you to write CSS directly inside your JavaScript files.
+
+* **Pros:** Complete encapsulation and dynamic styling based on component state.
+* **Cons:** Standard CSS-in-JS libraries add significant runtime overhead because they parse and inject CSS via JavaScript on the fly. Since JavaScript execution shares resources heavily in Gameface, this can cause severe layout thrashing and frame drops during gameplay.
+
+:::danger[Avoid Runtime CSS-in-JS]
+If you choose to use CSS-in-JS, strictly use **zero-runtime** libraries (like Vanilla Extract or Linaria) that extract styles to static `.css` files during the build step. Never parse CSS at runtime within the engine.
+:::
+
+## Next Steps
+
+Now that your CSS architecture is flat, maintainable, and optimized for the engine, it is time to ensure your views look flawless on any screen size. Move on to [Building Scalable & Responsive Game UIs](../building-scalable-and-responsive-game-uis/) to learn how to dynamically scale layouts and typography across different resolutions.

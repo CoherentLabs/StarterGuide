@@ -1,0 +1,28 @@
+---
+title: "Layout Performance & Flexbox"
+description: Coming soon!
+sidebar:
+    order: 1
+draft: true
+---
+
+In this article, we will dive into how Gameface physically calculates layouts and how you can optimize your CSS to maintain a smooth 60 FPS. 
+We will cover the engine's Flexbox-driven foundation, common layout pitfalls that cause performance drops, 
+and exact strategies—like managing animations and cross-axis stretching—to keep your UI running flawlessly.
+
+## Topics
+
+* **The Flexbox Foundation:**
+    * **Context:** Explain that Gameface's layout engine is built entirely around Flexbox. 
+    Explicitly state that `display: grid` is not supported. Other standard web display types (like `block`) are internally simulated using flex properties. 
+* **Transforms vs. Full Layouts:**
+    * **Context:** Explain the engine's layout phases. If you animate an element's `width`, `height`, or `margin`, it triggers a heavy "Full Layout Solve" (recalculating the whole grid). 
+    If you animate its `transform`, Gameface skips the full solve and runs a much lighter update phase, saving massive amounts of CPU time.
+* **The Layout Performance Cliff:**
+    * **Context:** Explain that the engine calculates layouts exponentially based on the depth of the DOM tree. 
+    The worst-case performance cliff happens when you have a deep DOM tree where multiple children lack defined `flex-basis`, can wrap (`flex-wrap: wrap`), 
+    and stretch on the cross-axis (`align-items: stretch`). This forces the engine to traverse the tree up and down multiple times to distribute space.
+* **How to Optimize Layouts:**
+    * **Context:** Give developers the exact fixes to eliminate recursive layout calls:
+        1. **Define dimensions:** Always define a `flex-basis` or strict width/height on elements to eliminate expensive measurement calculations.
+        2. **Limit Stretching:** Use `align-items: stretch` sparingly, as it forces the engine to recalculate the cross-axis multiple times.

@@ -5,9 +5,9 @@ sidebar:
   order: 2
 ---
 
-import Summary from '../../../../components/Summary.astro';
-import Highlight from '../../../../components/Highlight.astro';
-import Link from '../../../../components/Link.astro';
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import Link from 'coherent-docs-theme/components/Link.astro';
 import { Steps, FileTree } from '@astrojs/starlight/components';
 import leftColumnPreviewVideo from '../../../../assets/phase-2/the-prototyping-workflow/inventory-left-column-preview.webm'
 
@@ -246,7 +246,7 @@ import styles from './Inventory.module.scss';
 
 const Inventory = () => {
     return (
-        <Row>
+        <Row style={{height: '100%'}}>
             <Column.Two></Column.Two>
             <Column.Six></Column.Six>
             <Column.Four></Column.Four>
@@ -261,7 +261,7 @@ export default Inventory;
 You can add the `.test-border` class we created earlier directly to the `Column` components to see the layout structure visually as you build it out.
 
 ```tsx title='Inventory.tsx' ins="class="test-border""
-<Row>
+<Row style={{height: '100%'}}>
     <Column.Two class="test-border"></Column.Two>
     <Column.Six class="test-border"></Column.Six>
     <Column.Four class="test-border"></Column.Four>
@@ -287,7 +287,7 @@ To set up simple routing in Gameface UI, we use the `<Tabs>` component as a mast
     const Inventory = () => {
         return (
     +        <Tabs default="inventory">
-                <Row>
+                <Row style={{height: '100%'}}>
                     <Column.Two></Column.Two>
                     <Column.Six></Column.Six>
                     <Column.Four></Column.Four>
@@ -309,7 +309,7 @@ To set up simple routing in Gameface UI, we use the `<Tabs>` component as a mast
     const Inventory = () => {
         return (
             <Tabs default="inventory">
-                <Row>
+                <Row style={{height: '100%'}}>
                     <Column.Two></Column.Two>
     +                <Tab location="inventory">
                         <Column.Six></Column.Six>

@@ -1,0 +1,19 @@
+---
+title: "Gameface CSS: Simple Layout & Opacity"
+description: Coming soon!
+sidebar:
+    order: 3
+draft: true
+---
+
+Standard CSS rendering algorithms are heavy. For raw performance, Coherent provides custom CSS properties that bypass the standard web rules to save CPU and GPU memory.
+
+## Topics
+
+* **Simple Layout (`display: simple`):**
+    * **Context:** Introduce the proprietary `display: simple` mode. Explain that applying this to the `<body>` bypasses complex layout algorithms. 
+    * **When to use:** Explain it is perfect for absolute-positioned UI elements like floating nameplates or HUDs. Note that you can still use `display: flex` on child sub-trees if needed.
+    * **Example:** Provide a quick HTML/CSS snippet showing `<body>` set to simple, and a child HUD element absolutely positioned.
+* **Simple Opacity (`coh-simple-opacity`):**
+    * **Context:** Explain that standard opacity forces the engine to render the element to a separate temporary GPU texture. 
+    * **When to use:** Show how using `coh-simple-opacity: on` blends the child colors together directly without allocating extra GPU memory. Include an example CSS snippet.

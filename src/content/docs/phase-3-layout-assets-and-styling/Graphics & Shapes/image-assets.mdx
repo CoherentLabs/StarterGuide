@@ -1,0 +1,18 @@
+---
+title: "Image Assets: SVGs vs. Rasters"
+description: Coming soon!
+sidebar:
+    order: 1
+draft: true
+---
+
+Choosing the right image format drastically impacts both the look and the performance of your UI. This article covers when to use SVGs versus raster images, and the performance implications of how you load them.
+
+## Topics
+
+* **SVGs vs. Raster Images:** * **Concept:** Share best practices on when to use each format. Recommend SVGs for scalable, crisp UI elements (like vector icons, simple logos, and flat HUD borders). 
+    * **Gotcha:** Explain that raster images (PNGs) are preferred for high-fidelity art (like character portraits or painted backgrounds) where SVG path calculations would be too heavy.
+* **How to Include SVGs (Inline vs. External):** **How-to (External):** Explain that linking SVGs externally (via an `<img>` tag or CSS `background-image`) is the best practice for static assets that don't change.
+    * **How-to (Inline):** Detail that injecting raw `<svg>` code directly into the HTML DOM is necessary *only* when you need dynamic control (which will be covered in the next article).
+    * **Gotcha:** Warn developers about DOM bloat. Injecting massive, complex inline SVGs directly into the HTML increases the DOM tree size, which can slow down traversal and layout calculations.
+* **Gameface SVG Support:** * **Concept:** Cover the most important remark regarding current SVG support but provide link to the official Gameface documentation regarding SVG support limitations so developers can quickly check supported tags.

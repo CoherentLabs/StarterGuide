@@ -1,0 +1,20 @@
+---
+title: "Sprite Sheet Animations: Building High-Performance VFX"
+description: Coming soon!
+sidebar:
+    order: 7
+draft: true
+---
+
+When you need highly complex, non-vector visual effects—like magical particle glows, explosions, or 3D item rotations—sprite sheets are the ultimate performance solution. This guide walks through how to build a production-ready VFX animation from scratch.
+
+## Topics
+
+* **The Core Concept (Why Sprite Sheets?):** * **Concept:** Explain that instead of animating dozens of heavy DOM elements or loading massive GIFs (which tank memory), a sprite sheet loads a single image grid. You animate it by rapidly shifting the `background-position` of a container element.
+    * **The Secret Sauce:** Briefly explain how the CSS `steps()` timing function works. Unlike `ease` or `linear`, `steps()` creates hard, instant cuts between keyframes, creating the illusion of a framerate.
+* **Mini-Guide: Teardown of a Real UI Animation:** * *Author's Note: Use our existing high-quality internal animation (e.g., the spinning ability with the cross in the middle and background particles) 
+for this step-by-step walkthrough.*
+    * **Step 1: The Assets:** Show the actual sprite sheets. Explain the dimensions (e.g., "This is a 10-frame animation, the total image is 1000x100px, meaning each frame is exactly 100x100px").
+    * **Step 2: The HTML/CSS Setup:** Show how to size the UI container to perfectly fit exactly *one* frame of the sprite sheet so the rest is hidden.
+    * **Step 3: The Keyframes:** Provide the exact CSS `@keyframes` block used in the example, showing how the `background-position` shifts by the exact width of the entire sheet.
+    * **Step 4: The Trigger:** Show how this animation is triggered in the game (e.g., adding an `.is-active` class via JavaScript when a player clicks a button).

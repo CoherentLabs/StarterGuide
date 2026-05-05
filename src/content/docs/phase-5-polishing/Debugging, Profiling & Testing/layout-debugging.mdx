@@ -1,0 +1,18 @@
+---
+title: "Layout Debugging: Computed Styles & Immediate Layout"
+description: Coming soon!
+sidebar:
+    order: 4
+draft: true
+---
+
+To maximize performance, Gameface delays and batches heavy page layouts. This creates specific quirks when trying to read CSS values via JavaScript.
+
+## Topics
+
+* **The `getComputedStyle` Gotcha:**
+    * **Context:** Explain that `window.getComputedStyle()` is not available immediately on load. Because Gameface delays layout, developers must wrap these calls in a 2-3 frame `requestAnimationFrame` loop to safely read computed widths or positions. Provide the standard recursive `rAF` snippet used to safely fetch this data.
+* **Forcing Immediate Layouts:**
+    * **Context:** If a 3rd-party library relies on synchronous DOM updates and breaks because of this delay, developers can override the engine.
+    * **How-to:** Explain `engine.enableImmediateLayout`, which forces synchronous layout calculations on getters. 
+    * **Warning:** Heavily warn that this destroys performance and should be used strictly as a debugging tool or a last resort.

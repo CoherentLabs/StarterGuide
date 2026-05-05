@@ -1,0 +1,24 @@
+---
+title: "Text Rendering & Font Optimization"
+description: Coming soon!
+sidebar:
+    order: 2
+draft: true
+---
+
+Rendering text is surprisingly expensive. From finding the right font size to wrapping words, text layout calculations can easily become a bottleneck if not configured correctly.
+
+## Topics
+
+* **How Text Layout Works (The Cache):**
+    * **Context:** Explain that Gameface caches text layouts to save performance. If the text string, box size, and styles haven't changed, the engine reuses the cache.
+* **The Cost of `coh-font-fit-mode`:**
+    * **Context:** Warn developers that the `font-fit` algorithm does a linear search, repeatedly laying out the text frame by frame, incrementing/decrementing the size until it fits. 
+    * **Gotcha:** If the default font size is `16px` but the best fit is `72px`, the engine will do 57 full layouts just to fit that one word. Instruct developers to *always* set a base `font-size` as close to the target fit as possible to minimize these iterations.
+* **Expensive Text CSS Properties:**
+    * **Context:** Provide a list of text properties that tank performance:
+        * `overflow-wrap: anywhere` is heavily unoptimized compared to `normal`, as it forces character-by-character evaluation.
+        * `text-overflow: ellipsis` forces similar heavy character evaluation to find exactly where to cut the word.
+        * `text-align: justify` is much slower than left/right alignment because it must manually distribute remaining space between words.
+* **Complex vs. Simple Text:**
+    * **Context:** Briefly note that triggering "Complex Text" (which requires heavy text shaping, RTL direction splits, and whitespace patching) is inherently slower than simple, left-to-right text.

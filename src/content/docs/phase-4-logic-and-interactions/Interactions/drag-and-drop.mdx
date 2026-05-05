@@ -1,0 +1,20 @@
+---
+title: "Drag & Drop: Mouse vs. Gamepad"
+description: Coming soon!
+sidebar:
+    order: 4
+draft: true
+---
+
+Drag-and-drop is a staple of game inventories. However, handling this mechanic requires a completely different UX approach depending on whether the player is using a mouse or a gamepad.
+
+## Topics
+
+* **The Native Gotcha:** * **Context:** Explicitly state that HTML5 native Drag and Drop (`draggable="true"`, `ondragstart`) is a dead end in Gameface. Developers must build custom absolute-positioning logic.
+* **Mouse DnD (IM Integration):** * **Context:** For PC players, this is standard "click, hold, drag, release". 
+    * **How-to:** Show how to use the Interaction Manager's `Draggable` and `Dropzone` modules. Explain how IM handles the heavy lifting of mouse-tracking and hit-testing the drop zones automatically.
+* **Gamepad DnD (The 2-Step Process):** * **Context:** A gamepad user cannot "click and drag". 
+    * **How-to:** Detail the UX breakdown. Step 1: Press 'A' to "pick up" (visibly attach the item to the focused element). Step 2: Use Spatial Navigation to move focus to a new inventory slot. Step 3: Press 'A' to execute the drop. Show how to swap IM modules dynamically to achieve this seamless input hybrid. 
+    :::tip[For future me]
+    We can use the tetris UI for the gamepad dnd example.
+    :::

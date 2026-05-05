@@ -1,0 +1,20 @@
+---
+title: "Observable Models & Virtual Lists"
+description: Coming soon!
+sidebar:
+    order: 4
+draft: true
+---
+
+Handling active UI states and massive arrays requires specialized data structures. Observable models automate your update loops, while Virtual Lists save your DOM from crashing.
+
+## Topics
+
+* **Observable Models:** * **Concept:** Introduce observable models (`engine.createObservableModel`) as smart objects that track their own properties and automatically push updates.
+    * **Tutorial:** Show a character selection screen scenario. Demonstrate how updating `activeState.selectedPlayer` automatically refreshes the UI without manual sync calls. Show how to link this observable to the main game model using `engine.addSynchronizationDependency` so they stay locked together.
+* **Virtual Lists (Massive Inventories):** * **Concept:** Explain that generating 1,000 DOM nodes for a massive scoreboard will tank memory. 
+    * **Tutorial:** Show how to use `engine.createVirtualList()` paired with `data-bind-for`. Walk through building a "pagination" UI that renders only 5 items at a time while scrolling through a 100-item array.
+
+:::tip[For future me]
+Use the playground for the Virtual list examples
+:::

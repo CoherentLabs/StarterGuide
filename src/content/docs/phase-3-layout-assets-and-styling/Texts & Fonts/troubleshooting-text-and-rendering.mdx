@@ -1,0 +1,16 @@
+---
+title: "Troubleshooting Text & Rendering Artifacts"
+description: Coming soon!
+sidebar:
+    order: 7
+draft: true
+---
+
+Rendering crisp, readable text at 60+ FPS requires specific optimizations. If your fonts look wrong or your performance is dipping when text updates, check these common engine gotchas.
+
+## Topics
+
+* **Fixing "Melted" Custom Fonts (SDF vs. Raster):** * **Concept:** Explain that Gameface uses single-channel SDF (Signed Distance Fields) by default for high performance, but this can cause sharp corners to round off or fine details to be lost on highly artistic fonts. 
+    * **How-to:** If a font looks mushy, show developers how to add `coh-font-sdf: off;` to their `@font-face` declaration to force standard, pixel-perfect rasterization.
+* **Avoiding Expensive Text CSS (Gotchas):** * **Gotcha:** Provide a quick, actionable list of standard web CSS properties to avoid for text layouts. Explain that `text-overflow: ellipsis` and `overflow-wrap: anywhere` trigger heavy character-by-character calculations. 
+    * **Gotcha:** Warn that `text-align: justify` is heavily unoptimized compared to standard `left` or `center` alignment, and should be avoided in game UIs to maintain high FPS.

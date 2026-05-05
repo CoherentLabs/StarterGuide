@@ -1,0 +1,19 @@
+---
+title: "SVG UI Tricks: ViewBox, Strokes, and Fills"
+description: Coming soon!
+sidebar:
+    order: 2
+draft: true
+---
+
+Inline SVGs are incredibly powerful for interactive game UIs. By manipulating standard SVG properties with CSS and JavaScript, you can create dynamic minimaps, animated skill trees, and endless asset variations.
+
+## Topics
+
+* **Generating Variations with Fills & Strokes:** * **How-to:** Show how keeping an SVG inline allows developers to use CSS to dynamically change the `fill` and `stroke` properties. Provide a quick example of a single sword icon changing from a gray "disabled" state to a glowing gold "legendary" state just by toggling a CSS class, saving texture memory.
+* **Minimaps & Panning with `viewBox`:** * **Concept:** Explain how the `<svg viewBox="...">` attribute defines the visible coordinate system.
+    * **How-to:** Demonstrate how to manipulate the `viewBox` values via JavaScript to zoom in, zoom out, or pan across a massive vector map without physically scaling or moving the DOM element itself.
+* **Progress Bars & Connecting Lines (Stroke Dashing):** * **How-to:** Showcase one of the best vector UI tricks: using `stroke-dasharray` and `stroke-dashoffset`. Provide a brief snippet showing how to use these CSS properties to animate a connecting line between two nodes on a skill tree, or how to create a perfect circular health/progress bar that fills up smoothly.
+
+## Notes 
+We can directly use the playground examples as showcases if applicable.

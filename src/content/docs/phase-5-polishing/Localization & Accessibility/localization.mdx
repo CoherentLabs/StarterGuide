@@ -1,0 +1,23 @@
+---
+title: "Native Localization & Dynamic CSS"
+description: Coming soon!
+sidebar:
+    order: 1
+draft: true
+---
+
+Translating a game UI presents unique challenges. This article covers how Gameface handles translation natively without heavy JSON files, how to translate elements on the fly, and how to prevent text from breaking your layout.
+
+## Topics
+
+* **The Localization Mental Model:**
+    * **Context:** Gameface comes with its own native localization interface. Unlike standard web apps, the frontend does not load dictionary files; it simply requests strings directly from the game engine.
+* **The `data-l10n-id` Attribute:**
+    * **Context:** To localize HTML content, developers add a `data-l10n-id` attribute to an element. 
+    * **Gotcha:** Text translation removes all children from the element and replaces them with the translated string. If the key is not found, the contents remain unchanged, which is excellent for leaving default text in the HTML for debugging.
+* **Translation on the Fly (JS Frameworks & Inputs):**
+    * **Context:** Using `data-l10n-id` on `<input>` or `<textarea>` elements can cause data loss, and JS frameworks that heavily modify the DOM may conflict with the attribute.
+    * **How-to:** In these cases, developers should fetch the translation manually using `engine.translate("Key")` in JavaScript. To update the UI dynamically when the language changes, developers must call `engine.reloadLocalization()`.
+* **CSS Optimizations for L10n:**
+    * **Font Fitting:** A 4-letter English word can become a 15-letter German word. Show developers how to use the custom `coh-font-fit-mode` CSS property to safely auto-scale text so it always fits its container.
+    * **Custom Media Queries:** Sometimes auto-scaling isn't enough. Gameface allows custom media features enabled through the engine. Show how to use `@media (language: de)` combined with standard features like `(max-width: 300px)` to apply completely different CSS styles for specific localized edge cases.

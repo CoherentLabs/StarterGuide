@@ -1,0 +1,26 @@
+---
+title: "AnimeJS: Setup, Usage, and Gotchas"
+description: Coming soon!
+sidebar:
+    order: 6
+draft: true
+---
+
+AnimeJS is a lightweight, highly flexible JavaScript animation library. It serves as an excellent alternative to GSAP for teams looking to sequence UI animations with a smaller bundle size.
+
+## Topics
+
+* **Why Choose AnimeJS:** * **Concept:** Compare AnimeJS briefly to GSAP. Note that AnimeJS is often preferred for its smaller footprint and excellent built-in support for SVG path animations and staggering.
+* **Installation & Setup:** * **How-to:** Show how to import the AnimeJS library into a Gameface project.
+* **Basic Usage Example:** * **How-to:** Provide a minimal setup script demonstrating how to animate a property using the `anime({ ... })` configuration object.
+```js
+    anime({
+        targets: '.menu-item',
+        translateX: 250,
+        delay: anime.stagger(100), // Staggering is AnimeJS's superpower
+        duration: 800,
+        easing: 'easeInOutQuad'
+    });
+```
+
+* **Gameface Performance Gotchas:** * **Gotcha:** Just like GSAP, AnimeJS runs on the JavaScript thread. Warn developers to avoid using it for continuous, never-ending animations or basic state toggles, and to always prefer CSS transitions for those tasks to maintain optimal FPS.

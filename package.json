@@ -12,9 +12,10 @@
   "dependencies": {
     "@astrojs/starlight": "0.37.6",
     "astro": "5.17.1",
-    "coherent-docs-theme": "^1.0.6",
+    "coherent-docs-theme": "^1.0.7",
     "gray-matter": "^4.0.3",
-    "sharp": "^0.34.2"
+    "sharp": "^0.34.2",
+    "starlight-auto-sidebar": "^0.1.4"
   },
   "overrides": {
     "zod": "3.25.76",

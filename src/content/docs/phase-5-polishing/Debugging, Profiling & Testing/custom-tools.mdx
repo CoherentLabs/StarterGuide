@@ -1,0 +1,18 @@
+---
+title: "Custom Inspector Tools"
+description: Coming soon!
+sidebar:
+    order: 2
+draft: true
+---
+
+Gameface extends standard Chrome DevTools with proprietary panels built specifically to debug the engine's rendering pipeline and declarative data-bindings.
+
+## Topics
+
+* **The Cohtml Panel:**
+    * **Context:** Introduce the custom "Cohtml" panel added to the DevTools.
+    * **Visual Debugging:** Show how to toggle "Paint Flashing" (highlights dirty regions updating every frame) and "Redraw Flashing" (highlights elements being repainted). This is the fastest way to visually spot UI elements that are wasting GPU cycles by animating incorrectly.
+    * **Rendering Metadata:** Mention the "Emit Rendering Metadata" toggle, which links specific DOM elements to GPU draw calls for advanced debugging in tools like RenderDoc.
+* **Advanced Data-Binding Debugging:**
+    * **Context:** Building on the introduction from Phase 1, show how to use the Data-Binding panel for hardcore debugging. Explain how to track down exactly which DOM nodes are subscribed to a massive observable model, and how to artificially mutate backend state to test UI edge cases without needing to play through the actual game.

@@ -1,0 +1,27 @@
+---
+title: "Lottie Animations: Setup, Usage, and Gotchas"
+description: Coming soon!
+sidebar:
+    order: 4
+draft: true
+---
+
+Gameface natively supports Lottie, allowing you to export complex, high-fidelity vector animations directly from Adobe After Effects into your game UI. Here is how to install and optimize the Lottie player.
+
+## Topics
+
+* **What is Lottie:** * **Concept:** Explain that Lottie uses a JSON file exported from After Effects (via the Bodymovin plugin) to render complex animations. It is the industry standard for UI motion graphics.
+* **Installation & Setup:** * **How-to:** Show developers how to include the `lottie-web` player library in their Gameface project (either via NPM in their Vite stack or as a direct `<script>` tag).
+* **Basic Usage Example:** * **How-to:** Provide the minimal JavaScript initialization code required to load and play a Lottie JSON file on a DOM element.
+```js
+    lottie.loadAnimation({
+        container: document.getElementById('lottie-container'),
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        path: 'assets/animations/level-up.json'
+    });
+```
+
+* **Gameface Lottie Gotchas:** * **Gotcha:** Warn developers to use the `svg` renderer, as it is highly optimized. 
+    * **Gotcha:** Explicitly warn against embedding heavy rasterized images (PNGs/JPEGs) inside the After Effects composition before exporting the Lottie JSON. Lottie shines with pure vector paths; embedding heavy rasters inside the JSON creates massive memory bottlenecks in the engine.
