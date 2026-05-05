@@ -3,12 +3,7 @@ title: "Managing Variables: CSS Custom Properties vs. SCSS"
 description: "Learn how to manage design tokens efficiently by understanding the performance costs of native CSS variables and the benefits of SCSS preprocessing."
 sidebar:
     order: 2
-draft: true
 ---
-
-:::note[To do]
-Research whether there is real performance hit when declaring and updateing CSS variables in the root element and what makes CSS variables slow in general in gameface..
-:::
 
 import Summary from 'coherent-docs-theme/components/Summary.astro';
 import Highlight from 'coherent-docs-theme/components/Highlight.astro';
@@ -45,8 +40,9 @@ Here is what a standard web-first implementation looks like:
 }
 ```
 
+Then, updating the variable with JavaScript is as simple as:
+
 ```javascript title="theme-manager.js"
-// Updating the global root variable via JavaScript
 const root = document.documentElement;
 
 function updateThemeColor(newColor) {
@@ -54,14 +50,26 @@ function updateThemeColor(newColor) {
 }
 ```
 
+Or by toggling CSS classes that switch between different variable values:
+
+```css title="theme-toggle.css"
+.light-theme {
+    --primary-color: #e62e3a;
+}
+```
+
 While this looks clean, it is highly dangerous in a game environment **when updated frequently**. 
 
-Native CSS variables are resolved at **runtime**. Because the variable is attached to the `:root` element, the CSS engine assumes that every single element on the page might rely on it. Whenever you update a `:root` variable via JavaScript, you force the engine to traverse the entire Document Object Model (DOM) and recalculate the styles for every single element, regardless of whether they actually use the variable or not.
+Native CSS variables are resolved at **runtime**. Because the variable is attached to the `:root` element, the CSS engine assumes that every single element on the page might rely on it. 
+Whenever you update a `:root` variable, you force the engine to traverse the entire Document Object Model (DOM) and recalculate the styles for every single element, 
+regardless of whether they actually use the variable or not.
 
 :::danger[The Global Recalculation Penalty]
-Updating a `:root` variable forces a <Highlight>global style recalculation</Highlight>. 
-If you have a complex UI with hundreds of nodes and you update a global variable every frame (such as tying a UI color to a player's dropping health), 
-you will cause severe layout thrashing and massive FPS drops.
+Updating a `:root` variable can trigger a massive <Highlight>global style recalculation</Highlight>. To be highly precise, the variable isn't inherently slow just because of where it is defined. The true performance bottleneck is determined by **how many elements actually reference that variable**. 
+
+If a root variable is only used by three specific buttons, updating it is relatively fast. However, if a global variable is applied to thousands of UI nodes, changing it forces the engine to recalculate the layout and paint for every single one of those nodes simultaneously. 
+
+**Crucially, it does not matter how you trigger the update.** Whether you use JavaScript (`setProperty`) or toggle a CSS class on the root element, changing a variable that thousands of nodes rely on will cause severe layout thrashing and destroy your frame rate. For high-frequency updates, always scope your variables as tightly as possible.
 :::
 
 :::caution[Unsupported Features]
@@ -254,4 +262,6 @@ This hybrid approach requires careful architectural planning. You lose the conve
 
 ## Next Steps
 
-With your styling architecture and design tokens firmly in place, the next crucial step in building a cohesive game UI is handling typography. Proceed to the [Importing Fonts & Styling Text](../importing-fonts-and-styling-text/) article to learn how to properly load custom game fonts and optimize your text rendering for maximum legibility and performance.
+With your styling architecture and design tokens firmly in place, the next crucial step in building a cohesive game UI is handling typography. 
+
+Proceed to the [Importing Fonts & Styling Text](/phase-3-layout-assets-and-styling/texts--fonts/importing-fonts-and-styling-text/) article to learn how to properly load custom game fonts and optimize your text rendering for maximum legibility and performance.
