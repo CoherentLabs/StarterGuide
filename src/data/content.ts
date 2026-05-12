@@ -21,13 +21,13 @@ export const content = [
   { 
     heading: 'Phase 4: Logic & Interactions', 
     desc: "Bridge the gap between static designs and dynamic interfaces. Learn how to mock game data, bind UI state, and manage complex user inputs like gamepad and spatial navigation.", 
-    link: '/phase-4-logic-and-interactions/mocking-data',
+    link: '/phase-4-logic-and-interactions/engine-communication--data-mocking/engine-communication/',
     current: false,
   },
   { 
     heading: 'Phase 5: Polishing', 
     desc: "The final steps to make your UI production-ready. Master native localization, accessibility features, and deep performance profiling while utilizing Gameface-exclusive rendering effects.", 
-    link: '/phase-5-polishing/accessibility',
+    link: '/phase-5-polishing/css--dom-optimization/layout-performance/',
     current: false,
   },
 ];
