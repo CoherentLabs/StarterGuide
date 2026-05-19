@@ -1,20 +1,303 @@
 ---
 title: "Observable Models & Virtual Lists"
-description: Coming soon!
+description:
+    "Learn how observable models automate synchronization by tracking property changes, how synchronization dependencies keep linked models in
+    lockstep, and how virtual lists paginate large arrays without generating thousands of DOM nodes."
 sidebar:
     order: 4
 draft: true
 ---
 
-Handling active UI states and massive arrays requires specialized data structures. Observable models automate your update loops, while Virtual Lists save your DOM from crashing.
+import Summary from "coherent-docs-theme/components/Summary.astro";
+import Highlight from "coherent-docs-theme/components/Highlight.astro";
+import Link from "coherent-docs-theme/components/Link.astro";
+import virtualListVideo from "../../../../assets/phase-4/data-binding/virtual-list.webm";
 
-## Topics
+<Summary>
+    Automate interactive UI state tracking without manual dirty-checking using <Highlight>observable models</Highlight>. Keep these models in lockstep
+    with core game data updates via <Highlight>synchronization dependencies</Highlight> (<code>engine.addSynchronizationDependency</code>). Prevent
+    DOM bloat when rendering large arrays by restricting element generation to separate pages using <Highlight>virtual lists</Highlight>.
+</Summary>
 
-* **Observable Models:** * **Concept:** Introduce observable models (`engine.createObservableModel`) as smart objects that track their own properties and automatically push updates.
-    * **Tutorial:** Show a character selection screen scenario. Demonstrate how updating `activeState.selectedPlayer` automatically refreshes the UI without manual sync calls. Show how to link this observable to the main game model using `engine.addSynchronizationDependency` so they stay locked together.
-* **Virtual Lists (Massive Inventories):** * **Concept:** Explain that generating 1,000 DOM nodes for a massive scoreboard will tank memory. 
-    * **Tutorial:** Show how to use `engine.createVirtualList()` paired with `data-bind-for`. Walk through building a "pagination" UI that renders only 5 items at a time while scrolling through a 100-item array.
+Standard data-binding models created with `engine.createJSModel` are passive. When you modify their properties, the engine does not automatically
+detect the change. You must call `engine.updateWholeModel(modelName)` to flag the model as "dirty" before the next `engine.synchronizeModels()` cycle
+flushes the changes to the DOM.
 
-:::tip[For future me]
-Use the playground for the Virtual list examples
+While `synchronizeModels()` is typically called once per frame in your main update loop, calling `updateWholeModel` on a massive object (like a global
+inventory or game state) forces the C++ engine to scan the entire dataset for changes. For small UI states, this is unnecessary overhead. Observable
+models provide a specialized solution for active UI state.
+
+## Observable Models
+
+An <Highlight>observable model</Highlight> is a proxy object that monitors its own top-level properties. Assigning a new value to a property
+automatically flags the model as dirty. You bypass the `updateWholeModel` call entirely, reducing JavaScript boilerplate and avoiding expensive diff
+checks on large game models.
+
+Create one using `engine.createObservableModel`:
+
+```js title="observable-creation.js"
+engine.whenReady.then(() => {
+    engine.createObservableModel("activeState");
+
+    // This assignment automatically flags activeState as dirty
+    activeState.selectedHero = null;
+});
+```
+
+### Tracking Selection with an Index
+
+Consider a character selection screen. A list of heroes lives in a game model, and the UI displays the stats of the selected hero. A common pattern is
+to keep the active selection on the same passive model using an <Highlight>array index</Highlight>.
+
+```html title="selection-without-observable.html"
+<div class="hero-stats">
+    <span data-bind-value="{{HeroData.heroes}}[{{HeroData.selectedIndex}}].name"></span>
+    <span data-bind-value="{{HeroData.heroes}}[{{HeroData.selectedIndex}}].power"></span>
+</div>
+```
+
+```js title="selection-without-observable.js"
+engine.whenReady.then(() => {
+    engine.createJSModel("HeroData", {
+        heroes: [
+            { name: "Kira", role: "Scout", power: 82 },
+            { name: "Thane", role: "Guardian", power: 64 },
+        ],
+        selectedIndex: 0,
+    });
+    engine.synchronizeModels();
+
+    // Player selects the second hero
+    HeroData.selectedIndex = 1;
+    engine.updateWholeModel(HeroData); // Forces the engine to scan the entire HeroData object
+});
+```
+
+That pattern is straightforward to wire up, but it carries two costs in a live UI:
+
+1. **Binding evaluation:** The SDK cannot evaluate array-index expressions (`{{HeroData.heroes}}[{{HeroData.selectedIndex}}]`) directly in C++. It
+   falls back to JavaScript evaluation, adding execution overhead to every bound element on every frame.
+2. **Model updates:** Calling `updateWholeModel(HeroData)` forces the engine to diff the entire array when you only changed a single index integer.
+
+### Holding a Direct Reference
+
+Observable models fit this workflow well when you store a <Highlight>direct reference</Highlight> to the selected object in a separate lightweight
+model instead of tracking an index on the game data model.
+
+```html title="selection-with-observable.html"
+<div class="hero-stats">
+    <span data-bind-value="{{activeState.selectedHero.name}}"></span>
+    <span data-bind-value="{{activeState.selectedHero.power}}"></span>
+</div>
+```
+
+```js title="selection-with-observable.js" ins="createObservableModel"
+engine.whenReady.then(() => {
+    engine.createJSModel("HeroData", {
+        heroes: [
+            { name: "Kira", role: "Scout", power: 82 },
+            { name: "Thane", role: "Guardian", power: 64 },
+        ],
+    });
+
+    engine.createObservableModel("activeState");
+    activeState.selectedHero = HeroData.heroes[0];
+
+    engine.synchronizeModels();
+
+    // Player selects the second hero
+    activeState.selectedHero = HeroData.heroes[1];
+
+    // No updateWholeModel is needed here.
+    // The next global synchronizeModels() call will handle it.
+});
+```
+
+The binding expressions now reference properties directly (`{{activeState.selectedHero.name}}`). The SDK evaluates these simple property lookups
+directly in C++ with zero JavaScript overhead. Furthermore, changing the selection only flags the lightweight `activeState` model for an update,
+leaving the massive `HeroData` array untouched.
+
+:::note[Shallow Property Tracking]
+
+Observable models only track assignments to their own top-level properties. Mutating a nested property like `activeState.selectedHero.power = 100`
+will **not** trigger the automatic dirty flag. Only direct reassignments like `activeState.selectedHero = newObject` trigger it.
+
 :::
+
+### Keeping Referenced Data in Sync
+
+When `activeState.selectedHero` points at an object inside `HeroData`, both models can drift apart during synchronization. Observable models only
+auto-flag their own top-level property assignments. If game logic updates the hero through `HeroData` (for example, power increases mid-match) and you
+call `updateWholeModel(HeroData)`, bindings that read only through `HeroData` refresh. Bindings that read through `activeState.selectedHero` stay on
+the previous sync cycle for `activeState` until something interacts with `activeState` and it is pushed again.
+
+Use <Highlight>engine.addSynchronizationDependency(parent, dependent)</Highlight> to keep them aligned. When the parent model is pushed for an update,
+the engine pushes the dependent model in the same synchronization pass.
+
+```js title="sync-dependency.js" ins="addSynchronizationDependency"
+engine.whenReady.then(() => {
+    // ... HeroData and activeState setup ...
+
+    // Link activeState to HeroData updates
+    engine.addSynchronizationDependency(HeroData, activeState);
+
+    activeState.selectedHero = HeroData.heroes[1];
+    engine.synchronizeModels();
+
+    // Backend updates the hero's stats
+    HeroData.heroes[1].power = 99;
+
+    // This single call now updates the UI for both HeroData AND activeState
+    engine.updateWholeModel(HeroData);
+    engine.synchronizeModels();
+});
+```
+
+With the dependency established, the UI elements bound to `activeState.selectedHero.power` update instantly when the source array changes. If the
+dependency is no longer needed (for example, closing the inventory menu), remove it to save processing time:
+
+```js title="remove-dependency.js"
+engine.removeSynchronizationDependency(HeroData, activeState);
+```
+
+## Virtual Lists
+
+A standard `data-bind-for` expression generates one DOM subtree for every element in the bound array. This is acceptable for short lists, but massive
+datasets create a severe performance bottleneck. A 500-slot inventory or leaderboard generates hundreds of DOM nodes. The engine must allocate memory,
+calculate layout, and track bindings for every node regardless of how many are actually visible on screen.
+
+<Highlight>engine.createVirtualList()</Highlight> solves this DOM bloat by wrapping the array iteration in a sliding window. Instead of processing the
+entire array, the loop only generates elements within a defined range controlled by two properties:
+
+- **`startIndex`**: The array index where DOM generation begins (defaults to `0`).
+- **`pageSize`**: The maximum number of DOM elements to generate.
+
+To use a virtual list, you must change the standard `data-bind-for` syntax. Instead of iterating the raw array directly, you pass the array as an
+argument to the virtual list object exposed in your model.
+
+```html title="paginated-leaderboard.html" ins="BoardState.page({{LeaderboardData.players}})"
+<div class="leaderboard__list">
+    <div class="leaderboard__entry" data-bind-for="index, player:BoardState.page({{LeaderboardData.players}})">
+        <div class="leaderboard__entry-content">
+            <span class="leaderboard__rank" data-bind-value="{{index}} + {{BoardState.page.startIndex}} + 1"></span>
+            <span class="leaderboard__name" data-bind-value="{{player.name}}"></span>
+            <span class="leaderboard__score" data-bind-value="{{player.score}}"></span>
+        </div>
+    </div>
+</div>
+```
+
+In the HTML above, `LeaderboardData.players` is the standard array of game data. `BoardState.page` is the virtual list object. The virtual list acts
+as a <Highlight>callable view function</Highlight> that intercepts the iteration and only emits the elements within its defined window.
+
+For the HTML expression to work, you must create the virtual list in JavaScript and attach it to a model so the view layer can access it.
+
+```js title="pagination-logic.js" ins="engine.createVirtualList" ins="page: virtualList" mark={2, 9, 14}
+engine.whenReady.then(() => {
+    // 1. Generate the raw data model
+    engine.createJSModel("LeaderboardData", {
+        players: [
+            /* ... massive array of player objects ... */
+        ],
+    });
+
+    // 2. Create the virtual list and define the window constraints
+    const virtualList = engine.createVirtualList();
+    virtualList.startIndex = 0;
+    virtualList.pageSize = 5;
+
+    // 3. Expose the virtual list to the HTML via a state model
+    engine.createJSModel("BoardState", {
+        page: virtualList,
+    });
+
+    engine.synchronizeModels();
+});
+```
+
+:::note[Frontend-Only UI State]
+
+The virtual list object is strictly a frontend construct. Even if the array you are paginating comes directly from the C++ game backend, the virtual
+list itself is created, stored, and updated entirely in your UI's JavaScript layer. The game engine does not need to know what page of the inventory
+or leaderboard the player is currently viewing—it just provides the raw array, and the frontend handles the windowing.
+
+:::
+
+When you increment `virtualList.startIndex` and synchronize, the engine destroys the old DOM nodes and generates the new slice. If the source array
+contains 500 items and the `pageSize` is 5, the engine maintains a strict maximum of 5 nodes at any given time.
+
+To increment or decrement the virtual list window, you can modify the `startIndex` property of the virtual list object:
+
+```js
+const nextPage = () => {
+    const maxStart = LeaderboardData.players.length - virtualList.pageSize;
+    if (virtualList.startIndex + virtualList.pageSize <= maxStart) {
+        virtualList.startIndex += virtualList.pageSize;
+
+        engine.updateWholeModel(BoardState);
+        engine.synchronizeModels();
+    }
+};
+```
+
+:::caution[Non-Destructive View]
+
+The virtual list object is strictly a view layer construct. It does not modify, copy, or filter the source array. If you need to sort players by score
+or filter them by class, perform those operations on the raw array itself before calling `synchronizeModels()`. The virtual list only controls the
+final DOM generation slice.
+
+```js title="filter-source-reset-slice.js" mark={1, 4}
+// Filter the source array
+LeaderboardData.players = LeaderboardData.allPlayers.filter((player) => player.classType === "Ranger");
+
+// Reset the virtual list window so the DOM slice starts at the new array
+virtualList.startIndex = 0;
+engine.updateWholeModel(LeaderboardData);
+engine.synchronizeModels();
+```
+
+:::
+
+## Combining Virtual Lists with Observable Models
+
+Virtual lists control DOM generation volume, and observable models track interactive UI state. They are frequently used together. A common pattern is
+tracking which item inside a paginated virtual list the user has currently selected.
+
+By storing the selected object in an observable model, you avoid complex index tracking across pages. The UI instantly applies an active class when
+the selected player is rendered in the current virtual window.
+
+```js title="selection-logic.js" mark={1, 6}
+// Create the observable to track selection
+engine.createObservableModel("activeState");
+// first player from players list is selected by default
+activeState.selectedPlayer = LeaderboardData.players[0];
+
+// The click handler assigns the player object, automatically dirtying the activeState
+BoardState.selectPlayer = function (event, playerData) {
+    activeState.selectedPlayer = playerData;
+    engine.synchronizeModels();
+};
+```
+
+```html title="selectable-leaderboard.html" ins="activeState.selectedPlayer.name"
+<div class="leaderboard__entry" data-bind-for="index, player:BoardState.page({{LeaderboardData.players}})">
+    <div
+        class="leaderboard__entry-content"
+        data-bind-click="BoardState.selectPlayer(event, {{player}})"
+        data-bind-class-toggle="is-active: {{player.name}} === {{activeState.selectedPlayer.name}}">
+        <span class="leaderboard__name" data-bind-value="{{player.name}}"></span>
+    </div>
+</div>
+```
+
+_An example of the paginated leaderboard with virtual list and observable model in action:_
+
+<video autoplay loop muted>
+    <source src={virtualListVideo} type="video/webm" />
+</video>
+
+## Next Steps
+
+The next article shifts focus from data flow mechanics to architectural decisions about where state should live. Continue with
+[Local State vs. Game State](/phase-4-logic-and-interactions/data-binding--ui-state/local-vs-game-state/) to learn which data belongs in the frontend
+JavaScript layer and which should be delegated to the game engine backend.
