@@ -142,7 +142,7 @@ Once you have included the `cohtml.js` library and the `cohtml.d.ts` declaration
 game engine. However, there is an important timing constraint to be aware of.
 
 Your JavaScript may execute the moment the script is loaded, but the underlying game engine may still be initializing its own systems. Attempting to
-send or receive data before this handshake is complete will result in failed communication. This is a common source of bugs during early development.
+send or receive data before this handshake is complete will result in failed communication.
 
 The engine provides a specific promise-based lifecycle method: <Highlight>engine.whenReady</Highlight>. You should treat this as the "Main" entry
 point for your UI logic.
@@ -155,9 +155,6 @@ engine.whenReady.then(() => {
     initializeMenu();
 });
 ```
-
-Because `whenReady` is a Promise, it is inherently reliable: if the engine is already ready by the time your code runs, the `.then()` block will still
-execute immediately. A standard event listener would miss the event entirely if it fired before the listener was attached.
 
 :::caution[Project Initialization]
 
@@ -223,9 +220,7 @@ engine.on("PlayerScoreChanged", scoreDisplay.update, scoreDisplay);
 
 ### Unsubscribing and Cleanup
 
-To prevent memory leaks or logic errors (like a HUD trying to update a score after the match is over), you should unregister your handlers using
-
-<Highlight>engine.off(eventName, callback)</Highlight>.
+To prevent memory leaks or logic errors, you should unregister your handlers using <Highlight>engine.off(eventName, callback)</Highlight>.
 
 To unregister successfully, you must pass the <Highlight>exact same function reference</Highlight> to `engine.off` that you used in `engine.on`.
 
@@ -276,10 +271,6 @@ function selectDifficulty(level) {
 An important characteristic of `engine.trigger` is that it supports <Highlight>multiple handlers</Highlight> on the game side. When the game registers
 several functions for the same event name, all of them execute when you trigger it.
 
-To illustrate: imagine your UI has a "Quit Game" button. When the player clicks it, the game might need to do several things at once: save progress,
-stop background music, disconnect from the server, and log an analytics event. On the game side, each of those systems can independently register a
-handler for the same `"UI_QuitGame"` event. Your frontend only needs to fire the trigger once:
-
 ```js
 function handleQuitClick() {
     // One trigger, but the game side may have multiple systems
@@ -322,6 +313,23 @@ async function loadPlayerProfile() {
     }
 }
 ```
+
+:::tip[Send Data and Await a Response]
+
+`engine.call` is not limited to read-only queries. The same optional `...args` you pass to `engine.trigger` work here too.
+You can send data to the game and wait for a response to show a confirmation message to the user.
+
+```js
+engine.call("SetMasterVolume", someValue).then((success) => {
+    if (!success) // toggle error state on the UI
+});
+```
+
+Use this when the UI must confirm that the game accepted an action (rename, purchase, equip). 
+If you only need to notify the game and do not care about a return value, `engine.trigger` is the lighter choice.
+
+:::
+
 
 ### When to Use Which
 
@@ -401,10 +409,3 @@ Subscribing to the `*` event does not prevent `_Unhandled` from firing. The engi
 registered via `engine.on` with that specific event name.
 
 :::
-
-## Next Steps
-
-Now that your UI can communicate reliably with the game engine through events, triggers, and calls, the next step is learning how to mock these
-interactions during development without a running game instance. Continue with
-[Mocking Engine Data](/phase-4-logic-and-interactions/engine-communication-data-mocking/mocking-engine-data/) to build a self-sufficient development
-workflow.

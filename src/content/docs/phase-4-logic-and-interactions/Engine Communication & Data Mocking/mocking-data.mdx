@@ -331,7 +331,7 @@ longer receive updates.
 
 In the [previous article](/phase-4-logic-and-interactions/engine-communication--data-mocking/engine-communication/), you learned about `engine.on`,
 `engine.trigger`, and `engine.call` for event communication. When developing without the engine, you need a way to simulate the data flow. There are
-two approaches to this, and it is important to understand the distinction between them.
+two approaches to this:
 
 ### The Universal Approach: engine.on + engine.trigger
 
@@ -371,8 +371,7 @@ production without any code changes to the handler itself.
 would do</Highlight> in response to events your UI sends out.
 
 Consider this scenario: your UI has a "Quit Game" button that fires `engine.trigger("UI_QuitGame")`. In production, a backend handler catches that
-event and shuts down the game. During development, there is no backend, so nothing happens when you click the button. `mockEvent` lets you simulate
-that backend reaction:
+event and shuts down the game. During development `mockEvent` lets you simulate that backend reaction:
 
 ```js title="mock-backend-reaction.js"
 // Simulate what the backend would do when the UI signals "quit"
@@ -435,10 +434,3 @@ passing the mock object back to the engine (via `engine.trigger` or another `eng
 correctly.
 
 :::
-
-## Next Steps
-
-Now that you can mock data models, events, and calls independently of the game engine, you have a complete self-sufficient development workflow. The
-next article dives into the binding syntax you have been previewing throughout this article. Continue with
-[Data-Binding Basics](/phase-4-logic-and-interactions/data-binding--ui-state/data-binding-basics/) to learn how to connect model properties to values,
-styles, and classes declaratively.

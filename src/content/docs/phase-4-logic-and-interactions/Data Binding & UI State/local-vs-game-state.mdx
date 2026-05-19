@@ -3,7 +3,6 @@ title: "Local State vs. Game State"
 description: "Learn how to partition UI state between the frontend and the game backend to minimize communication overhead and maximize performance."
 sidebar:
     order: 5
-draft: true
 ---
 
 import Summary from "coherent-docs-theme/components/Summary.astro";
@@ -212,15 +211,3 @@ engine.on("PlayerEarnedAchievement", (achievementName) => {
     timer management and state tracking for visual elements that have no bearing on gameplay logic.
 
 :::
-
-## Next Steps
-
-You now have a clear rule for data flow: keep intermediate state in JavaScript, and cross the engine boundary only when a value is final or batched
-for commit.
-
-The next challenge is input: your HUD sits on top of a live 3D world, and the same click can mean "press this button" or "move this unit" depending on
-what the pointer hits.
-
-Continue with [Routing Input: UI vs. The 3D World](/phase-4-logic-and-interactions/interactions/routing-input/) to learn how the engine acts as a
-gatekeeper for OS events, how to mark transparent UI regions so clicks pass through to gameplay, and how to handle cursors and text selection in a
-hybrid overlay.
