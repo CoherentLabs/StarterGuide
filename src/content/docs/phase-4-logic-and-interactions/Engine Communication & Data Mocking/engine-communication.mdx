@@ -316,8 +316,8 @@ async function loadPlayerProfile() {
 
 :::tip[Send Data and Await a Response]
 
-`engine.call` is not limited to read-only queries. The same optional `...args` you pass to `engine.trigger` work here too.
-You can send data to the game and wait for a response to show a confirmation message to the user.
+`engine.call` is not limited to read-only queries. The same optional `...args` you pass to `engine.trigger` work here too. You can send data to the
+game and wait for a response to show a confirmation message to the user.
 
 ```js
 engine.call("SetMasterVolume", someValue).then((success) => {
@@ -325,11 +325,10 @@ engine.call("SetMasterVolume", someValue).then((success) => {
 });
 ```
 
-Use this when the UI must confirm that the game accepted an action (rename, purchase, equip). 
-If you only need to notify the game and do not care about a return value, `engine.trigger` is the lighter choice.
+Use this when the UI must confirm that the game accepted an action (rename, purchase, equip). If you only need to notify the game and do not care
+about a return value, `engine.trigger` is the lighter choice.
 
 :::
-
 
 ### When to Use Which
 

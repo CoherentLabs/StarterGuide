@@ -1,17 +1,450 @@
 ---
-title: "The Interaction Manager: Actions & Gamepads"
-description: Coming soon!
+title: "Keyboard & Gamepad Input"
+description:
+    Learn how to add keyboard and gamepad support to your Gameface UI using the Interaction Manager library, including named actions for sharing
+    handlers across inputs, key combinations, hold types, and analog stick bindings.
 sidebar:
     order: 2
-draft: true
 ---
 
-Writing manual polling loops for gamepad input is tedious. Coherent Labs provides a standardized Interaction Manager (IM) library to handle gamepads, keyboards, and complex UI behaviors right out of the box.
+import Summary from "coherent-docs-theme/components/Summary.astro";
+import Highlight from "coherent-docs-theme/components/Highlight.astro";
+import Link from "../../../../components/Link.astro";
+import { Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
-## Topics
+<Summary>
+    This article introduces the <Highlight>Interaction Manager</Highlight> library and walks through its <Highlight>actions</Highlight>,{" "}
+    <Highlight>keyboard</Highlight>, and <Highlight>gamepad</Highlight>
+    modules so you can add responsive keyboard and gamepad input to your UI without managing a polling loop or duplicating handler logic.
+</Summary>
 
-* **The Standard Solution:** * **Context:** Introduce the `coherent-gameface-interaction-manager` library. Explain that instead of writing dozens of custom `addEventListener` scripts, the IM serves as the unified hub for Keyboard mapping, Gamepad integration, Spatial Navigation, and Touch. Provide a quick installation snippet.
-* **Mapping Actions (Keyboard & Gamepad):** * **Context:** Show how the IM unifies input devices. 
-    * **How-to:** Provide a snippet showing how to create an "Action" (e.g., `onConfirm`). Map *both* the Keyboard "Enter" key and the Gamepad "A" button to this single action. This ensures the UI responds identically regardless of what peripheral the player uses.
-* **Why IM for Gamepads? (The Polling Problem):** * **Context:** Frontend developers used to the web expect to just write `window.addEventListener('gamepadbuttondown', ...)`—but that doesn't exist.
-    * **Concept:** Explain that gamepads require manual polling loops via the HTML `Navigator` API (usually synced to `requestAnimationFrame`). The IM's `Gamepad` class abstracts this entirely, saving the developer from writing a heavy, custom polling loop.
+Game UIs need to respond to keyboard and gamepad at the same time, and both should trigger the same logic. Wiring this from scratch means juggling
+`keydown` listeners alongside a manual polling loop against `navigator.getGamepads()` (the browser doesn't fire gamepad button events on its own) and
+keeping the two in sync as the project grows. The <Highlight>coherent-gameface-interaction-manager</Highlight> (IM) library handles those low-level
+concerns and exposes a small set of modules for keyboard, gamepad, spatial navigation, drag and drop, touch and others.
+
+This article covers <Highlight>actions</Highlight>, <Highlight>keyboard</Highlight>, and <Highlight>gamepad</Highlight> IM modules.
+
+## Setup
+
+```bash
+npm install coherent-gameface-interaction-manager
+```
+
+<Tabs>
+    <TabItem label="Bundler (Vite / Webpack)">
+        Import the modules your screen uses:
+
+        ```ts title="src/input/setup.ts"
+        import { actions, keyboard, gamepad } from "coherent-gameface-interaction-manager"
+        ```
+    </TabItem>
+    <TabItem label="Vanilla JS">
+        Include the pre-built script from the package directory:
+
+        ```html title="index.html"
+        <script src="./node_modules/coherent-gameface-interaction-manager/umd/interaction-manager.js"></script>
+        ```
+
+        The library attaches its modules to the global scope:
+
+        ```js title="src/input/setup.js"
+        const { actions, keyboard, gamepad } = window.interactionManager
+        ```
+    </TabItem>
+
+</Tabs>
+
+For the complete module reference, see the <Link href="https://frontend-tools.coherent-labs.com/interaction-manager/getting-started/">Interaction
+Manager documentation</Link>.
+
+## How the modules work together
+
+The library is built around a simple flow: `keyboard` and `gamepad` listen for physical input, and the `actions` module is what they call into. You
+write your handler logic once, register it under a name, and point both inputs at that name:
+
+1. Write a handler function for some UI behavior (`confirmSelection`, `openInventory`, etc.).
+2. Register that function under a name with `actions.register("onConfirm", confirmSelection)`.
+3. Wire `keyboard.on()` and `gamepad.on()` to that name instead of passing the function directly.
+
+When the player presses Enter or the A button, IM looks up `"onConfirm"` and runs your handler. Whichever input fires first, the same code path runs.
+The same name can also be triggered programmatically via `actions.execute("onConfirm")`, which is how other modules like spatial navigation and touch
+dispatch into your handlers without holding a direct function reference.
+
+## The `actions` module
+
+The <Highlight>actions</Highlight> module lets you register a named callback once and call it from anywhere in your code. Both `keyboard` and
+`gamepad` accept an action name as a callback instead of a function, which means your handler lives in one place regardless of how many input sources
+trigger it.
+
+Register a handler under a name with `actions.register()`:
+
+```ts title="src/input/actions.ts"
+import { actions } from "coherent-gameface-interaction-manager";
+
+actions.register("openInventory", openInventory);
+```
+
+Call it by name from anywhere:
+
+```ts
+actions.execute("openInventory");
+```
+
+`execute` also accepts an optional value, forwarded as the first argument to the callback:
+
+```ts
+actions.register("focusSlot", focusSlot); // function focusSlot(slotId: string) { ... }
+actions.execute("focusSlot", "slot-12");
+```
+
+Remove the registration when the view unmounts so the name does not persist across screens:
+
+```ts
+actions.remove("openInventory");
+```
+
+## The `keyboard` module
+
+<Highlight>keyboard.on()</Highlight> binds a key or combination to a callback or registered action name. Every key in the <Highlight>keys</Highlight>
+array must be held simultaneously for the binding to fire.
+
+```ts title="src/input/keyboard-bindings.ts"
+import { keyboard } from "coherent-gameface-interaction-manager";
+
+// Bind a single key to a registered action
+keyboard.on({
+    keys: ["Enter"],
+    callback: "onConfirm",
+    type: "press",
+});
+```
+
+You can pass a function reference directly when the handler is local to one screen:
+
+```ts
+keyboard.on({
+    keys: ["Enter"],
+    callback: handleConfirm,
+    type: "press",
+});
+```
+
+Keys can be written as strings, numeric keycodes, or values from the global <Highlight>KEYS</Highlight> object available on `window`. All three
+reference the same key:
+
+```ts ins="keys"
+keyboard.on({ keys: ["A"], callback: "onConfirm", type: "press" });
+keyboard.on({ keys: [65], callback: "onConfirm", type: "press" });
+keyboard.on({ keys: [KEYS.A], callback: "onConfirm", type: "press" });
+```
+
+### Press, hold, and lift
+
+The <Highlight>type</Highlight> property controls when the callback fires:
+
+| `type`                       | Fires when                                        |
+| ---------------------------- | ------------------------------------------------- |
+| <Highlight>press</Highlight> | The key is pressed then released (once per cycle) |
+| <Highlight>hold</Highlight>  | The key is held down (on every tick while held)   |
+| <Highlight>lift</Highlight>  | The key is released (single key only)             |
+
+Pass an array to combine types. Because both types call the same function, you can use a flag to distinguish the first fire (press) from the continuous ones
+(hold):
+
+```ts
+let isCharging = false;
+
+function chargeAbility() {
+    if (!isCharging) {
+        isCharging = true; // press: first fire, begin the charge
+        return;
+    }
+    buildCharge(); // hold: every subsequent tick, accumulate charge
+}
+
+keyboard.on({
+    keys: ["Space"],
+    callback: chargeAbility,
+    type: ["press", "hold"],
+});
+```
+
+:::caution[Lift Requires a Single Key]
+
+`lift` only accepts one entry in the `keys` array. Passing multiple keys with `lift` logs an error.
+
+:::
+
+### Key combinations
+
+More than one key in the array creates a combination. All listed keys must be held at the same time:
+
+```ts ins="["Control", "S"]"
+keyboard.on({
+    keys: ["Control", "S"],
+    callback: saveSettings,
+    type: "press",
+});
+```
+
+### Registering multiple callbacks on the same key
+
+You can attach more than one callback to the same key and type. They all run in registration order every time the key fires:
+
+```ts
+keyboard.on({ keys: ["Escape"], callback: closeContextMenu, type: "press" });
+keyboard.on({ keys: ["Escape"], callback: closeSidebar, type: "press" });
+```
+
+This is useful in menus where one key needs to do different things depending on what is currently active. Escape might close a context menu, collapse
+a search bar, or exit a sub-panel, and each of those behaviors lives in a separate, focused callback.
+
+:::caution[Each Callback Must Guard Its Own State]
+
+Both functions run on every Escape press, in registration order. Neither can stop the other from running. Each callback must check its own state and
+return early if it should not act:
+
+```ts title="src/input/escape-handlers.ts"
+function closeContextMenu() {
+    if (!contextMenuOpen) return;
+    contextMenu.close();
+}
+
+function closeSidebar() {
+    if (!sidebarOpen) return;
+    sidebar.close();
+}
+```
+
+Without those guards, every Escape press triggers every registered handler regardless of context.
+
+:::
+
+## The `gamepad` module
+
+Unlike keyboard events, the browser's Gamepad API does not fire events when button states change. Reading gamepad input requires polling
+`navigator.getGamepads()` on a timer and comparing each button's state to the previous tick. The <Highlight>gamepad</Highlight> module runs that loop
+and calls your callbacks when it detects a change.
+
+Enable polling before registering any bindings:
+
+```ts
+gamepad.enabled = true;
+```
+
+The default polling interval is 200ms. Lower it on any screen where input feels sluggish:
+
+```ts
+gamepad.pollingInterval = 16; // roughly once per frame at 60fps
+```
+
+### Binding buttons
+
+<Highlight>gamepad.on()</Highlight> accepts the same callback shapes as `keyboard.on()`: a registered action name or a function reference.
+
+For menu input, set <Highlight>type: "press"</Highlight>. The default type is <Highlight>hold</Highlight>, which fires on every poll tick while the
+button stays down.
+
+```ts title="src/input/gamepad-bindings.ts" ins="gamepad.enabled = true;" ins="actions: ["face-button-down"]"
+import { gamepad } from "coherent-gameface-interaction-manager";
+
+gamepad.enabled = true;
+
+gamepad.on({
+    actions: ["face-button-down"],
+    callback: "onConfirm",
+    type: "press",
+});
+```
+
+The `actions` array here is a list of button aliases, not the IM `actions` module. Aliases come in three flavors: generic (`face-button-down`),
+PlayStation-specific (`playstation.x`), and Xbox-specific (`xbox.a`). Using a platform alias is purely a readability choice. Writing `xbox.a` does not
+restrict the binding to Xbox controllers: the library maps it to button index 0 and the binding responds to any connected gamepad.
+
+You can find the <Link href="https://frontend-tools.coherent-labs.com/interaction-manager/features/gamepad/#options">full alias reference</Link> in the documentation.
+
+Requiring multiple buttons at once works the same way as key combinations. Every alias in the array must be active simultaneously:
+
+```ts ins="actions: ["pad-down", "right-shoulder"],"
+gamepad.on({
+    actions: ["pad-down", "right-shoulder"],
+    callback: openDebugPanel,
+    type: "press",
+});
+```
+
+### Analog sticks
+
+Stick input uses the same `gamepad.on()` call but with joystick aliases and a different callback signature. 
+Stick bindings only support <Highlight>type: "hold"</Highlight>.
+
+A full stick alias passes both axes to the callback as a `[number, number]` tuple. Values follow the Gamepad API range of -1 to 1, with `axes[0]` as
+horizontal and `axes[1]` as vertical:
+
+```ts title="src/input/analog-pan.ts" mark={1} ins="actions: ["right.joystick"]"
+// axes[0] = horizontal (-1 left, 1 right), axes[1] = vertical (-1 up, 1 down)
+function handleMapPan(axes: [number, number]) {
+    const [x, y] = axes;
+    panMapBy(x, y);
+}
+
+gamepad.on({
+    actions: ["right.joystick"],
+    type: "hold",
+    callback: handleMapPan,
+});
+```
+
+:::danger[Full Stick Aliases Fire on Every Poll Tick]
+
+`left.joystick` and `right.joystick` fire on every polling interval, including when the stick is at rest. A resting stick returns `[0, 0]` on every
+tick, so your callback runs continuously regardless of actual movement. Always guard with an early return for near-zero values:
+
+```ts
+function handleMapPan(axes: [number, number]) {
+    const [x, y] = axes;
+    if (Math.abs(x) < 0.15 && Math.abs(y) < 0.15) return; // idle, skip
+    panMapBy(x, y);
+}
+```
+
+:::
+
+Directional aliases only fire when the stick is pushed fully in that direction, making them the preferred choice for discrete directional input like
+navigating a list:
+
+```ts
+gamepad.on({ actions: ["left.joystick.up"], type: "hold", callback: scrollUp });
+gamepad.on({ actions: ["left.joystick.down"], type: "hold", callback: scrollDown });
+```
+
+The <Link href="https://frontend-tools.coherent-labs.com/interaction-manager/features/gamepad/#options">documentation</Link> lists all available
+directional aliases for both sticks.
+
+:::caution[Buttons and Axes Cannot Be Mixed]
+
+Combining button aliases and stick aliases in a single `gamepad.on()` call logs an error. Register them separately.
+
+:::
+
+## Removing bindings
+
+`keyboard.off()` and `gamepad.off()` work identically. Pass only the keys or aliases array to remove every callback registered for that combination:
+
+```ts
+keyboard.off(["Enter"]);
+gamepad.off(["face-button-down"]);
+```
+
+To remove one specific callback while keeping others on the same key or button, pass the function reference as the second argument. This requires the
+callback to be stored in a named variable, not an inline arrow function (the same way `removeEventListener` works):
+
+```ts ins=".off"
+keyboard.on({ keys: ["Escape"], callback: closeContextMenu, type: "press" });
+keyboard.on({ keys: ["Escape"], callback: closeSidebar, type: "press" });
+
+// Only closeContextMenu is removed, closeSidebar keeps running
+keyboard.off(["Escape"], closeContextMenu);
+
+// Same pattern for gamepad
+gamepad.off(["face-button-down"], handleConfirm);
+```
+
+:::caution[Gamepad Aliases Must Match]
+
+Use the same alias you registered with. A binding registered using `playstation.x` must be removed using `playstation.x`, not `face-button-down`.
+
+:::
+
+## Wiring it all together
+
+The following walkthrough registers one handler and points both keyboard and gamepad at it. The setup and teardown functions pair with a pause menu
+that mounts and unmounts during gameplay.
+
+<Steps>
+
+1. #### Build the menu markup
+
+    Each button carries a `data-menu-action` attribute that the confirm handler reads from the currently focused element to determine what to do.
+
+    ```html title="pause-menu.html"
+    <div class="pause-menu">
+        <button class="menu-item" data-menu-action="resume">Resume</button>
+        <button class="menu-item" data-menu-action="options">Options</button>
+        <button class="menu-item" data-menu-action="quit">Quit</button>
+    </div>
+    ```
+
+2. #### Write the confirm handler
+
+    The handler reads the focused element's attribute and dispatches to the matching function:
+
+    ```js title="src/input/confirm.js"
+    const menuHandlers = {
+        resume: () => engine.call("ResumeGame"),
+        options: showOptionsPanel,
+        quit: () => engine.call("QuitToTitle"),
+    };
+
+    export function confirmSelection() {
+        const focused = document.querySelector(".menu-item:focus");
+        const action = focused?.dataset.menuAction;
+        if (action && menuHandlers[action]) menuHandlers[action]();
+    }
+    ```
+
+3. #### Register the action and wire both inputs
+
+    `confirmSelection` is registered once. Both `keyboard.on()` and `gamepad.on()` reference the same action name:
+
+    ```js title="src/input/setup-pause-input.js"
+    import { actions, keyboard, gamepad } from "coherent-gameface-interaction-manager";
+    import { confirmSelection } from "./confirm";
+
+    export function setupPauseInput() {
+        actions.register("onConfirm", confirmSelection);
+
+        keyboard.on({
+            keys: ["Enter"],
+            callback: "onConfirm",
+            type: "press",
+        });
+
+        gamepad.enabled = true;
+        gamepad.on({
+            actions: ["face-button-down"],
+            callback: "onConfirm",
+            type: "press",
+        });
+    }
+    ```
+
+4. #### Clean up when the menu closes
+
+    Removing bindings prevents input from leaking into screens that mount after this one closes:
+
+    ```js title="src/input/teardown-pause-input.js"
+    import { actions, keyboard, gamepad } from "coherent-gameface-interaction-manager";
+
+    export function teardownPauseInput() {
+        actions.remove("onConfirm");
+        keyboard.off(["Enter"]);
+        gamepad.off(["face-button-down"]);
+        gamepad.enabled = false;
+    }
+    ```
+
+</Steps>
+
+Call `setupPauseInput()` when the pause menu mounts and `teardownPauseInput()` when it unmounts.
+
+## Registered action vs. function reference
+
+Both `keyboard.on()` and `gamepad.on()` accept either a registered action name or a direct function reference. The right choice depends on whether the
+handler needs to be triggered from outside the input setup:
+
+| `callback` value                        | Best for                                                                                    |
+| --------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Registered action name (`"onConfirm"`)  | Handler also needs to fire from spatial navigation, touch, or `actions.execute()` elsewhere |
+| Function reference (`confirmSelection`) | Handler is local to one screen, never triggered programmatically                            |
