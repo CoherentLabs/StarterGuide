@@ -1,18 +1,242 @@
 ---
 title: "Layout Debugging: Computed Styles & Immediate Layout"
-description: Coming soon!
+description: "Understand Gameface's dual-tree layout model, why getComputedStyle returns empty values on load, how to safely defer style reads, and when to use engine.enableImmediateLayout as a last resort."
 sidebar:
     order: 4
 draft: true
 ---
 
-To maximize performance, Gameface delays and batches heavy page layouts. This creates specific quirks when trying to read CSS values via JavaScript.
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
 
-## Topics
+<Summary>
+Gameface's layout system runs on a separate thread from JavaScript. A <Highlight>dual-tree architecture</Highlight> synchronizes the DOM and layout trees once per frame, which means computed geometry is always one frame behind your JavaScript reads. This article explains that synchronization model, shows how the three layout phases map to the Performance tab markers you will see while profiling, covers the <Highlight>getComputedStyle and getBoundingClientRect</Highlight> timing trap and its fix, and documents <Highlight>engine.enableImmediateLayout</Highlight> as a last-resort escape hatch.
+</Summary>
 
-* **The `getComputedStyle` Gotcha:**
-    * **Context:** Explain that `window.getComputedStyle()` is not available immediately on load. Because Gameface delays layout, developers must wrap these calls in a 2-3 frame `requestAnimationFrame` loop to safely read computed widths or positions. Provide the standard recursive `rAF` snippet used to safely fetch this data.
-* **Forcing Immediate Layouts:**
-    * **Context:** If a 3rd-party library relies on synchronous DOM updates and breaks because of this delay, developers can override the engine.
-    * **How-to:** Explain `engine.enableImmediateLayout`, which forces synchronous layout calculations on getters. 
-    * **Warning:** Heavily warn that this destroys performance and should be used strictly as a debugging tool or a last resort.
+## How Layout Works in Gameface
+
+Understanding the timing quirks in this article requires a basic mental model of how layout fits into Gameface's rendering pipeline.
+
+### The Dual-Tree Architecture
+
+Gameface maintains two parallel trees: a <Highlight>DOM tree</Highlight> on the main thread (updated by JavaScript and CSS) and a <Highlight>layout tree</Highlight> on the layout thread (used by the layout solver). Each frame, the two trees synchronize twice: once from the main thread to the layout thread (pushing DOM changes into the solver), and once from the layout thread back to the main thread (publishing the resolved positions and sizes).
+
+The critical implication: data calculated during the layout phase is only available to JavaScript in the **next frame**. This is the root cause of the `getComputedStyle` empty-string problem described below, and it is by design. Running layout synchronously on every read would block the main thread constantly.
+
+### The Three Layout Phases
+
+When layout does run, it executes in up to three ordered phases. Recognizing these in the Performance tab is covered in the [Performance & Memory Profiling](/phase-5-polishing/debugging-profiling-and-testing/performance-and-memory-profiling) article, but knowing their names and triggers is useful here.
+
+| Phase | Performance Tab Marker | Triggered When |
+|---|---|---|
+| Full layout solve | `Solve Flex Layout` | Width, height, margin, padding, or other box-model properties change |
+| Transform update | `Update Node Transforms` | Only `transform` properties change; no box-model properties affected |
+| Visual style recalc | `RecalcVisualStyle` | Always runs; resolves `%`-based values using the newly computed sizes |
+
+The transform update is significantly cheaper than a full layout solve because `transform` does not change a node's contribution to the flex layout of its siblings. When only `transform` changes, the engine skips Yoga entirely and only recalculates each node's axis-aligned bounding box. The full solve always includes a transform update as its second step.
+
+:::tip[Animate with transform, Not with width or margin]
+
+A CSS animation that moves an element by animating `transform: translateX(...)` triggers only `Update Node Transforms` each frame. The same movement animated by changing `margin-left` triggers a full `Solve Flex Layout` every frame. For anything that animates continuously, prefer `transform`.
+
+:::
+
+---
+
+## Why `getComputedStyle` Returns Nothing
+
+Calling `window.getComputedStyle(element)` immediately after page load returns empty strings for any property that depends on layout. The cause is the dual-tree sync: on initial load, the engine runs JS first, then syncs the trees, then runs the layout solver. The layout results are published back to the main thread only after all of this completes, which is after the current frame ends.
+
+Concretely, computed styles become available:
+
+- **After the third frame** when read inside the `window.onload` event.
+- **After the second frame** following any subsequent page layout.
+
+A naive read like the one below produces an empty string, even on an element that visually has a width:
+
+```js
+window.addEventListener('load', () => {
+    const el = document.querySelector('.health-bar');
+    console.log(getComputedStyle(el).width); // "" — layout not yet published to main thread
+});
+```
+
+---
+
+## Safely Reading Computed Styles
+
+The reliable pattern is to defer the `getComputedStyle` call behind `requestAnimationFrame` callbacks, letting the dual-tree sync cycle complete before reading. The raw nested version:
+
+```js
+requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            const el = document.getElementById('health-bar');
+            const styles = getComputedStyle(el);
+            console.log(styles.width); // "320px" — layout results are now published
+        });
+    });
+});
+```
+
+This works, but nesting three callbacks for every geometry read is noisy. The following utility wraps the pattern and handles both the initial-load case (3 frames) and the post-layout case (2 frames) automatically:
+
+```js title="utils/styles.js"
+let isLoading = true;
+
+// After the first animation frame fires, the page has completed its first render pass.
+window.addEventListener('load', () => {
+    requestAnimationFrame(() => {
+        isLoading = false;
+    });
+}, { capture: true });
+
+/**
+ * Defers a callback until computed styles are safe to read.
+ *
+ * @param {Function} callback           - the function to run once styles are available
+ * @param {number}   [count]            - frame count override; defaults to 3 on load, 2 otherwise
+ * @param {...*}     callbackArguments  - forwarded to the callback
+ */
+function getStyles(callback = () => {}, count, ...callbackArguments) {
+    if (count === undefined) count = isLoading ? 3 : 2;
+
+    if (count === 0) {
+        return callback(...callbackArguments);
+    }
+
+    count--;
+    requestAnimationFrame(() => {
+        getStyles(callback, count, ...callbackArguments);
+    });
+}
+```
+
+With the utility in place, reading styles becomes a single non-nested call:
+
+```js title="hud.js"
+// After a layout change — waits 2 frames for the dual-tree sync to complete
+getStyles(() => {
+    const barWidth = getComputedStyle(document.querySelector('.health-bar')).width;
+    console.log(barWidth); // "320px"
+});
+
+// Inside window.onload — waits 3 frames
+window.addEventListener('load', () => {
+    getStyles(() => {
+        const panelHeight = getComputedStyle(document.querySelector('.skill-panel')).height;
+        positionTooltipRelativeTo(panelHeight);
+    });
+});
+```
+
+:::tip[Keep getStyles in a Shared Module]
+
+Both the `isLoading` flag and the `getStyles` function need to be in scope across the application. Put them in a shared utility module imported by your entry point so that the `load` listener fires exactly once, no matter how many components use the function.
+
+:::
+
+---
+
+## Forcing Immediate Layouts
+
+Sometimes you do not control when geometry is read. A third-party animation library, a UI framework, or an accessibility helper may call `offsetWidth` or `getBoundingClientRect` synchronously and silently break because Gameface's deferred model returns zeroes.
+
+<Highlight>`engine.enableImmediateLayout`</Highlight> is the escape hatch for this situation. When enabled, any CSS geometry getter triggers a synchronous full layout pass before returning its value. The affected getters are the same [layout-triggering properties](https://gist.github.com/paulirish/5d52fb081b3570c81e3a) as in standard browsers: `offsetWidth`, `offsetHeight`, `getBoundingClientRect`, `scrollTop`, and others.
+
+The setting applies at the view level, affecting all documents loaded in that view.
+
+```js
+// Force synchronous layout on every geometry getter call
+engine.enableImmediateLayout(true);
+
+// Check whether it is currently active
+const isEnabled = engine.isImmediateLayoutEnabled();
+
+// Disable when done diagnosing
+engine.enableImmediateLayout(false);
+```
+
+### On-Demand Sync Layout
+
+Enabling Immediate Layout globally is the bluntest approach available. A more targeted option is `engine.executeImmediateLayoutSync`, which triggers a single synchronous layout pass on demand without changing the view-level setting.
+
+The optimal pattern when you need accurate geometry after a batch of mutations is to batch all mutations first, run one sync pass, and then read all geometry values:
+
+```js
+// 1. Apply all mutations upfront — accumulate all changes before any layout runs
+updateInventoryGrid();
+repositionHUDElements();
+applyNewItemCounts();
+
+// 2. One layout pass to flush all mutations at once — one Solve Flex Layout, not many
+engine.executeImmediateLayoutSync();
+
+// 3. Read geometry freely — the dual-tree sync has been forced, results are current
+const gridBounds = document.querySelector('.inventory-grid').getBoundingClientRect();
+const panelWidth  = document.querySelector('.stats-panel').offsetWidth;
+const tooltipHeight = document.querySelector('.tooltip').offsetHeight;
+```
+
+This runs one full layout solve instead of one per getter call, which is dramatically cheaper than having `enableImmediateLayout(true)` active across the same reads.
+
+:::danger[Immediate Layout Bypasses the Entire Deferred Pipeline]
+
+Each geometry getter call with `enableImmediateLayout(true)` active forces a full synchronous `Solve Flex Layout` pass on the JavaScript thread, bypassing Gameface's batching and scheduling entirely. A single frame that reads `offsetWidth` on 20 list items runs 20 full Yoga solves in sequence, with the JS thread blocked for each one.
+
+Recall from the three-phase table above that a full layout solve is the most expensive phase. Triggering it per getter rather than once per frame is the inverse of how the engine is designed to work.
+
+Use `engine.enableImmediateLayout` only to confirm that a third-party library is the source of a breakage. If enabling it fixes the problem, the correct production fix is one of: replace the library, wrap its geometry reads in `getStyles`, or gate them behind a single `engine.executeImmediateLayoutSync` call at a controlled point.
+
+:::
+
+### Behavioral Constraints
+
+Four constraints apply whenever an immediate layout runs:
+
+- **Animations are not ticked.** The engine does not advance CSS or JS animations during the layout pass.
+- **JavaScript is suspended.** No other JavaScript executes while the layout is running.
+- **Resource loads are not awaited.** The layout runs on the current DOM state and does not wait for pending fonts, images, or other resources.
+- **Runs on the JavaScript thread.** The layout executes synchronously on the same thread that called it, not on the layout thread.
+
+---
+
+## Yoga Layout Performance: What Your CSS Triggers
+
+Gameface uses the <Highlight>Yoga</Highlight> layout engine (the same engine used by React Native) for all flex layout calculations. Yoga's complexity is not linear with node count; it is exponential with tree depth, and the specific CSS properties on your elements determine how many recursive passes Yoga must make.
+
+Two patterns in particular push Yoga into its worst-case call tree:
+
+- **Auto-sized elements without explicit `width`, `height`, or `flex-basis`.** When a child has no explicit size, Yoga must call back into layout recursively to measure it from its own children (a `measure` call). Each unsized node multiplies the number of recursive calls.
+- **`align-items: stretch` on flex containers.** Stretch triggers additional recursive calls (`stretch` and `multiline-stretch`) once Yoga knows the cross-axis size. Combined with auto-sizing, the call count per node can reach `O(4^depth)`.
+
+The two fixes are straightforward:
+
+```css title="layout.css"
+/* ❌ Auto-sized item with stretch — triggers measure + stretch recursion */
+.inventory-slot {
+    display: flex;
+    align-items: stretch;
+}
+
+/* ✅ Explicit flex-basis eliminates the measure call */
+.inventory-slot {
+    display: flex;
+    flex-basis: 80px;       /* Yoga knows the size without measuring children */
+    align-items: flex-start; /* Removes the stretch recursive pass */
+}
+```
+
+For deeply nested UIs (the layout reference data shows real game views reaching depths of 19 to 28), defining `flex-basis` on container elements, not just leaf nodes, produces the most significant gains because it breaks the recursion at each level rather than only at the bottom.
+
+:::note[These Are CSS Authoring Rules, Not Debugging Tools]
+
+The Yoga patterns above affect every layout solve, including the ones triggered by Immediate Layout. A UI that already minimizes auto-sizing and `align-items: stretch` will also run faster under `executeImmediateLayoutSync` because each pass has less work to do.
+
+:::
+
+---
+
+## Next Steps
+
+With layout timing, style resolution, and layout solver behavior understood, the next article covers performance profiling in depth: how to record a trace, read the Gameface-specific timeline markers, and connect GPU draw calls back to the DOM nodes responsible for them.

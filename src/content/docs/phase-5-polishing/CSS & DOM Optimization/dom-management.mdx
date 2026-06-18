@@ -1,27 +1,293 @@
 ---
 title: "DOM Size Management & Hiding Elements"
-description: Coming soon!
+description: "Learn how to choose the right hiding technique for each use case, defer heavy DOM branches to reduce startup cost, pool reusable nodes to eliminate garbage collection spikes, and throttle DOM mutations to keep the layout tree quiet."
 sidebar:
     order: 4
 draft: true
 ---
 
-A massive DOM tree will severely impact your UI's initial load time and layout performance. This article covers advanced techniques for managing elements efficiently, grouping strategies by their ultimate optimization goal: from controlling visibility overhead to throttling tree mutations.
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
 
-## Topics
+<Summary>
+A large DOM tree taxes every part of Gameface's rendering pipeline: layout calculation, style matching, data-binding synchronization, and draw call preparation. Four strategies address this at different levels. <Highlight>Hiding techniques</Highlight> trade resting overhead for toggle cost — picking the wrong one for a given element compounds that cost across every frame the element is invisible. <Highlight>Deferred rendering</Highlight> keeps heavy DOM branches out of the layout tree until the player actually needs them. <Highlight>Node pooling</Highlight> eliminates garbage collection spikes from high-frequency element creation. <Highlight>Update throttling</Highlight> keeps the layout tree quiet by batching DOM mutations to intervals the player cannot perceive.
+</Summary>
 
-* **Controlling Visibility: Hiding vs. Removing:**
-    * **Context:** Provide a definitive breakdown of the tradeoff between resting overhead and toggling cost.
-        * **CSS Hiding:** `opacity: 0` / `visibility: hidden` skip paint commands but remain in the layout tree and sync data-bindings. This has the highest resting overhead but is the cheapest to toggle on/off (no reflows). `display: none` detaches the element from the layout tree, but toggling it back causes an expensive layout reflow on worker threads.
-        * **Structural Removal:** Completely detaching nodes via `remove()` or Gameface's `data-bind-if` eliminates all resting overhead, but has the highest possible toggling cost, as attaching/detaching elements happens on the main game thread.
-* **Deferred & Partial Rendering (Initial Load Optimizations):**
-    * **Context:** Teach developers how to avoid loading a massive DOM tree all at once during startup.
-        * **Async Component Loading:** Use async imports and dynamic loading so heavy DOM branches (like a massive Skill Tree screen) only exist in memory when the player actually opens them.
-        * **The `<template>` Tag Hack:** Place non-immediate content (like secondary menus) inside a `<template>` tag. This parses the nodes instantly without rendering them into the active layout, saving precious CPU time during the game's initial startup sequence.
-* **Handling Massive Data & Spikes (Memory Management):**
-    * **Context:** How to keep the total active node count low during heavy gameplay.
-        * **DOM Node Pooling (Recycling):** Instead of constantly running `document.createElement()` and `element.remove()` for temporary UI (like floating damage numbers), create a "pool" of 20 invisible DOM nodes on startup. Grab a node, animate it, and return it to the pool to prevent massive garbage collection spikes.
-        * **Virtual Lists:** Cross-reference `engine.createVirtualList()` from Phase 4. Emphasize the golden rule: for a 10,000-item inventory, never render 10,000 DOM nodes.
-* **Rate-Limiting DOM Mutations (CPU Optimization):**
-    * **Context:** How to keep the DOM tree quiet to save CPU cycles.
-        * **Throttling Updates:** For rapidly changing data (like a DPS meter, a tachometer, or a ticking timer), developers shouldn't update the DOM text node on every single frame. Throttling the update to every 50ms or 100ms reduces tree mutations dramatically without the player ever noticing a visual difference.
+## Controlling Visibility: Hiding vs. Removing
+
+Every technique for hiding a UI element carries two costs: the overhead it imposes while the element is invisible, and the cost of making it visible again. These two costs trade against each other. Picking the right technique is a function of how often the element toggles and how expensive its resting overhead is.
+
+| Technique | Resting Overhead | Toggle Cost |
+|---|---|---|
+| `opacity: 0` / `visibility: hidden` | High (layout + data-binding) | Lowest (no reflow) |
+| `display: none` | Medium (no layout, no draw) | Medium (layout reflow on show) |
+| `remove()` / `data-bind-if` | None | Highest (DOM mutation + layout reflow) |
+
+### CSS Hiding: opacity and visibility
+
+`opacity: 0` makes an element invisible but leaves it fully active in the layout tree. The engine still runs layout calculations for it on every frame, still synchronizes its data bindings, and still processes it in the style-matching pass. Only paint commands are skipped. `visibility: hidden` behaves identically from a layout and binding perspective: the element occupies its box, participates in flex distribution, and keeps its data bindings alive.
+
+The advantage is toggle cost. Switching `opacity` from `0` to `1` triggers no layout reflow. The element was already in the tree; only its visibility state changes. The following shows a HUD widget that toggles frequently during gameplay, where the zero-reflow toggle cost justifies the resting overhead:
+
+```html
+<div class="objective-tracker">
+    <div class="objective-tracker__label">Reach the extraction zone</div>
+    <div class="objective-tracker__marker"></div>
+</div>
+```
+
+```css title="hud.css"
+/* ✅ Fast toggle — element stays in the layout tree, no reflow on show */
+.objective-tracker {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-out;
+}
+
+.objective-tracker.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+```
+
+The resting overhead is the trade-off. An `opacity: 0` element with active data bindings still synchronizes all its bound properties on every frame. A complex panel kept permanently invisible but fully data-bound contributes layout cost and binding overhead for no visible output.
+
+### Display None
+
+`display: none` detaches the element from the layout tree entirely. Yoga skips it during layout calculation. No draw commands are generated. The element still exists in the DOM and its data bindings stay registered, but the layout solve cost drops to zero.
+
+The toggle cost is the trade-off. When the engine transitions an element from `display: none` to any visible display value, it reintegrates the element into the layout tree and runs a full layout solve over the affected subtree. The following compares the two approaches on a pause menu that is hidden for most of a gameplay session:
+
+```html
+<div class="pause-menu">
+    <div class="pause-menu__header">Paused</div>
+    <div class="pause-menu__options">
+        <!-- dozens of option rows -->
+    </div>
+</div>
+```
+
+```css title="hud.css"
+/* ❌ Pause menu hidden with opacity: 0 — layout computed for hundreds of nodes every frame */
+.pause-menu {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ✅ Pause menu hidden with display: none — Yoga skips the entire subtree */
+.pause-menu {
+    display: none;
+}
+
+.pause-menu.is-open {
+    display: flex; /* Full layout reflow on open — paid once, not every frame */
+}
+```
+
+`display: none` suits elements that are hidden for large portions of a session: pause menus, inventory screens, character customization panels. The one-time reflow on open is acceptable when weighed against the frame-by-frame layout savings over the session.
+
+:::caution[Data Bindings Stay Active Under display: none]
+
+`display: none` removes an element from the layout tree but does not unregister its data bindings. A pause menu with 30 bound properties still synchronizes all 30 on every frame while hidden. If a subtree has many active bindings and is hidden for long periods, combine `display: none` with a conditional `data-bind-if` on the outer wrapper to fully suspend binding overhead while the view is closed.
+
+:::
+
+### Structural Removal: remove() and data-bind-if
+
+Fully removing a node from the DOM eliminates every form of resting overhead. The element is absent from the layout tree, the style-matching pass, and the data-binding system. Nothing computes for it while it is detached.
+
+The toggle cost is the highest of any option. Adding or removing a node from the DOM triggers a main-thread operation that must synchronize with the layout thread. When the node is re-added, the engine runs a full layout solve for the reattached subtree.
+
+Gameface's `data-bind-if` attribute applies this mechanism through the data-binding system. An element with `data-bind-if` is physically mounted or unmounted from the DOM as the bound value changes. The following shows a full inventory screen that should only exist in the layout tree when the player has it open:
+
+```html
+<!-- Inventory screen: only mounted when model.isInventoryOpen is true -->
+<div class="inventory-screen" data-bind-if="{{model.isInventoryOpen}}">
+    <div class="inventory-screen__header">Inventory</div>
+    <div class="inventory-screen__grid">
+        <!-- hundreds of item slots -->
+    </div>
+</div>
+```
+
+`data-bind-if` is the right choice for full-screen overlays, game-state-specific views (character select, post-match results), and any screen the player visits infrequently. The mount cost is paid once on open. Zero resting overhead is maintained for the entire time the view is closed.
+
+:::note[Choosing the Right Hiding Technique]
+
+`opacity: 0` and `visibility: hidden` suit elements that toggle multiple times per engagement: tooltips, damage flash overlays, notification banners. `display: none` suits elements hidden for minutes at a time where data bindings must stay registered. `data-bind-if` and `remove()` suit full screens and heavy subtrees that the player visits occasionally — their zero resting overhead outweighs the one-time mount cost at those usage frequencies.
+
+:::
+
+---
+
+## Deferred & Partial Rendering
+
+A large DOM tree at startup has two costs: the time to parse and attach every node, and the first-frame layout solve over all of them. Both costs can be eliminated for content the player does not see at startup.
+
+### Lazy Component Loading
+
+A skill tree, a full character loadout panel, or a crafting screen each contain hundreds or thousands of nodes. The engine creates their DOM nodes at startup, meaning the player pays the full creation and layout cost before ever opening those screens. JavaScript dynamic imports defer both costs: the component module and its DOM nodes are not created until the first time the player actually navigates to that screen.
+
+The following shows a settings panel and a skill tree that are never loaded until explicitly opened:
+
+```js title="main.js"
+// ❌ Both modules load at startup — all DOM nodes created immediately, before they are needed
+import SettingsPanel from './settings-panel.js';
+import SkillTree from './skill-tree.js';
+
+// ✅ Each module and its DOM nodes are created only when the player opens that screen
+async function openSettings() {
+    const { default: SettingsPanel } = await import('./settings-panel.js');
+    const panel = new SettingsPanel();
+    panel.mount(document.getElementById('overlay-root'));
+}
+
+async function openSkillTree() {
+    const { default: SkillTree } = await import('./skill-tree.js');
+    const tree = new SkillTree();
+    tree.mount(document.getElementById('overlay-root'));
+}
+```
+
+The first open is slightly slower because the module must be parsed before the screen appears. Structure components so they can be mounted and unmounted cleanly without rebuilding their internal state from scratch on every open. Caching the component instance after its first creation eliminates the module-load cost on subsequent opens and reduces the total operation to a single DOM attach.
+
+### The template Element
+
+The `<template>` element holds HTML content that the engine parses without rendering into the active layout. Template content is never part of the layout tree, never receives style calculations, and never runs data bindings. Its content is available to clone into the document on demand.
+
+This pattern is useful for structural definitions that must exist on page load but should not participate in layout until a specific event occurs. A tooltip template, a repeating notification element, or a context menu panel are natural candidates. The following shows a tooltip structure that is stamped into the HUD on demand:
+
+```html
+<div id="hud-root">
+    <!-- Active HUD content — rendered immediately -->
+    <div class="hud__health-bar"></div>
+    <div class="hud__ammo-counter"></div>
+</div>
+
+<!-- Tooltip structure — parsed but not in the layout tree until cloned -->
+<template id="tooltip-template">
+    <div class="tooltip">
+        <div class="tooltip__title"></div>
+        <div class="tooltip__body"></div>
+    </div>
+</template>
+```
+
+```js title="hud.js"
+function showTooltip(title, body) {
+    const template = document.getElementById('tooltip-template');
+    const clone = template.content.cloneNode(true);    // Clone the inert content
+
+    clone.querySelector('.tooltip__title').textContent = title;
+    clone.querySelector('.tooltip__body').textContent = body;
+
+    document.getElementById('hud-root').appendChild(clone); // Insert on demand
+}
+```
+
+The benefit is at startup: the engine skips layout for all template content on the first frame. The trade-off is that each insertion of a cloned node triggers a layout reflow for that subtree, paid at the moment of insertion rather than at startup.
+
+---
+
+## Handling Massive Data
+
+High-frequency element creation and large data collections are the two DOM patterns that produce the sharpest memory and performance spikes during active gameplay.
+
+### DOM Node Pooling
+
+Damage numbers, kill feed entries, status effect icons, and waypoint markers share a pattern: they appear, animate briefly, and disappear. Implementing that cycle with `document.createElement()` and `element.remove()` on every occurrence forces the JavaScript garbage collector to reclaim the discarded nodes. A GC pause during an intense combat exchange is exactly when the player least tolerates a frame stall.
+
+A <Highlight>node pool</Highlight> eliminates this by allocating a fixed set of nodes at startup and reusing them. Each new occurrence claims a node from the pool, configures it, and releases it when the animation finishes. No allocation happens during gameplay, and the garbage collector has nothing to reclaim:
+
+```js title="damage-pool.js"
+const POOL_SIZE = 20;
+const pool = [];
+let poolIndex = 0;
+
+// Allocate the entire pool once at startup — all nodes sit invisible until needed
+for (let i = 0; i < POOL_SIZE; i++) {
+    const node = document.createElement('div');
+    node.className = 'damage-number';
+    node.style.opacity = '0';
+    document.getElementById('hud-root').appendChild(node);
+    pool.push(node);
+}
+
+function showDamageNumber(value, x, y) {
+    const node = pool[poolIndex % POOL_SIZE]; // Cycle through — oldest node recycled first
+    poolIndex++;
+
+    node.textContent = `-${value}`;
+    node.style.left = `${x}px`;
+    node.style.top = `${y}px`;
+    node.style.opacity = '1';
+    node.classList.add('is-animating');        // CSS animation handles the float-up effect
+}
+
+function releaseNode(node) {
+    node.classList.remove('is-animating');     // Called when animation completes
+    node.style.opacity = '0';
+}
+```
+
+```css title="hud.css"
+.damage-number {
+    position: absolute;
+    pointer-events: none;
+}
+
+@keyframes float-up {
+    from { transform: translateY(0);      opacity: 1; }
+    to   { transform: translateY(-4rem);  opacity: 0; }
+}
+
+.damage-number.is-animating {
+    animation: float-up 0.8s ease-out forwards;
+}
+```
+
+The pool size is a tuning parameter. Set it to the maximum number of simultaneous instances your peak scenario produces. A combat encounter that can display 20 damage numbers at once needs a pool of at least 20. A pool that is too small recycles visible nodes before their animations finish, producing visual glitches.
+
+### Virtual Lists
+
+A 10,000-item inventory, a full server browser, or a complete achievement list are collections where rendering every item as a DOM node is not viable. Ten thousand `<div>` elements in the layout tree produce a layout solve measured in hundreds of milliseconds on every frame the list is visible.
+
+Gameface's `engine.createVirtualList()` API addresses this by rendering only the items visible within the scrollable viewport. The full collection lives as a JavaScript data array; the DOM contains only the visible slice. The complete setup and usage for virtual lists is covered in [Observable Models & Virtual Lists](/phase-4-logic-and-interactions/data-binding-and-ui-state/observable-models-and-virtual-lists) in Phase 4.
+
+The rule is unconditional: never create a DOM node for each item in a list of more than 50 to 100 entries. For any list beyond that threshold, virtual rendering is the correct choice.
+
+---
+
+## Rate-Limiting DOM Mutations
+
+A DOM tree that mutates constantly keeps the layout, style-matching, and data-binding systems active on every frame. Many game values update faster than the player can read them.
+
+A DPS meter, a tachometer, a kill counter, and a match timer all receive values from game state that ticks on every frame at 60 FPS. Updating their DOM text nodes 60 times per second produces 60 mutations per element per second. The player cannot perceive a difference between a counter that updates 60 times per second and one that updates 10 times per second.
+
+A <Highlight>timestamp throttle</Highlight> limits DOM updates to a fixed interval without relying on external scheduling. The update function checks elapsed time since the last DOM write and skips the mutation if the interval has not passed:
+
+```js title="hud.js"
+const UPDATE_INTERVAL_MS = 100; // 10 updates per second — imperceptible to players
+let lastDpsUpdate = 0;
+
+// Called from the game's update loop on every frame
+function onDpsUpdate(currentDps) {
+    const now = Date.now();
+    if (now - lastDpsUpdate < UPDATE_INTERVAL_MS) return; // Interval not elapsed — skip
+
+    lastDpsUpdate = now;
+    document.getElementById('dps-label').textContent = Math.round(currentDps);
+}
+```
+
+A 100ms interval produces 10 DOM updates per second and reduces mutations by 83% compared to per-frame updates at 60 FPS. For values the player watches closely (a live countdown near zero), a 50ms interval at 20 updates per second reads as continuous without the per-frame overhead. The interval is a tuning decision: set it to the highest value the player cannot perceive as lag for that specific element.
+
+:::note[Throttling vs. Debouncing for Game UI]
+
+Throttling caps the update rate to a maximum frequency and guarantees regular DOM updates at that rate. Debouncing delays any update until the value has been stable for a minimum duration. For game values that change continuously (DPS, speed, cooldown progress), throttling is the correct pattern: updates arrive at a predictable cadence regardless of how rapidly the source value changes. Debouncing suits values that settle after a burst of changes — a search filter, a slider, a volume dial — where intermediate states between the start and end of interaction represent wasted renders.
+
+:::
+
+## Next Steps
+
+The hiding and mutation strategies in this article reduce per-frame DOM overhead. The remaining startup cost — the time between a view being triggered and its first fully rendered frame — is addressed at the build level. [Asset Preloading & Bundler Config](/phase-5-polishing/css-dom-optimization/asset-preloading) covers how to configure your build pipeline so that every resource is already in the engine's in-memory cache before the UI renders for the first time.

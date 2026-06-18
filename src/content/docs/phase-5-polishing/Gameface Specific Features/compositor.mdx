@@ -1,16 +1,241 @@
 ---
 title: "The Compositor & 3D UI"
-description: Coming soon!
+description: "Use the coh-composition-id CSS property to detach a UI element from the flat render surface and let the game engine place it anywhere in 3D world space — on terminals, screens, and any in-world geometry."
 sidebar:
     order: 2
 draft: true
 ---
 
-Gameface doesn't just render flat overlays. The Compositor allows you to project UI panels onto 3D surfaces in the game world, like a holographic sci-fi computer terminal.
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
 
-## Topics
+<Summary>
+Standard Gameface rendering draws the entire UI onto a flat texture that sits in front of the camera. The Compositor breaks that constraint. By assigning a <Highlight>coh-composition-id</Highlight> to an element, you hand Gameface a live texture of that element along with its CSS transformation matrix. The engine can then project that texture onto any surface in the 3D world: a terminal screen, a floating hologram, a curved instrument panel. The frontend writes standard CSS. The engine does the world-space placement.
+</Summary>
 
-* **Understanding the Compositor:**
-    * **Context:** Give a high-level explanation of how Gameface splits UI rendering into separate layers that the C++ engine can manipulate, bend, and project in 3D space.
-* **The Frontend Developer's Role:**
-    * **Context:** Show the exact CSS required to enable this. Instruct developers on how to assign a `coh-composition-id` property to a layer, and apply `transform-style: preserve-3d` to the parent container so the engine knows exactly how to map the surface.
+## How It Works
+
+Normal rendering flattens every DOM element into one UI texture. The Compositor introduces a different path for specific elements: instead of being folded into the flat texture, a composited element is rendered into its own isolated texture, and the engine receives callbacks with that texture plus the full transformation data.
+
+The data the engine receives per frame includes the rendered texture, a 4×4 transformation matrix derived from the element's CSS `transform` property, the original 2D bounds of the element, and UV sampling data. The engine then decides where and how to draw that texture in the scene, completely independently of the main UI plane.
+
+The split between frontend and engine responsibilities is clear:
+
+- **Frontend:** apply two CSS properties, write CSS transforms to set position and rotation, control visibility with standard CSS.
+- **Engine team:** register a compositor, receive per-frame callbacks, apply the transformation to a GPU quad, composite the result into the 3D scene.
+
+---
+
+## The Two Required CSS Properties
+
+Every composited element needs exactly two CSS properties on two different elements: one on the target element itself, and one on its parent.
+
+```html
+<div class="terminal-wrapper">
+    <div class="terminal-screen" id="terminal-ui">
+        <p class="terminal-text">SYSTEM ONLINE</p>
+        <p class="terminal-subtext">Access granted. Welcome, Commander.</p>
+    </div>
+</div>
+```
+
+```css
+.terminal-wrapper {
+    /* REQUIRED: preserve-3d must be on the PARENT, not the composited element */
+    transform-style: preserve-3d;
+}
+
+.terminal-screen {
+    width: 600px;
+    height: 400px;
+
+    /* Identifies this element to the engine compositor */
+    coh-composition-id: terminal-main;
+
+    /* The 3D transform the engine will read */
+    transform: rotateY(25deg) translateZ(50px);
+
+    background-color: rgba(0, 20, 10, 0.9);
+    color: #00ff88;
+    font-family: monospace;
+    padding: 2rem;
+}
+```
+
+`coh-composition-id` is the identifier string the engine uses to match callbacks to specific elements. The value is arbitrary, but it must be unique across all composited elements in the same view and must be coordinated with the engine team so both sides reference the same string.
+
+:::danger[preserve-3d Goes on the Parent]
+
+`transform-style: preserve-3d` must be set on the **parent** of the composited element, not on the element itself. If it is missing or placed on the wrong element, the CSS transform is flattened into a 2D projection before the engine receives it. The element will appear to work but will lose all depth information, and the engine cannot recover the 3D rotation. This is the most common mistake when setting up a composited element for the first time.
+
+:::
+
+---
+
+## Controlling Position with CSS Transforms
+
+The CSS `transform` on a composited element is the mechanism the engine uses to place the element in 3D space. Whatever transform you write in CSS, Gameface computes a final 4×4 matrix and hands that directly to the engine compositor as `FinalTransform`.
+
+A composited terminal screen with a slight tilt and offset:
+
+```css
+.terminal-screen {
+    coh-composition-id: terminal-main;
+
+    /* Rotate 15 degrees around Y axis, push 30px forward on Z */
+    transform: rotateY(15deg) translateZ(30px);
+}
+```
+
+A composited dashboard element fixed to a corner of the in-world instrument panel:
+
+```css
+.dashboard-rpm-gauge {
+    coh-composition-id: rpm-gauge;
+
+    /* Tilt back slightly, then position at a specific point */
+    transform: rotateX(-10deg) translate3d(120px, 80px, 20px);
+}
+```
+
+CSS transforms here behave identically to standard CSS 3D transforms for layout purposes. The difference is that the engine intercepts the resulting matrix and applies it in world space, so the visual effect the engine produces is not constrained by the HTML viewport.
+
+One important detail: HTML uses the **top-left corner** as the default `transform-origin`, while most 3D engines assume the center of an object. The engine team must account for this offset when converting the `FinalTransform` matrix to world space. If the element appears to rotate or translate around the wrong pivot point, this origin mismatch is the likely cause.
+
+---
+
+## Animating Composited Elements
+
+CSS animations and transitions work on composited elements. Because the `FinalTransform` is computed fresh each frame from the current CSS state, any animation that changes `transform` is automatically reflected in the engine's callback data each frame.
+
+A slow rotation animation on a holographic display:
+
+```css
+@keyframes hologram-rotate {
+    from { transform: rotateY(0deg) translateZ(60px); }
+    to   { transform: rotateY(360deg) translateZ(60px); }
+}
+
+.holographic-display {
+    coh-composition-id: hologram;
+    width: 400px;
+    height: 300px;
+    animation: hologram-rotate 8s linear infinite;
+    background-color: rgba(0, 150, 255, 0.15);
+    border: 2px solid rgba(0, 200, 255, 0.6);
+}
+```
+
+The engine compositor receives the correct in-progress `FinalTransform` at each frame and renders the panel at the interpolated rotation without any additional JavaScript.
+
+---
+
+## Controlling Visibility
+
+The engine compositor receives an `OnCompositionVisibility` callback each frame that reflects whether the element is currently visible. This maps directly to the standard CSS visibility properties:
+
+```css
+/* Make the terminal screen invisible - engine stops drawing it */
+.terminal-screen--hidden {
+    opacity: 0;
+}
+
+/* Or use display */
+.terminal-screen--off {
+    display: none;
+}
+
+/* Or visibility */
+.terminal-screen--inactive {
+    visibility: hidden;
+}
+```
+
+All three approaches signal the compositor that the element is invisible. The engine can skip draw calls for invisible compositions, saving GPU work. The difference between them follows standard CSS behavior: `display: none` removes the element from layout entirely, while `opacity: 0` and `visibility: hidden` retain the layout space.
+
+From JavaScript, toggle visibility the same way you would for any other element:
+
+```js
+function setTerminalVisible(visible) {
+    const terminal = document.getElementById('terminal-ui');
+    terminal.style.opacity = visible ? '1' : '0';
+}
+
+engine.on('TerminalActivated', (active) => {
+    setTerminalVisible(active);
+});
+```
+
+:::caution[Empty Composited Elements Stay Dirty]
+
+If all children inside a composited element are removed or hidden via `display`, `opacity`, or `visibility`, the composited element enters a persistently dirty state and will continue triggering redraws. Two practical workarounds: hide the composited root itself in the same frame that its content becomes empty, or keep a single near-transparent placeholder child (for example, `opacity: 0.0001`) inside the composited element at all times so the engine always has something to render.
+
+:::
+
+---
+
+## The Frontend-Engine Data Contract
+
+Understanding what the engine receives helps you author the CSS correctly and debug problems that arise in integration. The engine compositor receives the following data per composited element per frame:
+
+| Field | What it contains | Where it comes from |
+|---|---|---|
+| `SubLayerCompositionId` | The `coh-composition-id` string | Your CSS |
+| `FinalTransform` | 4×4 matrix of the element's combined CSS transforms | CSS `transform` property |
+| `Untransformed2DTargetRect` | The element's 2D position and size in the HTML viewport | CSS dimensions and layout |
+| `Texture` | The GPU texture containing the rendered element | Gameface renders this |
+| `UVScale` / `UVOffset` | Texture sampling coordinates | Gameface computes these |
+| `MixingMode` | Blend mode for compositing | CSS `mix-blend-mode` (see note below) |
+
+Two points require attention from the frontend side:
+
+**`mix-blend-mode` is not applied automatically.** If you set `mix-blend-mode` on a composited element, the value is surfaced through `MixingMode` in the callback data, but Gameface does not apply the blending itself. The engine team must implement the blending in their rendering pipeline. Without that implementation, the property has no visual effect.
+
+**UV sampling requires care.** The `Texture` provided by Gameface may be larger than the element's content area. The `UVScale` and `UVOffset` fields define the correct sub-region to sample. The engine must use both to sample the texture correctly. The correct sample coordinate is: `UV * UVScale + UVOffset`. Using raw UVs without applying scale and offset produces a zoomed-in or offset image.
+
+---
+
+## Routing Input to Composited Elements
+
+Input events (mouse, touch) targeted at a composited element in world space require coordinate transformation before Gameface can process them. The engine receives a hit-test result from the scene that includes UV coordinates at the point of intersection with the composited geometry. Those UV coordinates must be converted to HTML-space coordinates using the element's `Untransformed2DTargetRect`:
+
+```js
+// Called from the engine when a raycast hits the composited terminal surface
+engine.on('CompositorHit', (data) => {
+    const compositionId = data.compositionId;
+    const uvX = data.uvX; // 0.0 - 1.0
+    const uvY = data.uvY; // 0.0 - 1.0
+
+    // These values are available from the DrawData the engine received
+    const rectWidth  = data.untransformedRectWidth;
+    const rectHeight = data.untransformedRectHeight;
+    const rectX      = data.untransformedRectX;
+    const rectY      = data.untransformedRectY;
+
+    // Convert UV hit to HTML-space mouse coordinates
+    const htmlX = uvX * rectWidth  + rectX;
+    const htmlY = uvY * rectHeight + rectY;
+
+    // The engine then passes these coordinates with the composition ID
+    // to the Gameface input API to dispatch the event to the correct element
+    engine.call('DispatchCompositorMouseEvent', htmlX, htmlY, compositionId);
+});
+```
+
+Without this coordinate conversion, events dispatched to the UI would use raw screen coordinates rather than the HTML-local position, causing clicks to register on the wrong element or miss entirely.
+
+---
+
+## Known Issues
+
+**Elements outside the viewport stop updating.** A composited element positioned so its CSS layout places it entirely outside the HTML viewport (for example, set to `left: -9999px`) will be drawn once and then no longer receive redraw updates. This is intentional behavior for performance, but it can be surprising if you try to use off-screen positioning as a way to "park" composited elements. The practical workaround is to move elements that need to be temporarily inactive to a separate view instead.
+
+**Redrawing causes intersecting elements to repaint.** When a composited element redraws, the engine also redraws any non-composited elements that overlap its original layout position in the HTML document. This can cause unexpected visual flicker on nearby HUD elements. Structure your HTML so composited elements are isolated from elements that should not repaint alongside them.
+
+**`OnCompositionRemoved` may arrive before the last `OnDrawSubLayer`.** In multithreaded rendering setups, the UI thread can run two or three frames ahead of the render thread. The engine team must guard their `OnDrawSubLayer` handler against using composition data after `OnCompositionRemoved` has been received.
+
+---
+
+## Next Steps
+
+With the compositor covered, the next article addresses backdrop filters and surface partitioning, two more features that use `coh-composition-id` as part of their rendering architecture and similarly require close coordination between the frontend CSS and the engine integration.

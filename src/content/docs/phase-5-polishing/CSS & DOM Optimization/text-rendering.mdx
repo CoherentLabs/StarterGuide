@@ -1,24 +1,220 @@
 ---
 title: "Text Rendering & Font Optimization"
-description: Coming soon!
+description: "Understand how Gameface caches text layout calculations, why coh-font-fit-mode can generate dozens of redundant layout passes, and which CSS text properties carry disproportionate per-frame cost."
 sidebar:
     order: 2
 draft: true
 ---
 
-Rendering text is surprisingly expensive. From finding the right font size to wrapping words, text layout calculations can easily become a bottleneck if not configured correctly.
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
 
-## Topics
+<Summary>
+Text layout in Gameface is expensive when it runs from scratch and nearly free when the engine can skip it. The engine caches every text layout result and reuses it when the text string, box dimensions, and styles are all unchanged. Knowing what breaks that cache keeps text-heavy views on the fast path. Beyond the cache, <Highlight>coh-font-fit-mode</Highlight> performs a <Highlight>linear search</Highlight> starting from the element's declared `font-size`, generating one full layout pass per pixel of distance to the target size. A handful of CSS properties — <Highlight>overflow-wrap: anywhere</Highlight>, <Highlight>text-overflow: ellipsis</Highlight>, and <Highlight>text-align: justify</Highlight> — also carry per-frame costs several times higher than their alternatives.
+</Summary>
 
-* **How Text Layout Works (The Cache):**
-    * **Context:** Explain that Gameface caches text layouts to save performance. If the text string, box size, and styles haven't changed, the engine reuses the cache.
-* **The Cost of `coh-font-fit-mode`:**
-    * **Context:** Warn developers that the `font-fit` algorithm does a linear search, repeatedly laying out the text frame by frame, incrementing/decrementing the size until it fits. 
-    * **Gotcha:** If the default font size is `16px` but the best fit is `72px`, the engine will do 57 full layouts just to fit that one word. Instruct developers to *always* set a base `font-size` as close to the target fit as possible to minimize these iterations.
-* **Expensive Text CSS Properties:**
-    * **Context:** Provide a list of text properties that tank performance:
-        * `overflow-wrap: anywhere` is heavily unoptimized compared to `normal`, as it forces character-by-character evaluation.
-        * `text-overflow: ellipsis` forces similar heavy character evaluation to find exactly where to cut the word.
-        * `text-align: justify` is much slower than left/right alignment because it must manually distribute remaining space between words.
-* **Complex vs. Simple Text:**
-    * **Context:** Briefly note that triggering "Complex Text" (which requires heavy text shaping, RTL direction splits, and whitespace patching) is inherently slower than simple, left-to-right text.
+## How Text Layout Works
+
+Every time a text element needs to display content, the engine performs a full text layout pass: iterating through characters, applying font metrics, calculating line breaks, and distributing glyphs across the available box. That calculation is not cheap. Running it on every frame for every text element would consume a significant portion of the frame budget on any view with more than a few labels.
+
+The engine avoids repeated work through a text layout cache stored in <Highlight>TextBoxDisplayer</Highlight>. Before recalculating a text layout, the engine checks three conditions on each frame: has the text string changed, has the containing box size changed, and have any text-related CSS properties changed. All three checks are naive value comparisons, fast enough to run on every visible text element each frame. When all three pass, the engine reuses the cached result without running any layout logic.
+
+A text element stays on the fast path as long as its content, its container dimensions, and its styling remain constant between frames. Any change to any one of those inputs invalidates the cache and triggers a full recalculation on that frame.
+
+The practical consequence for dynamic UI is to avoid invalidating the cache on intermediate frames. A health counter that updates its value string every single frame triggers a full text layout on every frame. A counter that updates only when the underlying health value actually changes sits on the fast path for every frame between updates:
+
+```html
+<!-- A health display that updates from a bound game value -->
+<div class="health-display">
+    <div class="health-display__label">1,250 / 2,000</div>
+</div>
+```
+
+```js title="hud.js"
+// ❌ Updates the DOM string every frame regardless of whether value changed
+function onUpdate(newHealth, maxHealth) {
+    label.textContent = `${newHealth} / ${maxHealth}`;
+}
+
+// ✅ Compares first — cache is only invalidated when the value actually changes
+let lastHealth = null;
+function onUpdate(newHealth, maxHealth) {
+    const formatted = `${newHealth} / ${maxHealth}`;
+    if (formatted !== lastHealth) {
+        label.textContent = formatted;
+        lastHealth = formatted;
+    }
+}
+```
+
+---
+
+## The Cost of coh-font-fit-mode
+
+`coh-font-fit-mode` is a Gameface-proprietary CSS property that scales text to fill its container. The engine adjusts the rendered font size until the text occupies the element's bounds without overflowing, producing a fitted result that responds to both the text string and the container dimensions.
+
+The algorithm is a <Highlight>linear search</Highlight>. The engine begins at the element's declared `font-size` value and steps the size by one pixel at a time, performing a complete text layout pass at each step, until it finds the largest size where the text still fits. Each step is a full recalculation from scratch.
+
+The total number of layout passes depends on the distance between the declared `font-size` and the final fitted size. The best case is two passes: one measurement at the declared size and one confirmation. The worst case is one full layout pass per pixel of distance between the starting size and the target.
+
+A concrete example makes the cost visible. Leaving `font-size` at its default `16px` while the text fits near `72px` means the engine steps through every size from 16 to 72, generating 57 full text layout passes to render a single element. Declaring `font-size` close to the expected fit collapses that to two or three passes:
+
+```html
+<!-- A skill name label that must fill its panel width -->
+<div class="skill-panel">
+    <div class="skill-panel__name">Arcane Surge</div>
+</div>
+```
+
+```css title="hud.css"
+/* ❌ font-size at default 16px — 57 layout passes from 16px to ~72px */
+.skill-panel__name {
+    coh-font-fit-mode: shrink-to-fit;
+    width: 24rem;
+    height: 4rem;
+}
+
+/* ✅ font-size declared near the expected fit — 2–3 passes to confirm */
+.skill-panel__name {
+    coh-font-fit-mode: shrink-to-fit;
+    font-size: 68px;               /* Start close to the expected fitted size */
+    width: 24rem;
+    height: 4rem;
+}
+```
+
+:::caution[font-size Is the Search Starting Point]
+
+`coh-font-fit-mode` does not ignore `font-size`. It uses it as the starting point for the linear search. Setting `font-size` close to the expected fitted result minimizes the number of layout passes the engine performs. Leaving it at an arbitrary or default value forces as many passes as the pixel distance to the target.
+
+:::
+
+This cost is paid on the first frame the element renders, making it a startup concern rather than a sustained frame-rate concern. A pause menu with ten font-fit labels, each starting from `16px` and fitting near `72px`, generates over 500 layout passes on the frame the menu opens. A single CSS declaration on each label eliminates most of them.
+
+---
+
+## Expensive Text CSS Properties
+
+Several standard CSS text properties shift the engine from a fast character-placement path to a significantly slower one. Each property below is valid and sometimes the right choice, but each one carries a per-frame cost that scales with the number of elements using it.
+
+### overflow-wrap: anywhere
+
+Standard word wrapping evaluates break opportunities only at whitespace characters. `overflow-wrap: anywhere` extends that to every character in the string, forcing the engine to test each character position as a potential line break. The per-frame cost is several times higher than `overflow-wrap: normal` for any string with more than a few characters.
+
+The following shows a player tag that may contain long unbreakable strings, where the difference in wrapping behavior is visible:
+
+```html
+<div class="player-tag">PlayerName_XxX_9000</div>
+```
+
+```css title="ui.css"
+/* ❌ Tests every character as a break point — several times slower */
+.player-tag {
+    overflow-wrap: anywhere;
+}
+
+/* ✅ Tests only whitespace boundaries — fast path */
+.player-tag {
+    overflow-wrap: normal;
+}
+```
+
+Reserve `overflow-wrap: anywhere` for content where unbreakable strings (URLs, technical identifiers, long player-generated names) must not overflow their container. Apply `overflow-wrap: normal` everywhere else.
+
+### text-overflow: ellipsis
+
+`text-overflow: ellipsis` determines the exact character position at which the visible text must be cut to make room for the ellipsis glyph. That calculation measures cumulative glyph widths character by character until the available space is consumed, then adjusts backward to fit the ellipsis character itself. The cost per frame is comparable to `overflow-wrap: anywhere`.
+
+`text-overflow: clip` is the cheaper alternative: it cuts at the container boundary with no glyph-level measurement. The following compares both options on a truncated item name:
+
+```html
+<div class="item-name-container">
+    <div class="item-name">Legendary Staff of Ancient Dragonfire</div>
+</div>
+```
+
+```css title="ui.css"
+/* ❌ Character-level measurement to find the cut point — heavy per-frame cost */
+.item-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ✅ Clips at the container boundary — no glyph measurement */
+.item-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+}
+```
+
+:::note[When Ellipsis Is Worth the Per-Frame Cost]
+
+`text-overflow: ellipsis` is the right choice when truncation must be visually obvious to the player: names in a lobby list, items in an inventory grid, quest titles in a tracker. The cost scales with the number of elements using it. An inventory list of 50 truncated item names pays the measurement cost 50 times per frame. Benchmark against your target element count before applying it at that scale.
+
+:::
+
+### text-align: justify
+
+`text-align: justify` aligns both edges of each line to the container boundaries by distributing the remaining space across word gaps. After the initial glyph placement pass, the engine runs a secondary distribution pass over each line to calculate the adjusted gaps. Justified text therefore requires two passes per line.
+
+`text-align: left` requires no offset calculation and no secondary pass: it is the baseline cost for text alignment. `text-align: center` and `text-align: right` add a per-line offset calculation but no secondary pass, placing them between `left` and `justify` on the cost curve. The following shows all three in context:
+
+```html
+<div class="lore-panel">
+    <div class="lore-panel__body">An ancient blade forged in the fires of the Sunken Forge.</div>
+</div>
+```
+
+```css title="ui.css"
+/* ❌ Two passes per line — distribution calculation on every frame */
+.lore-panel__body {
+    text-align: justify;
+}
+
+/* ✅ Single pass, no distribution — fastest alignment */
+.lore-panel__body {
+    text-align: left;
+}
+
+/* ✅ Single pass, per-line offset only — between left and justify in cost */
+.lore-panel__body {
+    text-align: center;
+}
+```
+
+---
+
+## Complex vs. Simple Text
+
+Gameface assigns every text element to one of two rendering paths based on the content of its text string. The assigned path determines which algorithms run and how many processing stages the text passes through before a glyph reaches the screen.
+
+<Highlight>Simple text</Highlight> covers left-to-right Latin characters without combining marks, ligatures, or mixed-direction content. The engine processes each glyph individually, advances by the glyph's advance width, and moves to the next. No shaping algorithm runs. This is the fast path.
+
+<Highlight>Complex text</Highlight> covers content that requires glyph-level intelligence: right-to-left scripts, cursive scripts where glyph forms depend on position within a word (Arabic, Devanagari), characters composed of multiple Unicode code points, and strings that mix directions or scripts in a single run.
+
+The pipeline for complex text has several additional stages. The engine first splits the string into direction runs using the <Highlight>BiDi</Highlight> (Unicode bidirectional) algorithm. Each direction run is split again by script using <Highlight>ICU</Highlight> (International Components for Unicode). Each resulting segment is shaped independently by <Highlight>HarfBuzz</Highlight>, which resolves the correct glyph forms, their advance widths, and any positional adjustments required by combining marks or cursive joining rules. Because wrapping must operate on the original data order to remain correct, the HarfBuzz and ICU results are reversed before the line-break pass. If a shaped segment spans a line boundary, it is shaped again.
+
+A single element containing mixed Arabic and Latin content traverses font-fallback splitting, BiDi splitting, ICU script splitting, HarfBuzz shaping for each segment, reversal, line-break evaluation, and a second shaping pass on any segment that crosses a line break.
+
+For game UIs targeting a single locale, keep text elements to a single script where possible. Multiple `<div>` elements, each containing one script, avoids triggering the full complex pipeline on a mixed-content run:
+
+```html
+<!-- ❌ Single element, mixed direction content — full complex pipeline on one element -->
+<div class="item-name">سيف حديد Iron Sword</div>
+
+<!-- ✅ Separate elements per script — each processes on its own path -->
+<div class="item-name item-name--arabic">سيف حديد</div>
+<div class="item-name item-name--latin">Iron Sword</div>
+```
+
+:::note[RTL and Complex Script Cost Is Non-Negotiable]
+
+Complex text rendering exists because those scripts cannot be displayed correctly without it. Do not attempt to avoid the pipeline by substituting Latin approximations or removing script support. The distinction matters for performance budgeting: a game shipping with Arabic, Hebrew, or other RTL locale support should profile text-heavy views under locale-switch conditions, since the cost applies to every complex text element visible on screen.
+
+:::
+
+## Next Steps
+
+Text layout cost is one dimension of how CSS choices affect frame performance. The next article covers two Gameface-proprietary properties — [Gameface CSS: Simple Layout & Opacity](/phase-5-polishing/css-dom-optimization/gameface-css) — that operate at the layout solve and GPU compositing level, targeting a different layer of per-frame rendering overhead.

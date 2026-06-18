@@ -1,23 +1,228 @@
 ---
 title: "Native Localization & Dynamic CSS"
-description: Coming soon!
+description: "Use Gameface's native localization interface to translate UI strings directly from the game engine, handle dynamic locale changes, and apply CSS optimizations that prevent text overflow and enable language-specific style rules."
 sidebar:
     order: 1
 draft: true
 ---
 
-Translating a game UI presents unique challenges. This article covers how Gameface handles translation natively without heavy JSON files, how to translate elements on the fly, and how to prevent text from breaking your layout.
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
 
-## Topics
+<Summary>
+Gameface's localization system bypasses the JSON-file approach common in web frameworks. The frontend declares <Highlight>translation keys</Highlight> directly in HTML or requests them in JavaScript. The engine resolves those keys to strings at runtime using a <Highlight>localization manager</Highlight> registered on the C++ side. Your job as a frontend developer is to annotate the HTML correctly, handle the edge cases where declarative translation doesn't work, and write CSS that survives the layout shock of text expanding to twice its English length.
+</Summary>
 
-* **The Localization Mental Model:**
-    * **Context:** Gameface comes with its own native localization interface. Unlike standard web apps, the frontend does not load dictionary files; it simply requests strings directly from the game engine.
-* **The `data-l10n-id` Attribute:**
-    * **Context:** To localize HTML content, developers add a `data-l10n-id` attribute to an element. 
-    * **Gotcha:** Text translation removes all children from the element and replaces them with the translated string. If the key is not found, the contents remain unchanged, which is excellent for leaving default text in the HTML for debugging.
-* **Translation on the Fly (JS Frameworks & Inputs):**
-    * **Context:** Using `data-l10n-id` on `<input>` or `<textarea>` elements can cause data loss, and JS frameworks that heavily modify the DOM may conflict with the attribute.
-    * **How-to:** In these cases, developers should fetch the translation manually using `engine.translate("Key")` in JavaScript. To update the UI dynamically when the language changes, developers must call `engine.reloadLocalization()`.
-* **CSS Optimizations for L10n:**
-    * **Font Fitting:** A 4-letter English word can become a 15-letter German word. Show developers how to use the custom `coh-font-fit-mode` CSS property to safely auto-scale text so it always fits its container.
-    * **Custom Media Queries:** Sometimes auto-scaling isn't enough. Gameface allows custom media features enabled through the engine. Show how to use `@media (language: de)` combined with standard features like `(max-width: 300px)` to apply completely different CSS styles for specific localized edge cases.
+## How Gameface Localization Works
+
+Traditional web apps load translation files (JSON, `.po`, YAML) in the browser and look up keys client-side. Gameface works differently: the game engine owns the locale and the string table. The frontend never touches translation files directly. It requests a translation by key, and the engine returns the correct string for the current language.
+
+This architecture has a concrete consequence for how you work: **all locale state lives on the engine side**. When the player changes language in the settings menu, the engine updates its locale internally and the UI must ask the engine to re-translate everything. The frontend does not detect locale changes on its own.
+
+---
+
+## Translating HTML with `data-l10n-id`
+
+The declarative way to localize an HTML element is to add a `data-l10n-id` attribute to it. The engine calls the localization manager's `Translate` function using the attribute value as the key, and replaces the element's content with the returned string.
+
+```html
+<button data-l10n-id="TextStartGameBtn">Start Game</button>
+<p data-l10n-id="WelcomeMessage">Welcome, player!</p>
+<span data-l10n-id="HudObjectiveLabel">Current Objective</span>
+```
+
+The default text inside each element is intentional. When the localization manager cannot find a key (say, a translator forgot to include it), the element's original content is left untouched. That fallback makes it obvious during development which strings are missing without crashing or producing empty labels.
+
+Translation is not limited to elements present in the initial HTML. Elements injected dynamically into the DOM are translated automatically when inserted:
+
+```js
+const container = document.getElementById('menu-list');
+// The localization manager will translate this button's label on insertion
+container.innerHTML = '<button data-l10n-id="TextResumeBtn">Resume</button>';
+```
+
+:::caution[Translation Clears All Children]
+
+When the engine translates an element, it removes **all existing child nodes** before inserting the translated string. This means any nested icons, spans, or elements inside a localized parent will be destroyed. Keep translatable elements flat, or apply `data-l10n-id` to a child text element rather than the parent container.
+
+:::
+
+---
+
+## Translation on the Fly with `engine.translate()`
+
+Two situations make `data-l10n-id` unsuitable:
+
+1. **Input and textarea elements.** The value of `<input>` and `<textarea>` is dynamic. If `engine.reloadLocalization()` fires while a player is typing, it wipes the `data-l10n-id` element's content, destroying whatever the player had entered. Use `engine.translate()` for placeholder text and labels associated with form fields.
+
+2. **JavaScript framework components.** React, SolidJS, and similar frameworks own the DOM and reconcile it on their schedule. A `data-l10n-id` attribute may get removed or ignored when the framework re-renders. Use `engine.translate()` inside your component's rendering logic instead.
+
+`engine.translate()` takes a key string and returns the translated value synchronously:
+
+```js
+const submitLabel = engine.translate('TextSubmitBtn');
+submitButton.textContent = submitLabel;
+```
+
+For building composite strings (a translated label followed by a dynamic value), concatenate after the translate call:
+
+```js
+const contactLabel = engine.translate('ContactNumber');
+const contactEl = document.getElementById('profile-contact');
+contactEl.appendChild(document.createTextNode(`${contactLabel}: ${playerContact}`));
+```
+
+:::note[Browser Behavior]
+
+In the browser during development, `engine.translate(key)` returns the key itself unchanged. This is expected. Use `engine.reloadLocalization()` in the browser console to apply translation keys to `data-l10n-id` elements so you can see how they look without the full game engine.
+
+:::
+
+---
+
+## Changing the Locale Dynamically
+
+Gameface does not track the current locale internally and will not automatically re-translate content when the game switches languages. You must trigger re-translation manually by calling `engine.reloadLocalization()`.
+
+`engine.reloadLocalization()` iterates all elements in the document that have a `data-l10n-id` attribute and calls `engine.translate()` on each one, replacing their content with the newly translated string for the updated locale. Elements that used `engine.translate()` directly in JavaScript are not touched by this call. You are responsible for updating them separately.
+
+A typical language change flow looks like this: the player selects a language in the settings menu, the UI notifies the engine, the engine updates its locale internally, and then the UI calls `engine.reloadLocalization()` once that operation completes.
+
+```js
+// Called when the player confirms a language change in the settings menu
+function changeLanguage(languageCode) {
+    engine.call('ChangeLanguage', languageCode).then(() => {
+        // The engine has updated its locale. Now re-translate all data-l10n-id elements.
+        engine.reloadLocalization();
+
+        // Re-translate any elements that were set with engine.translate() directly
+        refreshDynamicLabels();
+    });
+}
+
+function refreshDynamicLabels() {
+    document.getElementById('profile-contact').textContent =
+        engine.translate('ContactNumber') + ': ' + currentContactNumber;
+
+    document.querySelector('#submit-btn').textContent =
+        engine.translate('TextSubmitBtn');
+}
+```
+
+The `then()` callback guarantees that `engine.reloadLocalization()` runs only after the engine has finished updating its locale. Calling it before the engine finishes would translate using the old locale.
+
+---
+
+## CSS Optimizations for Localization
+
+### Font Fitting: Surviving Text Expansion
+
+A four-letter English word like "Save" can become a fifteen-character German string like "Speichern". Fixed-width buttons and HUD labels that look correct in English will overflow in other locales.
+
+The `coh-font-fit-mode` property instructs the layout engine to automatically adjust the rendered font size until the text fits within its container. The property accepts three values:
+
+- `none`: Default. No size adjustment.
+- `shrink`: Reduces font size if text overflows the container, but never grows it beyond the declared `font-size`.
+- `fit`: Both shrinks and grows text to fill the container as completely as possible.
+
+For most localization scenarios, `shrink` is the correct choice. It guarantees buttons never overflow while preserving the visual size of shorter strings like English labels:
+
+```css
+.menu-button-label {
+    font-size: 24px;           /* Starting point for the fitting algorithm */
+    coh-font-fit-mode: shrink;
+    coh-font-fit-min-size: 14px; /* Never shrink below this size */
+}
+```
+
+Use `fit` when visual consistency across languages matters more than text size variation. With `fit`, the engine grows short strings to fill the container and shrinks long ones, so all buttons carry text of roughly the same visual weight:
+
+```css
+.hud-objective-label {
+    /* Shorthand: mode | min-size | max-size */
+    coh-font-fit: fit 12px 28px;
+    /* Always declare max-size explicitly to avoid engine warnings */
+}
+```
+
+:::caution[Set font-size Close to the Target]
+
+`coh-font-fit-mode` uses a linear search starting from the element's declared `font-size`. If an element starts at `16px` but the container requires a `52px` fit, the algorithm runs 36 iterations to reach the result. **Always set `font-size` to a value close to the expected final rendered size** to minimize the number of layout passes. The [CSS & DOM Optimization](/phase-5-polishing/css--dom-optimization/text-rendering/) article covers the full performance profile of this property.
+
+:::
+
+For a detailed walkthrough of all `coh-font-fit-mode` values, boundary properties, and the `coh-font-fit` shorthand, see the [Auto-Scaling & Complex Text](/phase-3-layout-assets-and-styling/texts--fonts/auto-scaling-text/) article from Phase 3.
+
+---
+
+### Custom Media Queries for Language-Specific Styles
+
+Sometimes auto-scaling is not enough. German compound words may require a completely different button layout. Japanese characters at the same `font-size` as Latin scripts may produce text that is too small. These cases need wholesale CSS rule changes, not just size adjustments.
+
+Gameface supports custom media features that the game engine sets at runtime. The CSS you write is standard `@media` syntax, but the feature name and value are arbitrary strings that you define. The game engine activates or deactivates them via an engine-side API call.
+
+A practical pattern is a `language` feature that mirrors the active locale:
+
+```css
+/* Default styles (English) */
+.menu-button-label {
+    font-size: 22px;
+    coh-font-fit-mode: shrink;
+    coh-font-fit-min-size: 14px;
+}
+
+/* German-specific overrides: smaller base font, more horizontal padding */
+@media (language: de) {
+    .menu-button-label {
+        font-size: 18px;
+        coh-font-fit-mode: shrink;
+        coh-font-fit-min-size: 12px;
+    }
+}
+
+/* Japanese-specific overrides: larger base size for CJK character legibility */
+@media (language: ja) {
+    .menu-button-label {
+        font-size: 24px;
+        coh-font-fit-mode: none;
+    }
+}
+```
+
+Custom media feature values for the same feature name are mutually exclusive. When the engine activates `(language: de)`, the `(language: ja)` block automatically becomes inactive. Only one value per feature name can be active at a time.
+
+You can also combine custom features with standard media features. This is useful for applying language-specific tweaks only at certain viewport sizes:
+
+```css
+/* Apply German-specific font size only when the view is narrower than 400px */
+@media (language: de) and (max-width: 400px) {
+    .settings-description {
+        font-size: 13px;
+        line-height: 1.3;
+    }
+}
+```
+
+Custom features are set per view by the game engine when the locale changes. The game engine team in your project should update the `language` feature value alongside the locale change. From the frontend side, call `engine.reloadLocalization()` to re-translate `data-l10n-id` elements simultaneously so the new CSS rules and translated strings take effect together:
+
+```js
+function changeLanguage(languageCode) {
+    engine.call('ChangeLanguage', languageCode).then(() => {
+        // CSS media feature and translated strings update in the same frame
+        engine.reloadLocalization();
+        refreshDynamicLabels();
+    });
+}
+```
+
+:::note[Custom Features Persist Across Navigation]
+
+Custom media features survive page loads and navigations within the same view. Refreshing the HTML or loading a new page does not reset them. The engine retains the active feature values for the view's lifetime, so a language set once remains active until the engine explicitly changes it.
+
+:::
+
+---
+
+## Next Steps
+
+With localization in place, the next section covers accessibility: ensuring the UI is navigable and readable for all players, including those using screen readers, colorblind modes, or larger font scales.
