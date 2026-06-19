@@ -1,0 +1,290 @@
+---
+title: "Subtitles & Closed Captions"
+description: "Build a customizable subtitles and closed captions system in Gameface UI: synced timing, player-controlled font size and color, background opacity, and screen positioning."
+sidebar:
+    order: 6
+draft: true
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+
+<Summary>
+Subtitles and closed captions are built in HTML and CSS like any other UI component, but they require three things to work well: <Highlight>accurate timing sync</Highlight> from the game engine, <Highlight>player-controlled style customization</Highlight> (size, color, background), and a <Highlight>positioning system</Highlight> that adapts to screen layout and player preference. This article covers all three.
+</Summary>
+
+## Subtitles vs. Closed Captions
+
+These terms are often used interchangeably, but the distinction matters for scope:
+
+- **Subtitles** transcribe spoken dialogue. They assume the player can hear ambient sound and music but needs the dialogue in text form (for language barriers, noisy environments, or personal preference).
+- **Closed Captions** transcribe all audio: dialogue, sound effects, and music cues. They are designed for players who cannot hear any audio.
+
+A well-built system should support both modes. The HTML structure is identical; the difference is in what text content the game engine sends.
+
+---
+
+## HTML Structure
+
+The caption container lives at the root of your HUD, positioned independently of other UI panels. It receives and displays one or more caption entries at a time:
+
+```html
+<div id="caption-container" class="caption-container" aria-live="polite" aria-atomic="false">
+    <!-- Caption entries are injected here at runtime -->
+</div>
+```
+
+The `aria-live="polite"` attribute announces new caption text through TTS for players using screen readers (useful if a player uses both captions and TTS simultaneously). `aria-atomic="false"` lets screen readers announce each new entry as it arrives rather than re-reading the full container.
+
+A single caption entry looks like this:
+
+```html
+<div class="caption-entry">
+    <span class="caption-speaker">Commander Chen</span>
+    <span class="caption-text">All units, move to the extraction point now.</span>
+</div>
+```
+
+The speaker label is optional but recommended for scenes with multiple characters. It allows players to follow conversations at a glance.
+
+---
+
+## Base CSS
+
+The container should anchor to the bottom center of the viewport by default, which is the convention players expect from years of film and game subtitle standards:
+
+```css
+.caption-container {
+    position: fixed;
+    bottom: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.caption-entry {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--caption-bg, rgba(0, 0, 0, 0.75));
+    color: var(--caption-color, #ffffff);
+    font-size: var(--caption-font-size, 1rem);
+    font-family: var(--caption-font-family, inherit);
+    padding: 0.4em 0.8em;
+    border-radius: 4px;
+    line-height: 1.4;
+    max-width: 100%;
+    text-align: center;
+}
+
+.caption-speaker {
+    font-size: 0.75em;
+    font-weight: 600;
+    color: var(--caption-speaker-color, #ffd700);
+    margin-bottom: 0.2em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+```
+
+Notice the CSS custom properties on `.caption-entry`: `--caption-bg`, `--caption-color`, `--caption-font-size`. These are the player customization hooks. Every style the player can adjust goes through a custom property rather than a direct value.
+
+---
+
+## Receiving Caption Data from the Engine
+
+The game engine drives caption timing. Your UI subscribes to engine events and renders caption entries on demand:
+
+```js
+const captionContainer = document.getElementById('caption-container');
+
+engine.on('ShowCaption', (data) => {
+    displayCaption(data.speaker, data.text, data.duration);
+});
+
+engine.on('ClearCaptions', () => {
+    captionContainer.innerHTML = '';
+});
+```
+
+The `ShowCaption` event carries the speaker name, text content, and display duration in milliseconds. The `ClearCaptions` event wipes the container when a scene ends or dialogue pauses.
+
+The display function creates and manages entries:
+
+```js
+function displayCaption(speaker, text, duration) {
+    const entry = document.createElement('div');
+    entry.className = 'caption-entry';
+
+    if (speaker) {
+        const speakerEl = document.createElement('span');
+        speakerEl.className = 'caption-speaker';
+        speakerEl.textContent = speaker;
+        entry.appendChild(speakerEl);
+    }
+
+    const textEl = document.createElement('span');
+    textEl.className = 'caption-text';
+    textEl.textContent = text;
+    entry.appendChild(textEl);
+
+    captionContainer.appendChild(entry);
+
+    // Auto-remove after duration (engine may also send ClearCaptions explicitly)
+    if (duration > 0) {
+        setTimeout(() => {
+            if (entry.parentNode === captionContainer) {
+                captionContainer.removeChild(entry);
+            }
+        }, duration);
+    }
+}
+```
+
+The guard in the `setTimeout` callback (`entry.parentNode === captionContainer`) prevents errors when `ClearCaptions` removes the container contents before the timer fires.
+
+---
+
+## Player-Controlled Customization
+
+Caption preferences should live in the accessibility section of the settings menu. Four controls cover the full standard:
+
+1. **Font size** (small / medium / large / extra large)
+2. **Text color** (white, yellow, cyan, green)
+3. **Background opacity** (none, low, medium, high)
+4. **Screen position** (bottom, top)
+
+Each setting maps to a CSS custom property update on the `<html>` element or the caption container itself:
+
+```js
+const CAPTION_FONT_SIZES = {
+    small:   '0.75rem',
+    medium:  '1rem',
+    large:   '1.375rem',
+    xlarge:  '1.75rem',
+};
+
+const CAPTION_BG_OPACITIES = {
+    none:   'rgba(0, 0, 0, 0)',
+    low:    'rgba(0, 0, 0, 0.4)',
+    medium: 'rgba(0, 0, 0, 0.7)',
+    high:   'rgba(0, 0, 0, 0.92)',
+};
+
+function applyCaptiontSettings(settings) {
+    const root = document.documentElement;
+    root.style.setProperty('--caption-font-size', CAPTION_FONT_SIZES[settings.fontSize] ?? '1rem');
+    root.style.setProperty('--caption-color', settings.textColor ?? '#ffffff');
+    root.style.setProperty('--caption-bg', CAPTION_BG_OPACITIES[settings.bgOpacity] ?? 'rgba(0,0,0,0.75)');
+
+    const container = document.getElementById('caption-container');
+    container.style.bottom = settings.position === 'top' ? 'auto' : '8%';
+    container.style.top    = settings.position === 'top' ? '8%' : 'auto';
+}
+
+engine.on('CaptionSettingsChanged', (settings) => {
+    applyCaptiontSettings(settings);
+});
+```
+
+Apply the saved settings during UI initialization so the player's preferences are honored from the first moment captions appear:
+
+```js
+const savedCaptionSettings = engine.call('GetCaptionSettings') ?? {};
+applyCaptiontSettings(savedCaptionSettings);
+```
+
+---
+
+## Sound Effect and Music Captions
+
+Closed caption mode adds non-dialogue audio descriptions. The convention is to wrap these in square brackets and style them differently from speech:
+
+```html
+<div class="caption-entry caption-sfx">
+    <span class="caption-text">[Explosion in the distance]</span>
+</div>
+```
+
+```css
+.caption-entry.caption-sfx .caption-text {
+    font-style: italic;
+    color: var(--caption-sfx-color, #cccccc);
+}
+```
+
+The engine differentiates caption types in the event payload:
+
+```js
+engine.on('ShowCaption', (data) => {
+    const entry = buildCaptionEntry(data.speaker, data.text);
+
+    if (data.type === 'sfx') {
+        entry.classList.add('caption-sfx');
+    }
+
+    captionContainer.appendChild(entry);
+});
+```
+
+Keeping `type` as a first-class field on the caption data means the UI never needs to parse text content to decide how to style it.
+
+---
+
+## Handling Long Lines
+
+Long dialogue lines can overflow the caption container or push the text uncomfortably close to the edges of the screen. Two CSS properties prevent this:
+
+```css
+.caption-text {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+}
+```
+
+For lines that are genuinely too long at a given font size, the engine should break them across two separate `ShowCaption` events with sequential timing rather than sending a single very long string. Splitting at natural phrase boundaries ("Hold the line." followed by "We are not retreating.") is more readable than splitting mid-sentence.
+
+---
+
+## Displaying Multiple Active Captions
+
+In a scene with overlapping audio (two characters speaking simultaneously, a sound effect alongside dialogue), the container naturally stacks entries:
+
+```css
+.caption-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+```
+
+Limit the number of visible entries to prevent the container from growing beyond a readable height. Three simultaneous entries is the practical maximum before the display becomes confusing:
+
+```js
+const MAX_VISIBLE_CAPTIONS = 3;
+
+function displayCaption(speaker, text, duration) {
+    while (captionContainer.children.length >= MAX_VISIBLE_CAPTIONS) {
+        captionContainer.removeChild(captionContainer.firstChild);
+    }
+
+    // ... create and append the new entry
+}
+```
+
+Removing the oldest entry first keeps the display focused on the most recent content.
+
+---
+
+## Next Steps
+
+Subtitles address the needs of players who are deaf or hard of hearing. The final accessibility topic in this section is high contrast mode, which adapts color usage for players with low vision or extreme visual fatigue.

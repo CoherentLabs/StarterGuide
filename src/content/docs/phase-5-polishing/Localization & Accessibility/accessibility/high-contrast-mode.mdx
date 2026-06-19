@@ -1,0 +1,239 @@
+---
+title: "High Contrast Mode"
+description: "Implement a high contrast mode for players with low vision using CSS custom properties and a root class toggle. Build a contrast-safe color palette that meets accessibility standards and provide an easy player toggle in the settings menu."
+sidebar:
+    order: 7
+draft: true
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+
+<Summary>
+High contrast mode makes UI elements distinguishable for players with low vision, cataracts, or visual fatigue. Like the other theming systems in this section, the implementation is a <Highlight>root class toggle</Highlight> that swaps a predefined set of <Highlight>CSS custom properties</Highlight> to a high-contrast palette. The architectural work for this is largely identical to the color blindness system, which means if you've already built that, adding high contrast mode costs very little extra effort.
+</Summary>
+
+## Who Uses High Contrast Mode
+
+High contrast mode is not only for players with medical visual impairments. Many players enable it in bright environments (playing on a laptop outdoors), on TVs with poor calibration, or simply because they prefer the clarity. The broader the potential audience, the more it is worth implementing correctly.
+
+The key distinction from colorblind mode is the goal: colorblind mode remaps hue relationships; high contrast mode increases luminance contrast ratios between foreground elements and backgrounds. Both can be active simultaneously.
+
+---
+
+## The Contrast Ratio Standard
+
+The WCAG (Web Content Accessibility Guidelines) defines contrast ratios as the luminance difference between two colors. The relevant thresholds for game UI are:
+
+- **4.5:1** for normal-size text
+- **3:1** for large text (18px+) and UI components (button borders, icon outlines)
+
+Most game UIs fail these thresholds on their default palettes. Subtle grays, translucent overlays, and low-opacity text that looks fine to players with typical vision become illegible at lower contrast sensitivity.
+
+High contrast mode should push contrast ratios well above these minimums, typically targeting **7:1 or higher** for critical UI text.
+
+---
+
+## Defining a High Contrast Palette
+
+Your default theme uses semantic CSS custom properties (following the pattern established in the Color Blindness article). High contrast mode overrides those same properties under a `.theme-high-contrast` root class:
+
+```css
+/* Default palette (excerpt) */
+:root {
+    --color-text-primary:       #e8e8e8;
+    --color-text-secondary:     #a0a0a0;
+    --color-text-disabled:      #5a5a5a;
+
+    --color-bg-surface:         #1a1a2e;
+    --color-bg-overlay:         rgba(0, 0, 0, 0.6);
+    --color-bg-input:           #16213e;
+
+    --color-border-default:     rgba(255, 255, 255, 0.15);
+    --color-border-focus:       #4a90d9;
+
+    --color-interactive-primary: #4a90d9;
+    --color-interactive-hover:   #6baee8;
+
+    --color-status-danger:      #e05050;
+    --color-status-success:     #4caf50;
+    --color-status-warning:     #f5a623;
+}
+
+/* High contrast overrides */
+:root.theme-high-contrast {
+    --color-text-primary:       #ffffff;
+    --color-text-secondary:     #eeeeee;
+    --color-text-disabled:      #aaaaaa;
+
+    --color-bg-surface:         #000000;
+    --color-bg-overlay:         rgba(0, 0, 0, 0.9);
+    --color-bg-input:           #111111;
+
+    --color-border-default:     rgba(255, 255, 255, 0.7);
+    --color-border-focus:       #ffff00;          /* high visibility yellow for focus */
+
+    --color-interactive-primary: #ffff00;
+    --color-interactive-hover:   #ffffff;
+
+    --color-status-danger:      #ff4444;
+    --color-status-success:     #00ff88;
+    --color-status-warning:     #ffcc00;
+}
+```
+
+The high contrast palette choices above follow a deliberate logic:
+
+- **Backgrounds go fully black.** Any surface that previously had mid-range luminance is forced to the darkest possible value, maximizing contrast with light foreground elements.
+- **Text goes fully white.** Primary and secondary text converge toward white to ensure readability on black surfaces.
+- **Interactive and focus colors use high-luminance yellow.** Yellow on black is one of the highest-contrast color pairings possible and is the universal convention for focus indicators in high contrast interfaces.
+- **Status colors are supersaturated.** The default `#e05050` red becomes `#ff4444` and the default green becomes `#00ff88` to maintain hue distinction while pushing luminance.
+
+---
+
+## Applying the Theme at Runtime
+
+Apply the root class from your settings system using the same pattern used for colorblind mode:
+
+```js
+function setHighContrast(enabled) {
+    if (enabled) {
+        document.documentElement.classList.add('theme-high-contrast');
+    } else {
+        document.documentElement.classList.remove('theme-high-contrast');
+    }
+}
+
+engine.on('HighContrastChanged', (enabled) => {
+    setHighContrast(enabled);
+});
+
+// Restore on load
+const savedHighContrast = engine.call('GetHighContrastPreference') ?? false;
+setHighContrast(savedHighContrast);
+```
+
+If a player has both colorblind mode and high contrast mode enabled, the root element carries both classes:
+
+```html
+<html class="theme-colorblind theme-high-contrast">
+```
+
+CSS specificity handles the cascade correctly as long as both override blocks target the same custom properties. The last defined block wins for any property both attempt to override, so the order of your `@import` statements or CSS file concatenation matters. Define high contrast overrides after colorblind overrides if your intent is for high contrast to take final precedence.
+
+---
+
+## Strengthening Borders and Outlines
+
+Low-vision players often rely on element boundaries to distinguish interactive components from backgrounds. High contrast mode should increase border opacity and width:
+
+```css
+:root.theme-high-contrast .menu-button {
+    border-width: 2px;
+    border-color: var(--color-border-default);
+    outline: none; /* Remove the default outline since the border handles it */
+}
+
+:root.theme-high-contrast .menu-button:focus {
+    outline: 3px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+
+:root.theme-high-contrast .input-field {
+    border-width: 2px;
+    background-color: var(--color-bg-input);
+}
+```
+
+The focus indicator (yellow outline on button focus) is critical in high contrast mode. Players who rely on keyboard or gamepad navigation need to see exactly which element is focused. In high contrast mode, the focus indicator should be more prominent than in the default theme, not less.
+
+---
+
+## Handling Overlays and Translucency
+
+Translucent backgrounds (the semi-transparent overlay behind a modal, blurred panel backgrounds) are a common source of contrast failures. A background at `rgba(0, 0, 0, 0.5)` that looks stylish in the default theme might make text sitting above it unreadable for low-vision players.
+
+High contrast mode should replace translucent backgrounds with opaque ones:
+
+```css
+:root.theme-high-contrast .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.95);
+}
+
+:root.theme-high-contrast .panel-header {
+    background-color: #000000;
+    border-bottom: 2px solid var(--color-border-default);
+}
+
+:root.theme-high-contrast .hud-panel {
+    background-color: #000000;
+    border: 2px solid var(--color-border-default);
+}
+```
+
+Removing translucency in high contrast mode is not a visual regression; it is the feature. The visual richness of layered glass effects is not accessible to the target audience for this mode.
+
+---
+
+## Combining High Contrast with Font Scaling
+
+High contrast mode and font scaling are independent systems that should compose correctly. Both operate through CSS custom properties and root classes. A player can have `theme-high-contrast` and `scale-large` active simultaneously without either breaking the other:
+
+```html
+<html class="theme-high-contrast scale-large">
+```
+
+Verify this combination explicitly during QA. The most common failure mode is a component that hardcodes a color directly (`color: #a0a0a0`) instead of using a custom property, which means it escapes the high contrast override. Any hardcoded color value in your codebase is a potential high contrast failure point.
+
+---
+
+## Settings UI
+
+The player toggle should live in the accessibility settings alongside colorblind mode and reduced motion:
+
+```html
+<div class="settings-row" role="group" aria-labelledby="hc-label">
+    <span id="hc-label" class="settings-label">High Contrast Mode</span>
+    <div class="toggle-control">
+        <button
+            class="toggle-btn"
+            id="high-contrast-toggle"
+            aria-pressed="false"
+            tabindex="0"
+        >
+            Off
+        </button>
+    </div>
+</div>
+```
+
+```js
+const hcToggle = document.getElementById('high-contrast-toggle');
+
+hcToggle.addEventListener('click', () => {
+    const isEnabled = hcToggle.getAttribute('aria-pressed') === 'true';
+    const newValue = !isEnabled;
+
+    hcToggle.setAttribute('aria-pressed', String(newValue));
+    hcToggle.textContent = newValue ? 'On' : 'Off';
+
+    setHighContrast(newValue);
+    engine.call('SaveHighContrastPreference', newValue);
+});
+```
+
+---
+
+## Quick Audit Checklist
+
+Before shipping the high contrast implementation, run through these checks at every screen:
+
+- [ ] All text elements use `--color-text-primary` or `--color-text-secondary`. No hardcoded color values.
+- [ ] All interactive elements (buttons, inputs, tabs) have a visible 2px+ border in high contrast mode.
+- [ ] The focused element has a clearly visible outline (3px+ yellow outline recommended).
+- [ ] Translucent backgrounds are replaced by opaque alternatives.
+- [ ] Status indicators (health bars, damage counters, objective markers) are distinguishable without relying on hue alone.
+- [ ] The setting persists across session restarts.
+- [ ] High contrast mode composes correctly with colorblind mode and font scaling simultaneously.
+
+A component fails this audit if it requires a player to read the color to understand its state. Shape, icon, border, and text content should always carry the meaning alongside color.
