@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://starter.coherent-labs.com/sitemap.xml
