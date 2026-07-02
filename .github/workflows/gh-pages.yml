@@ -1,36 +1,39 @@
 name: Deploy Documentation
 
 on:
-  workflow_dispatch:
-  workflow_run:
-    workflows: ["GamefaceUI release"]
-    types:
-      - completed
+  push:
+    branches:
+      - master
 
 jobs:
   deploy:
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: "20.10.0"
 
       - name: Install modules
-        working-directory: ./docs
         run: npm i
 
+      - name: Build docs
+        run: npm run build
+
       - name: Deploy to gh-pages branch
-        working-directory: ./docs
         env:
-          TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          TAG: "${{ github.ref_name }}-${{ github.sha }}"
-          WORKSPACE_DIR: "${{ github.workspace }}"
-          GITHUB_SHA: "${{ github.sha }}"
-        run: npm run deploy-gh-pages
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages
+          git checkout gh-pages
+          rsync -av --delete --exclude=CNAME --exclude=.nojekyll dist/ ./
+          git add -A
+          git diff --staged --quiet || git commit -m "deploy: ${{ github.sha }}"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" gh-pages
