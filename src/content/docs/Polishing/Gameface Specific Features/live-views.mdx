@@ -1,0 +1,308 @@
+---
+title: "Live Views: Streaming 3D to 2D"
+description: "Display real-time engine render targets - character portraits, 3D minimaps, item previews - directly inside HTML elements as dynamically updating textures."
+sidebar:
+    order: 3
+draft: false
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+<Summary>
+A Live View is a GPU texture that the game engine renders into each frame and streams directly into the HTML document. From the frontend's perspective, it looks like an image: you reference it with a URL in an <Highlight>`<img>`</Highlight> tag or a CSS <Highlight>`background-image`</Highlight>. The engine side handles producing the pixels. The frontend side handles displaying and sizing them.
+</Summary>
+
+## What Are Live Views?
+
+Gameface distinguishes between two kinds of engine-provided textures: **User Images**, which are static textures loaded once, and **Live Views**, which update every frame. A Live View is a render target the engine writes to continuously, and Gameface repaints the HTML element displaying it whenever the engine signals an update.
+
+The practical effect is that you can embed a live 3D camera feed inside an `<img>` tag. Some common use cases:
+
+- **Character portrait:** A camera pointed at the player's character model. The portrait renders in real time, showing the character's current equipment, injuries, or idle animations.
+- **3D minimap:** A top-down orthographic camera rendering the world in real time. No need for a hand-drawn or pre-baked map texture.
+- **Item inspection preview:** A camera orbiting a selected weapon, vehicle, or cosmetic item in the character customization screen.
+- **Security camera feed:** An in-world camera whose feed appears on a monitor element inside the game world.
+
+A single Live View is backed by a real render target on the engine side. Each one has a per-frame rendering cost proportional to the resolution and complexity of whatever the camera sees. Plan Live View budgets with the rendering team.
+
+---
+
+## How the URL Is Established
+
+Gameface resolves image sources through an engine-side resource handler. When the HTML requests an image at a given URL, the engine intercepts that request and delivers a texture. For a Live View, the engine delivers a dynamic texture with a non-zero image handle, which tells Gameface to treat the source as updateable rather than static.
+
+The specific URL is a contract between the frontend and the engine team. A typical convention uses the `coui://` protocol with a path that names the view:
+
+```
+coui://live/player-portrait
+coui://live/minimap
+coui://live/item-preview
+```
+
+The engine team registers the resource handler to intercept these paths and bind them to their render targets. Agree on the URL naming scheme with the engine team before building the UI around it.
+
+If the URL needs to be dynamic (for example, an item preview whose camera target changes based on which item is selected), the engine team can expose a method via `engine.call` to update the binding, or the frontend can trigger a texture swap by re-assigning the `src` attribute with a query parameter that forces the handler to re-resolve:
+
+```js
+// Engine team exposes a call that updates which item the preview camera is looking at
+engine.call('SetItemPreviewTarget', itemId).then(() => {
+    const preview = document.getElementById('item-preview');
+    // Cache-busting query param forces the resource handler to re-deliver
+    preview.src = `coui://live/item-preview?id=${itemId}`;
+});
+```
+
+---
+
+## Displaying a Live View in HTML
+
+A Live View is used exactly like any other image source. The `<img>` element is the most straightforward approach:
+
+<Tabs>
+    <TabItem label="SolidJS">
+
+    ```tsx title="CharacterPortrait.tsx"
+    import Relative from '@components/Layout/Relative/Relative';
+    import LiveView from '@components/Media/LiveView/LiveView';
+    import TextBlock from '@components/Basic/TextBlock/TextBlock';
+
+    const CharacterPortrait = () => (
+        <Relative class="portrait-frame">
+            <LiveView src="coui://live/player-portrait" class="portrait-render" />
+            <TextBlock class="portrait-name">Commander Vasquez</TextBlock>
+            <TextBlock class="portrait-status">HP 84 / 100</TextBlock>
+        </Relative>
+    );
+    ```
+
+    </TabItem>
+    <TabItem label="HTML">
+
+    ```html title="index.html"
+    <div class="portrait-frame">
+        <img
+            id="player-portrait"
+            class="portrait-render"
+            src="coui://live/player-portrait"
+            alt="Player character"
+        />
+        <div class="portrait-name">Commander Vasquez</div>
+        <div class="portrait-status">HP 84 / 100</div>
+    </div>
+    ```
+
+    </TabItem>
+</Tabs>
+
+```css
+.portrait-frame {
+    position: relative;
+    width: 200px;
+    height: 260px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.portrait-render {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* crop/fill the frame without distorting the render */
+    display: block;
+}
+
+.portrait-name {
+    position: absolute;
+    bottom: 2rem;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 0.875rem;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+```
+
+`object-fit: cover` behaves the same way it does for regular images: the render target fills the container while maintaining its aspect ratio, cropping the edges if the aspect ratios do not match. Use `object-fit: contain` if you need the full render target visible with letterboxing.
+
+---
+
+## Using a Live View as a CSS Background
+
+A CSS `background-image` works equally well. This approach is cleaner when overlaying other HTML content directly on top of the live render:
+
+<Tabs>
+    <TabItem label="SolidJS">
+
+    ```tsx title="Minimap.tsx"
+    import Relative from '@components/Layout/Relative/Relative';
+    import BackgroundImage from '@components/Media/BackgroundImage/BackgroundImage';
+    import Absolute from '@components/Layout/Absolute/Absolute';
+
+    const Minimap = () => (
+        <Relative class="minimap-container">
+            <BackgroundImage
+                src="coui://live/minimap"
+                fill
+                class="minimap-render"
+                style={{ position: 'absolute', inset: '0' }}
+            />
+            <Absolute class="minimap-player-marker" center />
+            <Absolute class="minimap-objective-marker" />
+        </Relative>
+    );
+    ```
+
+    </TabItem>
+    <TabItem label="HTML">
+
+    ```html title="index.html"
+    <div class="minimap-container">
+        <div class="minimap-render" id="minimap"></div>
+        <div class="minimap-player-marker"></div>
+        <div class="minimap-objective-marker"></div>
+    </div>
+    ```
+
+    </TabItem>
+</Tabs>
+
+```css
+.minimap-container {
+    position: relative;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%; /* circular minimap */
+    overflow: hidden;
+    border: 3px solid rgba(255, 255, 200, 0.4);
+}
+
+.minimap-render {
+    position: absolute;
+    inset: 0;
+    background-image: url('coui://live/minimap');
+    background-size: cover;
+    background-position: center;
+}
+
+.minimap-player-marker {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    background-color: #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+```
+
+The player marker and objective overlays sit as independent HTML elements above the render target div. The live view itself is purely a background, making it easy to stack UI chrome on top.
+
+---
+
+## Loading State and Fallbacks
+
+The live view texture may not be ready immediately when the HTML loads. The resource handler delivers it asynchronously, and there can be a brief window where the `<img>` has no content. Provide a fallback background so the container is not visibly empty:
+
+```css
+.portrait-render {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background-color: #0a0a14; /* dark fill while render target loads */
+}
+
+.minimap-render {
+    background-image: url('coui://live/minimap');
+    background-size: cover;
+    background-color: #1a1a1a; /* fallback until texture is available */
+}
+```
+
+For a more deliberate loading state, display a placeholder until the engine signals the view is ready:
+
+<Tabs>
+    <TabItem label="SolidJS">
+
+    ```tsx title="PortraitWithLoading.tsx"
+    import { createSignal, onMount, onCleanup, Show } from 'solid-js';
+    import Relative from '@components/Layout/Relative/Relative';
+    import LiveView from '@components/Media/LiveView/LiveView';
+    import TextBlock from '@components/Basic/TextBlock/TextBlock';
+
+    const PortraitWithLoading = () => {
+        const [isReady, setIsReady] = createSignal(false);
+
+        onMount(() => {
+            engine.on('PlayerPortraitReady', () => setIsReady(true));
+        });
+
+        return (
+            <Relative class="portrait-frame">
+                <Show
+                    when={isReady()}
+                    fallback={<TextBlock class="portrait-loading-indicator">Loading...</TextBlock>}
+                >
+                    <LiveView src="coui://live/player-portrait" class="portrait-render" />
+                </Show>
+            </Relative>
+        );
+    };
+    ```
+
+    </TabItem>
+    <TabItem label="HTML + JS">
+
+    ```html title="index.html"
+    <div class="portrait-frame">
+        <img id="player-portrait" class="portrait-render portrait-render--loading" src="" alt="Player character" />
+        <div class="portrait-loading-indicator" id="portrait-loader">Loading...</div>
+    </div>
+    ```
+
+    ```js title="script.js"
+    engine.on('PlayerPortraitReady', () => {
+        const img = document.getElementById('player-portrait');
+        const loader = document.getElementById('portrait-loader');
+
+        img.src = 'coui://live/player-portrait';
+        img.classList.remove('portrait-render--loading');
+        loader.style.display = 'none';
+    });
+    ```
+
+    </TabItem>
+</Tabs>
+
+The `PlayerPortraitReady` event name is an example. Coordinate the actual event name with the engine team when they expose the notification from the render target setup.
+
+---
+
+## Sizing and Resolution Considerations
+
+The live view texture has a fixed resolution determined by the engine (the size of the render target). Displaying it at a size that does not match its native resolution will cause Gameface to scale it, which can produce blur or aliasing.
+
+Two practical rules:
+
+1. **Match display size to render target resolution where possible.** If the character portrait render target is 256×320, size the `<img>` container to 256×320 pixels or to an exact integer multiple (128×160 for half size).
+
+2. **If scaling is unavoidable, prefer downscaling.** Displaying a 512×512 render target at 256×256 in the UI is visually clean. Upscaling a 128×128 render target to 300×300 will look soft. Budget render target resolution based on the largest display size you need.
+
+Inform the engine team of the display dimensions your UI design requires so they can allocate render targets at appropriate resolutions.
+
+---
+
+## Performance Notes
+
+Each active Live View is a full camera render executing each frame. The cost is borne by the engine, not Gameface, but the overall frame budget is shared. Keep these points in mind:
+
+- **Only activate Live Views when the containing UI is visible.** If the character customization screen is closed, the item preview camera does not need to render. Coordinate with the engine team to pause render targets for views that are off-screen.
+- **Resolution directly determines cost.** A 512×512 portrait render costs four times the GPU fill rate of a 256×256 render.
+- **Multiple simultaneous live views multiply cost.** Three portrait frames for a squad-selection screen means three separate camera renders each frame. Evaluate whether lower resolutions or baked preview images cover the use case adequately.
+
+Use the performance profiling tools described in the [Performance & Memory Profiling](/polishing/debugging-profiling--testing/performance-and-memory-profiling/) article to confirm the frame budget impact of each Live View before shipping.
+
+---

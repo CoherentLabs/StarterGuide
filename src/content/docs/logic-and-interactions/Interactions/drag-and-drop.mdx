@@ -1,0 +1,394 @@
+---
+title: "Drag & Drop: Mouse vs. Gamepad"
+description:
+    Build drag-and-drop in Gameface from pointer events or the Interaction Manager's dropzone module for mouse input, then layer on a carry-mode state
+    machine so gamepad players who have no cursor can pick up, move, and drop with two button presses.
+sidebar:
+    order: 4
+---
+
+import Summary from "coherent-docs-theme/components/Summary.astro";
+import Highlight from "coherent-docs-theme/components/Highlight.astro";
+import Link from "../../../../components/Link.astro";
+import { Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import DnDTetrisGridVideo from "../../../../assets/phase-4/interactions/drag-and-drop-tetris-grid.webm";
+
+<Summary>
+    Gameface does not implement the HTML5 drag-and-drop API. Mouse drag-and-drop is built from pointer events directly, or via the Interaction
+    Manager's <Highlight>dropzone</Highlight> module for slot-based inventories. Gamepad players need a two-press flow: pick up, navigate, drop. While
+    the item is being carried, spatial navigation pauses and the D-Pad moves the item instead of the focus.
+</Summary>
+
+## The native HTML5 trap
+
+In a standard browser, you would reach for `draggable="true"` and the `dragstart` / `dragover` / `drop` event family. Gameface does not implement
+that API surface. Those attributes and events do nothing, and there is no engine flag that turns them on.
+
+:::caution[HTML5 DnD does not fire]
+
+`draggable="true"`, `ondragstart`, `ondragend`, `ondragover`, and the `DataTransfer` object are not implemented. Code that depends on them will
+silently no-op. The patterns below are the only ones that work.
+
+:::
+
+What does work is pointer events. Drag-and-drop in Gameface is always built from `mousedown`, `mousemove`, and `mouseup` (plus the gamepad
+equivalent for the second half of this article), with the dragged element positioned absolutely and moved by your own code.
+
+## Mouse drag-and-drop
+
+For mouse input, the manual pointer-event path gives you full control. IM's `dropzone` module handles the standard inventory-to-slot case with less
+code.
+
+### The manual approach
+
+The minimum pointer-event recipe is three handlers. `mousedown` on the draggable element captures the start offset between the pointer and the
+element's top-left corner. `mousemove` on `window` updates the element's `transform` so it follows the pointer. `mouseup` on `window` releases the
+drag and resolves the drop.
+
+<Tabs>
+    <TabItem label="SolidJS">
+
+    ```tsx title="Inventory.tsx"
+    import Block from '@components/Layout/Block/Block';
+
+    const Inventory = () => (
+        <Block class="inventory">
+            <Block class="slot" data-slot="0" />
+            <Block class="slot" data-slot="1" />
+            <Block class="slot" data-slot="2">
+                <Block class="item" id="potion" />
+            </Block>
+        </Block>
+    );
+    ```
+
+    </TabItem>
+    <TabItem label="HTML">
+
+    ```html title="inventory.html"
+    <div class="slot" data-slot="0"></div>
+    <div class="slot" data-slot="1"></div>
+    <div class="slot" data-slot="2">
+        <div class="item" id="potion"></div>
+    </div>
+    ```
+
+    </TabItem>
+</Tabs>
+
+<Tabs>
+    <TabItem label="SolidJS">
+
+    ```tsx title="DraggableItem.tsx"
+    import { createSignal, onMount, onCleanup } from 'solid-js';
+    import Block from '@components/Layout/Block/Block';
+
+    type Pos = { x: number; y: number };
+
+    const DraggableItem = () => {
+        let itemRef!: HTMLElement;
+        const [dragging, setDragging] = createSignal(false);
+        const [pos, setPos] = createSignal<Pos | null>(null);
+        let offset: Pos = { x: 0, y: 0 };
+
+        const onMouseDown = (e: MouseEvent) => {
+            const rect = itemRef.getBoundingClientRect();
+            offset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            setDragging(true);
+        };
+        const onMouseMove = (e: MouseEvent) => {
+            if (!dragging()) return;
+            setPos({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+        };
+        const onMouseUp = (e: MouseEvent) => {
+            if (!dragging()) return;
+            setDragging(false);
+            setPos(null);
+            const target = document.elementFromPoint(e.clientX, e.clientY);
+            const slot = target?.closest('.slot') as HTMLElement | null;
+            if (slot) slot.appendChild(itemRef);
+        };
+
+        onMount(() => {
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        });
+        onCleanup(() => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        });
+
+        return (
+            <Block
+                ref={itemRef}
+                id="potion"
+                class={`item${dragging() ? ' is-dragging' : ''}`}
+                style={pos() ? { transform: `translate(${pos()!.x}px, ${pos()!.y}px)` } : undefined}
+                onMouseDown={onMouseDown}
+            />
+        );
+    };
+    ```
+
+    </TabItem>
+    <TabItem label="Vanilla JS">
+
+    ```js title="manual-drag.js"
+    const item = document.getElementById("potion");
+    let dragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    function onMouseDown(event) {
+        dragging = true;
+        const rect = item.getBoundingClientRect();
+        offsetX = event.clientX - rect.left;
+        offsetY = event.clientY - rect.top;
+        item.classList.add("is-dragging");
+    }
+
+    function onMouseMove(event) {
+        if (!dragging) return;
+        item.style.transform = `translate(${event.clientX - offsetX}px, ${event.clientY - offsetY}px)`;
+    }
+
+    function onMouseUp(event) {
+        if (!dragging) return;
+        dragging = false;
+        item.classList.remove("is-dragging");
+
+        // Resolve drop. Which slot is under the pointer right now?
+        const target = document.elementFromPoint(event.clientX, event.clientY);
+        const slot = target?.closest(".slot");
+        if (slot) slot.appendChild(item);
+    }
+
+    item.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    ```
+
+    </TabItem>
+</Tabs>
+
+Use this approach when the interaction has rules the IM modules do not cover.
+
+### Using IM's dropzone
+
+The Interaction Manager's <Highlight>dropzone</Highlight> module handles the drag, the hit-test against a list of target slots, and the drop
+resolution in one constructor call. For typical inventory UIs it replaces the manual recipe entirely. It is part of the same Interaction Manager
+library introduced in [Keyboard & Gamepad Input](/logic-and-interactions/interactions/interaction-manager).
+
+```js title="im-dropzone.js"
+import { dropzone } from "coherent-gameface-interaction-manager";
+
+const item = new dropzone({
+    element: ".item",
+    dropzones: [".slot"],
+    dragClass: "is-dragging",
+    dropzoneActiveClass: "is-target",
+    dropType: "switch",
+    onDrop: (event) => {
+        console.log("Dropped on", event.dropzone);
+    },
+});
+```
+
+A few of these options carry most of the value:
+
+- **`dragClass`** is applied to the carried element while it is being dragged. Use it for the lift, shadow, or tilt that tells the player the drag is
+  in progress.
+- **`dropzoneActiveClass`** is applied to whichever drop target is currently under the carried element. Use it to highlight the slot the item will
+  land in.
+- **<Highlight>dropType</Highlight>** is the option you will tune most often. It decides what happens when the target slot is not empty:
+
+| `dropType`                            | Behavior                                                       |
+| ------------------------------------- | -------------------------------------------------------------- |
+| <Highlight>add</Highlight> (default)  | Places the carried item into the dropzone.                     |
+| <Highlight>switch</Highlight>         | Swaps the carried item with whatever is already in the slot.   |
+| <Highlight>shift</Highlight>          | Pushes the carried item in and shifts neighbors to make space. |
+| <Highlight>none</Highlight>           | Rejects the drop, returning the item to its starting position. |
+
+The <Highlight>onDrop</Highlight> callback fires once the drop resolves. The event object exposes `target` (the dropped element), `dropzone` (the
+receiving slot), and `preventDefault()`. The last one is useful when the drop needs server confirmation before committing the visual change.
+
+```js
+onDrop: (event) => {
+    event.preventDefault(); // hold the visual commit until the backend agrees
+    confirmInventoryMove(event.target, event.dropzone);
+};
+```
+
+Call `item.deinit()` to remove the listeners when the screen unmounts. For touch support, flip `item.touchEnabled = true` and see the
+[Touch Support](/logic-and-interactions/interactions/touch-support) article for the broader picture.
+
+:::tip[Use draggable for free-position drags]
+
+If you need a drag without target slots (a draggable panel, a slider thumb, a minimap pan handle), the simpler `draggable` module has the same shape
+minus the `dropzones` and `dropType` options. It supports `restrictTo` for container clamping and `lockAxis` for single-axis drags.
+
+:::
+
+## Gamepad drag-and-drop
+
+A gamepad has no equivalent of click-and-hold, so the same action that takes one gesture on a mouse splits into two button presses with navigation in
+between. The player presses confirm on a focused item to pick it up, uses the D-Pad to move it, and presses confirm again to drop it.
+
+The piece that needs the most care is what happens to directional input in the middle. While the item is being carried, the D-Pad has to move the
+item rather than the focus, which means spatial navigation needs to step aside and custom direction handlers take over until the drop. The
+walkthrough below builds that flow for a grid-based inventory where every slot holds one item.
+
+<Steps>
+
+1. #### Pick up the focused item on confirm
+
+    A single confirm handler toggles between pick-up and drop based on whether something is currently carried. On pick-up, the handler captures the
+    focused element, pauses
+    [spatial navigation](/logic-and-interactions/interactions/spatial-navigation-and-focus#pausing-and-resuming-navigation), installs the
+    temporary direction handlers, and adds a visual class.
+
+    ```js mark={3, 6, 15, 20}
+    import { spatialNavigation, gamepad } from "coherent-gameface-interaction-manager";
+
+    // Reference to the item the player is currently holding. Null when idle.
+    let carried = null;
+
+    // One handler covers both pick-up and drop.
+    function onConfirm() {
+        if (carried) drop();
+        else pickUp();
+    }
+
+    function pickUp() {
+        carried = document.activeElement;
+        carried.classList.add("is-carried");
+        // Without this pause, the D-Pad would still move focus instead of the item.
+        spatialNavigation.pause();
+        installCarryControls();
+    }
+
+    // Wire the confirm handler on initialization.
+    gamepad.on({ actions: ["face-button-down"], type: "press", callback: onConfirm });
+    ```
+
+2. #### Move the carried item with the D-Pad
+
+    With spatial navigation paused, the direction keys are free for the move handlers. Each one finds the neighboring slot and puts the carried
+    item into it.
+
+    ```js mark={1, 11} ins="gamepad.on"
+    // Registered on pick-up so the handlers only intercept the D-Pad while an item is held.
+    function installCarryControls() {
+        gamepad.on({ actions: ["pad-right"], type: "press", callback: moveRight });
+        gamepad.on({ actions: ["pad-left"],  type: "press", callback: moveLeft });
+        gamepad.on({ actions: ["pad-down"],  type: "press", callback: moveDown });
+        gamepad.on({ actions: ["pad-up"],    type: "press", callback: moveUp });
+    }
+
+    function moveRight() {
+        const nextSlot = carried.parentElement.nextElementSibling;
+        // Guard so the item only lands on real slot elements, not stray siblings.
+        if (nextSlot?.classList.contains("slot")) nextSlot.appendChild(carried);
+    }
+    ```
+
+3. #### Drop & cleanup on the second confirm press
+
+    The second confirm press calls `onConfirm` again which calls `drop` because `carried` is non-null. The item is already in its destination
+    slot, so the drop only cleans up.
+
+    ```js mark={4, 6, 10} ins="gamepad.off"
+    function drop() {
+        carried.classList.remove("is-carried");
+        removeCarryControls();
+        // Hand the D-Pad back to spatial navigation.
+        spatialNavigation.resume();
+        // Forget the reference so the next confirm press picks up again.
+        carried = null;
+    }
+
+    // Tears down every direction handler that pickUp installed.
+    function removeCarryControls() {
+        gamepad.off(["pad-right"], moveRight);
+        gamepad.off(["pad-left"], moveLeft);
+        gamepad.off(["pad-down"], moveDown);
+        gamepad.off(["pad-up"], moveUp);
+    }
+    ```
+
+</Steps>
+
+### Free-positioning layouts
+
+The snap-to-slot pattern works well for simple 1x1 grids. For Tetris-style inventories where each item occupies a different slice of the grid (1x3,
+2x2, 3x3), the approach needs to change.
+
+Each item tracks its top-left grid cell (`gridX`, `gridY`) and its size in cells (`cols`, `rows`). On every D-Pad press, the move handler shifts
+those coordinates and clamps them so the item's edges stay inside the grid. The element follows by writing the new pixel offset to `transform`.
+
+```js title="move-by-coordinates.js"
+function moveBy(dx, dy) {
+    // Shift the top-left corner and clamp so the item's far edges stay inside the grid.
+    carried.gridX = clamp(carried.gridX + dx, 0, gridWidth - carried.cols);
+    carried.gridY = clamp(carried.gridY + dy, 0, gridHeight - carried.rows);
+
+    carried.style.transform = `translate(${carried.gridX * cellSize}px, ${carried.gridY * cellSize}px)`;
+}
+```
+
+:::note[Why translate, not top/left]
+
+`transform: translate(...)` moves an element without forcing a new layout pass. Setting `top` or `left` would trigger layout on every direction
+press, which the player can feel as choppy movement once the inventory has more than a few items on screen.
+
+:::
+
+The drop also changes. Instead of appending to a known slot, find the slot the carried item overlaps most and commit there.
+
+```js title="overlap-drop.js"
+// Get the slots beforehand
+const slots = document.querySelectorAll(".slot");
+
+function resolveDrop() {
+    const carriedRect = carried.getBoundingClientRect();
+    let best = null;
+    let bestOverlap = 0;
+
+    // Find the slot with the most overlap with the carried item.
+    slots.forEach((slot) => {
+        const overlap = rectOverlap(carriedRect, slot.getBoundingClientRect());
+        if (overlap > bestOverlap) {
+            bestOverlap = overlap;
+            best = slot;
+        }
+    });
+
+    if (best) best.appendChild(carried);
+}
+```
+
+<video autoplay loop muted>
+    <source src={DnDTetrisGridVideo} type="video/webm" />
+</video>
+
+### Reusing the dropzone module
+
+If the mouse path is already wired with `dropzone`, extending it for gamepad follows the same pattern covered above: pick up the item, pause spatial
+navigation, move it with the D-Pad. The only part that changes is the drop. Reparenting the item directly into a slot bypasses what `dropzone` is
+tracking internally, so the next mouse drag will produce wrong results. Route the drop through <Highlight>automaticAction</Highlight> instead, which
+fires a programmatic drop through the same `dropType` policy and `onDrop` callback the mouse path already uses.
+
+```js title="programmatic-drop.js" ins="automaticAction" mark={3, 6}
+import { dropzone, actions } from "coherent-gameface-interaction-manager";
+
+// Set up the dropzone as normal for mouse input.
+const inventoryDrop = new dropzone({ element: ".item", dropzones: [".slot"] });
+
+// On gamepad drop, call the same action that dropzone calls on mouse drop.
+function resolveDrop(targetSlotIndex) {
+    actions.execute(inventoryDrop.automaticAction, {
+        elementIndex: 0,
+        dropzoneIndex: targetSlotIndex,
+    });
+}
+```

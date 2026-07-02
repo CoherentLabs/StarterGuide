@@ -1,0 +1,74 @@
+---
+title: "Working Separately from the Game"
+description: "Learn how to debug your game UI, tweak CSS, and test JavaScript logic using the standalone Gameface Inspector."
+sidebar:
+    order: 4
+draft: true
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+<Summary>
+    In the previous article, you loaded your HTML file into the Player and watched it run perfectly. But what happens when things go wrong? What if a layout breaks, or a data-bound value isn't updating?
+    
+    If you have ever done traditional web development, we have great news: **you do not need to learn a proprietary game engine debugger.**
+    
+    Gameface uses the standard Chrome DevTools. You get the exact same inspection power and JavaScript debugging as a web browser, completely independent of the game engine.
+</Summary>
+
+## The Standalone Workflow
+
+The core philosophy of Gameface development is **separation of concerns**. 
+
+You should never have to ask a gameplay programmer to recompile the Unreal or Unity engine just so you can change the color of a health bar. By pairing the **Player** (to render your HTML) with the **DevTools Inspector** (to debug it), you unlock a completely independent, rapid-iteration workflow. 
+
+Write code in your IDE &rarr; See it update in the Player &rarr; Debug it in the Inspector.
+
+:::note[TO DO - Resolve DevTools launch method]
+There is a contradiction to resolve before publishing: this article describes launching the inspector via **F12 or right-click → Inspect** inside the Player window. The [Development Environment & Tools](/planning-and-setup/development-environment-and-tools/) article states you **cannot** right-click to inspect and must use a separate standalone Inspector app. One of these approaches is incorrect. Please confirm the canonical way to open the inspector in the current Player version and update both articles accordingly.
+:::
+
+## Hands-On: Launching the Inspector
+
+Let's see how it works by inspecting the Demo page you were just playing with.
+
+<Steps>
+
+1. #### **Keep the Player Running**
+    Make sure you still have the Player open and running the Demo page from the previous article.
+
+2. #### **Open the DevTools**
+    To open the Inspector, simply press <Highlight>F12</Highlight> on your keyboard, or right-click anywhere inside the Player window and select **"Inspect"**. 
+
+3. #### **Explore the Interface**
+    A new window will pop up. If you have ever used Google Chrome to build a website, you will instantly recognize this interface. It is fully equipped to debug your UI's DOM, styling, and logic.
+
+</Steps>
+
+## A Quick Tour of the Tools
+
+While the Inspector contains all the standard web debugging features, Gameface includes a few custom additions specifically tailored for game UI.
+
+Here are the primary panels you will use daily:
+
+### 1. The Elements Panel
+This is your layout laboratory. Here you can see the live DOM tree of your loaded HTML file. 
+* Click on any element to view its active CSS rules.
+* <Highlight>Live Edit:</Highlight> Double-click a CSS property (like `width` or `background-color`) and change it. You will see the UI in the Player update instantly. This is the fastest way to polish designs without constantly saving and reloading files.
+
+### 2. The Console & Sources
+This is the brain monitor. If you have a typo in your JavaScript, it will show up here in bright red. You can use the Console to manually type JavaScript commands to trigger UI events, or use the Sources tab to set standard breakpoints in your code and step through your logic line by line.
+
+### 3. The Custom Data-Bind Panel
+Because Gameface relies heavily on data-binding to communicate with the game engine, we added a custom panel just for this workflow. 
+When you select an element in the DOM tree, you can use the Data-Bind tab to inspect exactly how its data-bound properties (like a dynamic health value or an inventory array) are updating in real-time. *(Don't worry, we will deep-dive into how to use this panel effectively in the Logic & Interactions section).*
+
+## Wrapping Up
+
+Congratulations! You now understand the fundamental Gameface workflow. You know how to load an HTML file into the Player, test live data-binding, and open the DevTools to debug your code-all without touching a single line of C++.
+
+You are now ready to build a real project.
+
+**Next up:** Proceed to [Planning & Setup](/planning-and-setup/development-environment-and-tools). We will walk through configuring VS Code, installing Gameface-specific linters, and establishing our recommended modern tech stack (Vite + SolidJS).

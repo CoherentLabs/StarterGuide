@@ -1,0 +1,70 @@
+---
+title: Core Concepts & Information Flow
+description: Transitioning from standard web development to game UI requires a fundamental shift in how you think about data and structure. In this article, we will cover how data flows between the game engine and your interface, why your UI should stay as "dumb" as possible, and how to structure your HTML documents into optimized "Views".
+sidebar:
+    order: 2
+draft: false
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import Link from 'coherent-docs-theme/components/Link.astro';
+import { Steps, FileTree } from '@astrojs/starlight/components';
+
+<Summary>
+Transitioning from standard web development to game UI requires a fundamental shift in how you think about data and structure. 
+
+In this article, we will cover how data flows between the game engine and your interface, why your UI should stay as "dumb" as possible, and how to structure your HTML documents into optimized "Views".
+</Summary>
+
+## The "Push" Philosophy: How Data Works in Games
+
+If you are coming from a traditional web development background, you are likely used to the <Highlight>Fetch</Highlight> model. In a standard web app, the frontend asks a server for data, waits for a network response, displays a loading spinner, and then parses a JSON payload.
+
+Game UIs operate entirely differently. There are rarely any loading spinners or network requests to a backend API. Instead, Gameface operates on a <Highlight>Push</Highlight> model. 
+
+The game engine is constantly running at 60 or more frames per second. Every single frame, the C++ engine uses data-binding to synchronize data between the UI and the engine. When data in the engine changes, the corresponding UI elements are automatically updated to reflect those changes. 
+
+### Keep Your UI "Dumb"
+
+Because the game engine is pushing state updates continuously, your frontend should hold as little state as possible. The game engine is the ultimate source of truth. 
+
+Your UI should remain "dumb." It shouldn't calculate how much damage a player took, nor should it sort a massive inventory array. The engine handles the heavy computational logic and pushes the finalized data, allowing your interface to simply react and render the result. 
+
+:::tip
+Always rely on the engine for logic and math. Your JavaScript should be reserved for managing pure UI interactions, like opening a dropdown panel or triggering an animation.
+:::
+
+---
+
+## What is a "View"?
+
+In Gameface terminology, each loaded HTML page within your game is referred to as a <Highlight>View</Highlight>. When planning your development workflow, you essentially have to decide how to split the UI into these views, which dictates how many distinct HTML pages your project will have.
+
+Generally, game UIs can be categorized into a few major screen types:
+
+* **Menu:** The main navigational hubs, like the Start screen, Settings, or Inventory.
+* **HUD (Heads-Up Display):** The persistent, on-screen elements like health bars, minimaps, and crosshairs.
+* **Spatial / Diegetic:** Elements that exist within the 3D game world itself, such as interactable computer terminals or floating nameplates above characters.
+* **Meta:** 2D overlays that relate to the story but sit on top of the game, like subtitles or cinematic pop-ups.
+
+---
+
+## Best Practices: Minimizing Views
+
+While it might be tempting to create a separate HTML file for every single menu screen in your game, it is highly advisable to minimize the number of views created. Loading new views entirely from scratch is much heavier than updating an existing one.
+
+Instead of swapping between separate HTML documents, you should leverage tabs or routing components to consolidate multiple elements onto a single view to enhance performance.
+
+### Routing vs. Separate Views
+
+Treat your complex screens like a Single Page Application (SPA). By using a frontend router, you can swap out panels and widgets instantly without asking the engine to spin up a brand-new HTML document. 
+
+Here is a common, optimized approach to structuring a game:
+
+* **The Main Menu SPA:** Build your main menu as a Single Page Application. When the player clicks from "Play" to "Settings", use routing to swap the content dynamically within the same view.
+* **The HUD Static Page:** Keep your HUD as a highly optimized, single HTML file without any complex routing. Hide and show widgets strictly through data-binding triggers.
+
+:::warning
+Avoid using complex routing or heavy state-management libraries for simple Spatial or HUD views. Keep your active DOM tree small, and rely on `data-bind-if` to add or remove elements only when they are explicitly needed by the player.
+:::

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.coherent-labs.com)",
+      "Bash(Get-ChildItem -Path \"d:\\\\repos\\\\StarterGuide\\\\src\\\\content\\\\docs\\\\\" -Filter \"*.mdx\" -Recurse | Select-Object -First 20 | Format-Table FullName, LastWriteTime)",
+      "Bash(Select-Object FullName)"
+    ]
+  }
+}

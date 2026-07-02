@@ -1,0 +1,267 @@
+---
+title: "Routing Input: UI vs. The 3D World"
+description: Learn how to manage input routing between your Gameface UI and the 3D game world, including custom cursors and text selection.
+sidebar:
+    order: 1
+---
+
+import Summary from "coherent-docs-theme/components/Summary.astro";
+import Highlight from "coherent-docs-theme/components/Highlight.astro";
+import Link from "coherent-docs-theme/components/Link.astro";
+import { Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import CustomCursor from "../../../../assets/phase-4/interactions/custom-cursor.webm";
+import TextSelection from "../../../../assets/phase-4/interactions/text-selection.webm";
+
+<Summary>
+    In a standard browser, the DOM is the full input chain. In Gameface, your UI is a transparent layer and the engine handles every click, keypress,
+    and gamepad input before forwarding it to the view. You work mainly in JavaScript and CSS, but unresponsive controls often mean the engine is not
+    forwarding that event. This article covers routing clicks between UI layers and the 3D world, system and software cursors, and manual text
+    selection.
+</Summary>
+
+## Routing Clicks Between UI Layers and the 3D World
+
+Because the UI often covers the entire screen, the engine needs a way to distinguish between "empty" UI space and "active" widgets. In games like
+MOBAs or RTS titles, clicking the empty space between your action bar and your minimap should issue a move command to your unit. However, clicking a
+spell icon inside that same action bar must execute UI logic.
+
+The most efficient way to handle this is through a <Highlight>CSS-based contract</Highlight>. Your engine developers can configure the C++ input
+handler to inspect the element directly under the player's cursor. If the element (or its parents) contains a specific class, like
+
+<Highlight>.ui-transparent</Highlight>, the engine can "interrupt" the input and pass it to the 3D world.
+
+The following example establishes a full-screen wrapper that the engine is instructed to ignore, while keeping the internal menu interactive.
+
+<Tabs>
+    <TabItem label="SolidJS">
+
+    ```tsx title="HudLayout.tsx"
+    import Block from '@components/Layout/Block/Block';
+    import Button from '@components/Basic/Button/Button';
+
+    const HudLayout = () => (
+        <Block class="hud-root ui-transparent">
+            <Block class="side-menu">
+                <Button class="menu-button">Inventory</Button>
+            </Block>
+        </Block>
+    );
+    ```
+
+    </TabItem>
+    <TabItem label="HTML">
+
+    ```html title="hud-layout.html"
+    <div class="hud-root ui-transparent">
+        <aside class="side-menu">
+            <button class="menu-button">Inventory</button>
+        </aside>
+    </div>
+    ```
+
+    </TabItem>
+</Tabs>
+
+In your CSS, you define the visual behavior. Even though the engine handles the "fall-through" logic based on the class name, you should still use the
+<Highlight>pointer-events</Highlight> property to ensure the UI engine itself doesn't waste resources calculating hits on empty containers.
+
+```css title="input-routing.css" ins="pointer-events:"
+.hud-root {
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none; /* Internal UI logic optimization */
+}
+
+.side-menu {
+    /* Re-enable interaction for the actual menu content */
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.8);
+}
+```
+
+:::note[Beyond the Frontend]
+
+This routing requires a C++ implementation of the <Highlight>OnNodeMouseEvent</Highlight> callback. You provide the class name (like
+`.ui-transparent`), and the C++ developer writes the logic to check for that class and return <Highlight>InterruptHandling</Highlight>.
+
+:::
+
+## Custom Cursor Strategies
+
+Gameface supports two ways to handle cursors. You can use the **System-Level** approach for maximum performance or a **Mocking** approach for
+prototyping and testing.
+
+### The System-Level Approach
+
+When you use a system-level cursor, you are asking the Operating System to draw the pointer directly. This is the <Highlight>recommended method</Highlight> because 
+the system draws the cursor at a level higher than the game engine, ensuring it never lags even if the game's frame rate drops.
+
+To use this, apply the standard CSS `url()` syntax pointing to platform-specific files like <Highlight>.ani</Highlight> or <Highlight>.cur</Highlight>.
+
+```css title="system-cursor.css"
+.interactable {
+    /* The OS handles this file for zero-latency movement */
+    cursor: url("assets/cursors/aim.ani") 5 10, pointer;
+}
+```
+
+:::caution[Testing Limitations]
+
+You cannot test this approach in the Gameface Player. The system-level cursor relies on a C++ integration where the engine implements the <Highlight>OnCursorChanged</Highlight> 
+callback to load and display the file. Since the Player lacks your game's specific C++ code, the cursor will not appear during testing.
+
+:::
+
+### The Mocking Approach
+
+If you need to test your UI without a game build, or if you want a cursor that uses complex CSS filters, you can "mock" it. This involves hiding the
+system cursor and replacing it with a top-level `<div>`.
+
+Because the mock cursor updates on every `mousemove`, avoid string interpolation in `style.transform` or other inline properties on each event. The
+examples below default to <Highlight>attributeStyleMap</Highlight> (CSS Typed OM) so position values stay numeric.
+
+:::note[CSS Typed OM]
+
+If CSS Typed OM is new to you, please refer to the
+[Continuous Updates: CSS Typed Object Model](/layout-assets-and-styling/dynamic-styling--variables/dynamic-styling-in-javascript/#continuous-updates-css-typed-object-model)
+topic in the guide.
+
+:::
+
+First, hide the system pointer and define the mock cursor element.
+
+```css title="mock-cursor.css"
+html {
+    cursor: none; /* Hide the OS cursor entirely */
+}
+
+.custom-cursor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none; /* Prevents the cursor from blocking clicks */
+    width: 1vmax;
+    height: 1vmax;
+    background-image: url("cursor-sprite.png");
+    background-repeat: no-repeat;
+    z-index: 9999; /* ensure the cursor is on top of everything else */
+}
+```
+
+Next, use JavaScript to map the mouse coordinates directly to the element's transformation.
+
+```javascript title="cursor-logic.js" mark={2, 5, 8, 12, 16, 20}
+const cursor = document.getElementById("cursor");
+// Cache the attributeStyleMap for faster access
+const cursorStyleMap = cursor.attributeStyleMap;
+
+// Create a reusable transform value to avoid memory thrashing
+const mouseTransform = new CSSTransformValue([new CSSTranslate(CSS.px(0), CSS.px(0))]);
+
+// Extract the specific X and Y properties for direct updates
+const mouseTransformTranslateX = mouseTransform[0].x;
+const mouseTransformTranslateY = mouseTransform[0].y;
+
+// Only update in the mousemove handler to avoid unnecessary updates
+document.addEventListener("mousemove", (e) => {
+    const { x, y } = e;
+
+    // Update numeric values directly without string interpolation
+    mouseTransformTranslateX.value = x;
+    mouseTransformTranslateY.value = y;
+
+    // Apply the update to the element
+    cursorStyleMap.set("transform", mouseTransform);
+});
+```
+
+<video autoplay loop muted>
+    <source src={CustomCursor} type="video/webm" />
+</video>
+
+:::danger[Performance Warning]
+
+The <Highlight>caretPositionFromPoint</Highlight> method forces the engine to calculate the layout of the text to find the character at those
+coordinates. Using this inside a high-frequency event like `mousemove` can be taxing. Ensure your UI is optimized and avoid complex nested styles
+inside selectable areas.
+
+:::
+
+## Implementing Text Selection
+
+Gameface disables text selection by default to prevent accidental highlighting during gameplay.  Enabling it requires a coordinated setup between your CSS, JavaScript, and the C++ backend.
+
+### Technical Requirements
+
+* **CSS Permission:** Apply <Highlight>user-select: text</Highlight> to the container.  This informs the engine that the nodes inside are interactable targets. 
+* **C++ Clipboard Bridge:** For Copy and Paste to function, your C++ team must implement <Highlight>OnClipboardTextSet</Highlight> and <Highlight>OnClipboardTextGet</Highlight>.  The engine uses these to communicate with the system clipboard. 
+* **Selection Logic:** You must manually handle the mouse drag to visually highlight text by tracking the "anchor" and "focus" points. 
+
+### Selection Handler Implementation
+
+```html title="selection-container.html"
+<div class="text-block selectable">
+    <p>This is a selectable text.</p>
+</div>
+<div class="text-block">
+    <p>This is a non-selectable text.</p>
+</div>
+```
+
+Apply the following CSS to the container you want to make selectable.
+
+```css title="selection-container.css"
+.selectable {
+    user-select: text;
+}
+```
+
+Then use a similar logic to manage the drag-to-select behavior by calculating the text range based on coordinate data.
+
+```javascript title="selection-manager.js" ins="caretPositionFromPoint" ins="setBaseAndExtent"
+let anchorCaretPosition = null;
+
+function handleMouseDown(event) {
+    // Clear existing selections on new click
+    document.getSelection().empty();
+    
+    // Record where the selection starts based on screen coordinates
+    if (event.button === 0 && !event.target.select) {
+        anchorCaretPosition = document.caretPositionFromPoint(event.x, event.y);
+    }
+}
+
+function handleMouseMove(event) {
+    // If the mouse moves while clicking, update the selection range
+    if ((event.buttons & 1) === 1 && anchorCaretPosition) {
+        const focusCaretPosition = document.caretPositionFromPoint(event.x, event.y);
+        
+        // Bridge the two points to create a highlighted area
+        document.getSelection().setBaseAndExtent(
+            anchorCaretPosition.offsetNode, 
+            anchorCaretPosition.offset,
+            focusCaretPosition.offsetNode, 
+            focusCaretPosition.offset
+        );
+    }
+}
+
+function handleMouseUp() {
+    // Reset the state once the user releases the button
+    anchorCaretPosition = null;
+}
+
+document.addEventListener('mousedown', handleMouseDown);
+document.addEventListener('mousemove', handleMouseMove);
+document.addEventListener('mouseup', handleMouseUp);
+```
+
+<video autoplay loop muted>
+    <source src={TextSelection} type="video/webm" />
+</video>
+
+:::danger[Performance Warning]
+
+The <Highlight>caretPositionFromPoint</Highlight> method forces the engine to calculate the layout of the text to find the character at those coordinates.  Using this inside a high-frequency event like `mousemove` can be taxing. Ensure your UI is optimized and avoid complex nested styles inside selectable areas.
+
+:::

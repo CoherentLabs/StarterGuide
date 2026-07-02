@@ -1,0 +1,297 @@
+---
+title: "Local State vs. Game State"
+description: "Learn how to partition UI state between the frontend and the game backend to minimize communication overhead and maximize performance."
+sidebar:
+    order: 5
+---
+
+import Summary from "coherent-docs-theme/components/Summary.astro";
+import Highlight from "coherent-docs-theme/components/Highlight.astro";
+import Link from "coherent-docs-theme/components/Link.astro";
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+<Summary>
+    The ability to send data seamlessly between JavaScript and the game engine is a core feature of Gameface. However, treating the backend as a
+    global state manager for every UI element creates a severe performance bottleneck. Cross-boundary communication carries a cost.
+</Summary>
+
+Sending events to the C++ engine 60 times a second simply to update the visual fill of a dragging slider steals CPU cycles from core game logic.
+Because Gameface is built on web standards, you can leverage the same state-rich frontend practices used in modern web development to hold
+intermediate state.
+
+:::tip[A Note for Web Developers]
+
+If you are an experienced web developer, you will likely reach for local component state or reactive stores automatically. That instinct is highly
+encouraged. Using standard web concepts to keep **temporary** state in the frontend is the key to a performant game UI.
+
+:::
+
+## Pure Visual States
+
+Visual toggles like opening a settings dropdown or expanding a collapsible menu do not require backend validation. The game engine only needs to know
+<Highlight>the final outcome</Highlight> of the interaction.
+
+For a dropdown menu, you can keep the `isOpen` state entirely within local JavaScript variables. You do not need to bind the UI structure to a backend
+model.
+
+<Tabs>
+    <TabItem label="SolidJS">
+
+    ```tsx title="GraphicsDropdown.tsx"
+    import { createSignal } from 'solid-js';
+    import Dropdown from '@components/Basic/Dropdown/Dropdown';
+
+    const QUALITY_OPTIONS = ['Low', 'Medium', 'High', 'Ultra'];
+
+    const GraphicsDropdown = () => {
+        const [isOpen, setIsOpen] = createSignal(false);
+
+        const handleChange = (value: string) => {
+            engine.trigger('ApplyGraphicsSetting', value);
+            setIsOpen(false);
+        };
+
+        return (
+            <Dropdown onChange={handleChange}>
+                <Dropdown.Options>
+                    {QUALITY_OPTIONS.map((q) => (
+                        <Dropdown.Option value={q.toLowerCase()}>{q}</Dropdown.Option>
+                    ))}
+                </Dropdown.Options>
+            </Dropdown>
+        );
+    };
+    ```
+
+    </TabItem>
+    <TabItem label="Vanilla JS">
+
+    ```js title="dropdown-logic.js" mark={3, 6, 12, 17, 20}
+    const toggleBtn = document.getElementById("dropdown-toggle");
+    const menu = document.getElementById("dropdown-menu");
+    // Local UI state
+    let isOpen = false;
+
+    // Manage the visual toggle entirely in JavaScript
+    toggleBtn.addEventListener("click", () => {
+        isOpen = !isOpen;
+        menu.classList.toggle("is-hidden", !isOpen);
+    });
+
+    // Communicate with the engine only when a final selection occurs
+    menu.addEventListener("click", (event) => {
+        if (event.target.classList.contains("dropdown__item")) {
+            const selectedQuality = event.target.getAttribute("data-quality");
+
+            // Send the definitive action to the backend
+            engine.trigger("ApplyGraphicsSetting", selectedQuality);
+
+            // Close the menu locally
+            isOpen = false;
+            menu.classList.add("is-hidden");
+        }
+    });
+    ```
+
+    </TabItem>
+</Tabs>
+
+By managing the interaction locally, the frontend intercepts rapid clicks, state reversals, and hover effects. The C++ backend remains entirely
+unaware of the dropdown menu's existence until the user makes a concrete decision that affects the game world.
+
+## Intermediate Input Values
+
+Interactive elements like sliders generate continuous streams of data while the user manipulates them. A common mistake is configuring a two-way data
+binding between the slider's value and the game engine. This hands the continuous drag data directly to the C++ backend, firing dozens of events per
+second as the user searches for the right volume level.
+
+You must separate the visual representation of the input from the data submission. Update the UI locally during the dragging phase and push the final
+value to the engine only when the interaction concludes.
+
+<Tabs>
+    <TabItem label="SolidJS">
+
+    ```tsx title="VolumeSlider.tsx"
+    import { createSignal } from 'solid-js';
+    import Slider from '@components/Basic/Slider/Slider';
+    import Block from '@components/Layout/Block/Block';
+
+    const VolumeSlider = () => {
+        const [volume, setVolume] = createSignal(50);
+        let pendingValue = 50;
+
+        const handleChange = (value: number) => {
+            pendingValue = value;
+            setVolume(value);
+        };
+
+        const handleRelease = () => {
+            engine.call('SetMasterVolume', pendingValue).then((success: boolean) => {
+                if (!success) {
+                    // revert or show error state via signal
+                }
+            });
+        };
+
+        return (
+            <Block onMouseUp={handleRelease}>
+                <Slider
+                    min={0}
+                    max={100}
+                    value={volume()}
+                    step={1}
+                    onChange={handleChange}
+                />
+            </Block>
+        );
+    };
+    ```
+
+    </TabItem>
+    <TabItem label="Vanilla JS">
+
+    ```js title="slider-logic.js" mark={2, 5, 10, 15}
+    const volumeSlider = document.getElementById("volume-slider");
+    // Local UI state
+    let currentValue = 50;
+    let isDragging = false;
+    // Start the drag interaction
+    volumeSlider.addEventListener("mousedown", (event) => {
+        isDragging = true;
+        updateVolumeUI(event.clientX);
+    });
+    // Update only the UI on every mousemove
+    document.addEventListener("mousemove", (event) => {
+        if (!isDragging) return;
+        updateVolumeUI(event.clientX);
+    });
+    // Send the final value to the engine only when the interaction ends
+    document.addEventListener("mouseup", () => {
+        if (!isDragging) return;
+        isDragging = false;
+
+        engine.call("SetMasterVolume", currentValue).then((success) => {
+            if (!success) {
+                // Toggle error state on the UI - e.g., revert slider to last known good value
+                volumeSlider.classList.add('is-error');
+            }
+        });
+    });
+    ```
+
+    </TabItem>
+</Tabs>
+
+:::tip[Single Engine Update]
+
+`mousemove` updates the UI locally on every pointer sample. `engine.call` runs once in `mouseup`, when the gesture ends.
+
+:::
+
+### UI Stores for Complex State
+
+For one-off interactable elements, local variables are sufficient. However, when dealing with complex menus like an options screen, the local state
+becomes too complex for scattered variables.
+
+For massive lists of inputs, it's usually better to utilize a <Highlight>reactive UI store</Highlight> (like a SolidJS store).
+
+First, read the initial configuration from the game engine, copy it exactly into your local store, bind your complex UI to that local store, and send
+the updated object back to the engine only when the user applies the changes.
+
+```jsx title="SettingsMenu.jsx" mark={7, 17, 26}
+import { createStore, unwrap } from "solid-js/store";
+import { onMount } from "solid-js";
+// Custom input components
+import { Slider, Toggle, Select } from "./settings-components";
+
+export function SettingsMenu() {
+    // 1. Define the local UI store
+    const [settings, setSettings] = createStore({
+        masterVolume: 50,
+        sfxVolume: 75,
+        invertYAxis: false,
+        subtitlesEnabled: true,
+        fullscreen: false,
+        textureQuality: "Medium",
+    });
+
+    // 2. Fetch the true game state on load and populate the local store
+    onMount(() => {
+        engine.whenReady.then(() => {
+            engine.call("GetGameSettings").then((backendSettings) => {
+                setSettings(backendSettings);
+            });
+        });
+    });
+
+    // 3. Send the modified store back to the engine only upon confirmation
+    const applyChanges = () => {
+        // unwrap() converts the SolidJS proxy back into a plain JavaScript object
+        const finalData = unwrap(settings);
+
+        engine.call("ApplyGameSettings", finalData).then((success) => {
+            if (success) console.log("Settings applied successfully.");
+        });
+    };
+
+    return (
+        <div class="settings-menu">
+            {/* All mutations stay in the local store until the Apply button is pressed */}
+            <Slider label="Master Volume" value={settings.masterVolume} onChange={(value) => setSettings("masterVolume", value)} />
+            <Slider label="SFX Volume" value={settings.sfxVolume} onChange={(value) => setSettings("sfxVolume", value)} />
+            <Toggle label="Invert Y-Axis" checked={settings.invertYAxis} onChange={(checked) => setSettings("invertYAxis", checked)} />
+            <Toggle label="Subtitles" checked={settings.subtitlesEnabled} onChange={(checked) => setSettings("subtitlesEnabled", checked)} />
+            <Toggle label="Fullscreen" checked={settings.fullscreen} onChange={(checked) => setSettings("fullscreen", checked)} />
+            <Select
+                label="Texture Quality"
+                value={settings.textureQuality}
+                options={["Low", "Medium", "High", "Ultra"]}
+                onChange={(value) => setSettings("textureQuality", value)}
+            />
+
+            <button class="apply-btn" onClick={applyChanges}>
+                Apply Changes
+            </button>
+        </div>
+    );
+}
+```
+
+:::note[Batching Data for Performance]
+
+The reactive store handles all continuous data streams during user interaction. The UI updates instantly within the JavaScript environment. The engine
+update toll is paid only once when the user clicks "Apply Changes", transmitting a single batched payload to the game engine.
+
+:::
+
+## Transitory UI Effects and Timers
+
+Many UI features involve temporary lifecycles, such as toast notifications, hit markers, or floating combat text. The game engine should never be
+responsible for counting seconds to determine when a UI element must fade out.
+
+The game engine issues a single, fire-and-forget command. The frontend catches this command, renders the visual, manages the active duration, and
+executes the cleanup animation locally.
+
+```js title="toast-logic.js" mark={3, 8, 11}
+const toastContainer = document.getElementById("toast-container");
+
+// The engine fires this event once and immediately forgets about it
+engine.on("PlayerEarnedAchievement", (achievementName) => {
+    const toast = createToast(achievementName);
+    toastContainer.appendChild(toast);
+
+    // JavaScript owns the UI timer
+    setTimeout(() => {
+        toast.classList.replace("toast--enter", "toast--exit");
+        // Wait for the CSS fade-out animation to finish before removing the DOM node
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+});
+```
+
+:::tip[No Unnecessary Backend State Tracking]
+
+    Delegating the 4000ms display duration and the CSS transition timing to JavaScript keeps the backend free. The engine avoids unnecessary
+    timer management and state tracking for visual elements that have no bearing on gameplay logic.
+
+:::

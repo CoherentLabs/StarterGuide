@@ -1,0 +1,60 @@
+---
+title: Alternative Frameworks
+description: Learn how to scaffold a Gameface project with React, Preact, Vue, or Svelte instead of the recommended SolidJS stack.
+sidebar:
+    order: 3
+draft: true
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+<Summary>
+SolidJS is the recommended framework for Gameface, but the engine is framework-agnostic. If your team already has expertise in React, Preact, Vue, or Svelte, this article shows you how to scaffold and configure each one to run in the Gameface Player.
+</Summary>
+
+:::note[TO DO]
+This article is a stub. For each framework tab below, provide:
+1. The `degit` or CLI command to scaffold the project (or Vite `--template` flag).
+2. The project structure overview (key files to know).
+3. The `npm run dev` → Player.bat connection steps (same as the main stack setup, but confirm any URL differences).
+4. Framework-specific caveats in Gameface (unsupported features, known issues with the renderer, performance notes).
+
+Frameworks to cover: **React**, **Preact**, **Vue**, **Svelte**.
+
+Reference the [Recommended Tech Stack Overview](/planning-and-setup/recommended-tech-stack/recommended-tech-stack-overview/) for the rationale on why SolidJS is preferred over these alternatives.
+:::
+
+<Tabs>
+  <TabItem label="React">
+
+:::note[TO DO]
+Add React setup instructions here. Key caveats to document:
+- React's virtual DOM diffing adds overhead vs. SolidJS fine-grained reactivity - document measured perf difference if available.
+- Any React-specific CSS-in-JS patterns that conflict with Instaload (see [Asset Preloading & Bundler Config](/planning-and-setup/asset-preloading/)).
+:::
+
+  </TabItem>
+  <TabItem label="Preact">
+
+:::note[TO DO]
+Add Preact setup instructions here. Preact is a lighter React alternative and may be a better fit than full React for performance-sensitive UIs.
+:::
+
+  </TabItem>
+  <TabItem label="Vue">
+
+:::note[TO DO]
+Add Vue setup instructions here. Note any single-file component (`.vue`) compilation considerations.
+:::
+
+  </TabItem>
+  <TabItem label="Svelte">
+
+:::note[TO DO]
+Add Svelte setup instructions here. Svelte compiles to vanilla JS which is generally friendly for Gameface's performance model.
+:::
+
+  </TabItem>
+</Tabs>

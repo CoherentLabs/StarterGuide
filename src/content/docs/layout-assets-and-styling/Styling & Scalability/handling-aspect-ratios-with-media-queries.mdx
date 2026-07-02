@@ -1,0 +1,336 @@
+---
+title: "Handling Aspect Ratios with Media Queries"
+description: "Learn how to use CSS media queries to adapt your game UI for different screen shapes, from 16:9 TVs to 21:9 ultrawide monitors and 16:10 handhelds."
+sidebar:
+    order: 3
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+
+<Summary>
+    While scale factors and viewport units ensure your UI components remain the correct physical size, they do not solve the problem of screens fundamentally changing shape. Modern games must support a wide variety of aspect ratios seamlessly.
+
+    This guide explores how to use <Highlight>CSS Media Queries</Highlight> to adapt your layouts for different screen proportions. We will cover the differences between querying resolution versus aspect ratio, outline best practices for ultrawide safe zones, and explore Gameface-specific custom media features.
+</Summary>
+
+## The Reality of Multiple Screens
+
+In traditional game development, UI was often built with the assumption that the player was using a standard 16:9 display (like a 1920x1080 PC monitor or a 4K television). Today, the hardware landscape is much more fragmented. 
+
+A modern UI must cleanly adapt to:
+* **16:9 (Standard):** Typical desktop monitors and console televisions.
+* **21:9 / 32:9 (Ultrawide):** Enthusiast PC monitors that are significantly wider relative to their height.
+* **16:10 (Handhelds):** Devices like the Steam Deck, which are slightly taller than standard 16:9 screens.
+* **4:3 / 5:4 (Retro/Arcade):** Older monitors or specific arcade cabinet builds.
+
+If your UI relies entirely on absolute anchoring to the extreme edges of the screen (e.g., anchoring a minimap using `right: 0`), 
+those elements will physically pull much further apart on an ultrawide monitor and crush closer together on a 4:3 monitor.
+
+## Using Media Queries for Aspect Ratios
+
+To handle variations in screen shapes, Gameface supports a subset of the CSS3 Media Query standard. A media query acts as a conditional statement for your CSS, enabling or disabling specific style rules based on the current Width and Height of the Gameface View.
+
+While web developers often use media queries to check the raw pixel width of a browser window (`max-width: 768px`), game UI developers must focus on the **shape** of the screen. This is done using the `aspect-ratio`, `min-aspect-ratio`, and `max-aspect-ratio` features.
+
+Here is how you establish your baseline layout for standard 16:9 screens:
+
+```css title="aspect-ratios.css"
+/* Default styles for standard 16:9 screens */
+.inventory-panel {
+    width: 40rem;
+}
+```
+
+Now, to tailor the layout for an ultrawide monitor (like 21:9) so the inventory panel utilizes the extra horizontal space, you add a `min-aspect-ratio` query:
+
+```css title="aspect-ratios.css"
+/* This rule activates only if the screen is wider than 16:9 (e.g., 21:9 Ultrawide) */
+@media (min-aspect-ratio: 21/9) {
+    .inventory-panel {
+        /* Expand the panel to utilize the extra horizontal space */
+        width: 60rem; 
+    }
+}
+```
+
+Conversely, if the player is using a narrower screen (like a 4:3 retro monitor or arcade cabinet), you can shrink the panel so it doesn't overlap other critical UI elements:
+
+```css title="aspect-ratios.css"
+/* This rule activates only if the screen is narrower than 16:9 (e.g., 4:3) */
+@media (max-aspect-ratio: 4/3) {
+    .inventory-panel {
+        /* Shrink the panel to fit the constrained space */
+        width: 30rem; 
+    }
+}
+```
+
+:::danger[CSS Nesting Gotcha]
+Gameface supports nesting `@keyframes` and other at-rules inside of a media query. However, the ordering of at-rules within nested media queries is currently strict. To ensure your styles override properly, **always put your nested media queries at the very end of your stylesheets**.
+
+**DON'T DO THIS:**
+```css
+/* ❌ Bad: Nested media is declared first */
+@media (min-width: 500px) {
+    @keyframes anim { 0% { background-color: blue; } }
+}
+/* This global rule will incorrectly override the one above! */
+@keyframes anim { 0% { background-color: red; } }
+```
+
+**DO THIS:**
+```css
+/* ✅ Good: Global rule is declared first */
+@keyframes anim { 0% { background-color: red; } }
+
+/* The nested media query is safely at the end of the file */
+@media (min-width: 500px) {
+    @keyframes anim { 0% { background-color: blue; } }
+}
+```
+:::
+
+## Ultrawide HUDs: Safe Zones vs. Media Queries
+
+One of the most common UX problems in gaming is the <Highlight>Ultrawide HUD Spread</Highlight>. 
+
+If you anchor your minimap to the top-right corner, it sits perfectly in the player's peripheral vision on a standard 16:9 screen. 
+However, on a 32:9 super-ultrawide monitor, that minimap is pushed so far to the physical edge of the screen that the player has to physically turn their head to see it. 
+
+To solve this, we can use two different architectural approaches, each with its own pros and cons:
+
+### Approach 1: The Safe Zone Wrapper
+
+A common web development instinct is to wrap the critical HUD elements in a centered container with a maximum width (e.g., `max-width: 100rem; margin: 0 auto;`).
+By centering this wrapper, you create an invisible "Safe Zone" that keeps elements anchored to where you place them.
+
+An example implementation of this approach looks like this:
+
+```html title="hud-wrapper.html"
+<body>
+    <div class="hud-safezone">
+        <div class="health-bar">100 HP</div>
+        <div class="minimap"></div>
+    </div>
+</body>
+```
+
+```css title="hud-wrapper.css"
+.hud-safezone {
+    position: relative;
+    width: 100vw;
+    max-width: 100rem; /* Locks the UI to a specified width */
+    height: 100vh;
+    margin: 0 auto; /* Centers the container horizontally, creating safe zones on either side on ultrawides */
+}
+
+.health-bar {
+    position: absolute;
+    bottom: 3rem;
+    left: 3rem;
+}
+
+.minimap {
+    position: absolute;
+    top: 3rem;
+    right: 3rem;
+    width: 15rem;
+    height: 15rem;
+}
+```
+
+:::note[The Tradeoffs]
+This is structurally robust and highly performant because it avoids media query recalculations entirely. 
+It guarantees your HUD never stretches beyond a specific boundary, it's great for simple use cases.
+
+However... it acts as a global constraint. If a specific element within that wrapper needs to bleed out to the screen edge or be positioned differently, the wrapper restricts it. 
+Furthermore, you lose granular aspect ratio control. A wrapper cannot smoothly fade the opacity or scale down an element *only* when the screen hits a 21:9 ratio.
+
+**For that level of control, you need media queries.**
+:::
+
+### Approach 2: Pure Aspect-Ratio Media Queries
+
+Gameface supports the `aspect-ratio`, `min-aspect-ratio`, and `max-aspect-ratio` media features. This allows for granular control over individual elements rather than the entire screen.
+
+Designers often want to push critical elements (Health, Minimap) inward to a safe zone on an ultrawide, while keeping non-critical elements (Chat Box, Damage Vignettes) glued to the true edges for maximum immersion. 
+Furthermore, media queries allow you to change other properties-like shrinking elements or lowering opacity-specifically for extreme screen shapes.
+
+Here, we leave the chat box on the left edge of the screen, but selectively push the minimap inward.
+
+```html title="hud-media.html"
+<body>
+    <div class="chat-box">System: Welcome...</div>
+    <div class="minimap"></div>
+</body>
+```
+
+```css title="hud-media.css"
+/* The Chat Box always stays glued to the extreme left edge for immersion */
+.chat-box {
+    position: absolute;
+    bottom: 2rem;
+    left: 2rem;
+}
+
+/* 1. Default 16:9 Anchor for the Minimap */
+.minimap {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    width: 15rem;
+    height: 15rem;
+}
+
+/* 2. Ultrawide (21:9): Push inward slightly so it doesn't spread out */
+@media (min-aspect-ratio: 21/9) {
+    .minimap {
+        right: 15vw; 
+        transform: scale(0.9); /* Shrink slightly so it doesn't block the wider cinematic view */
+    }
+}
+
+/* 3. Super-Ultrawide (32:9): Push heavily inward into the player's safe zone */
+@media (min-aspect-ratio: 32/9) {
+    .minimap {
+        right: 25vw;
+        transform: scale(0.8); /* Shrink so it doesn't block the wider cinematic view */
+        opacity: 0.7; /* Lower opacity to reduce peripheral distraction */
+    }
+}
+```
+
+:::note[The Tradeoffs]
+Allows fine control over every individual element. But managing dozens of media queries for every single UI element can become verbose, hard to maintain and slightly less performant than a pure structural wrapper.
+:::
+
+### Complex UIs use both!
+
+If your UI is complex enough to require both rigid centering and granular aspect ratio tweaks, the best practice is to combine both approaches.
+
+You create two separate layers: an **Edge Layer** (for immersive, full-screen elements) and a **Safe Zone Layer** (for critical HUD elements). 
+
+This gives you the structural safety of Approach 1, but allows you to use `min-aspect-ratio` media queries to achieve granular UX tweaks when the player is on a massive screen.
+
+```html title="hud-hybrid.html"
+<body>
+    <div class="edge-layer">
+        <div class="chat-box">System: Welcome...</div>
+    </div>
+
+    <div class="safe-zone-layer">
+        <div class="minimap"></div>
+    </div>
+</body>
+```
+
+```css title="hud-hybrid.css"
+/* --- STRUCTURAL LAYERS --- */
+.edge-layer {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+}
+
+.safe-zone-layer {
+    position: absolute;
+    width: 100vw;
+    max-width: 100rem; /* Locks the critical HUD to 16:9 */
+    height: 100vh;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* --- ELEMENT STYLING --- */
+.chat-box {
+    position: absolute;
+    bottom: 2rem;
+    left: 2rem;
+}
+
+.minimap {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    width: 15rem;
+    height: 15rem;
+}
+
+/* --- GRANULAR UX TWEAKS VIA MEDIA QUERIES --- */
+/* The minimap is already perfectly positioned by the safe-zone-layer.
+   We only use the media query to tweak its scale and opacity for super-ultrawide users! */
+@media (min-aspect-ratio: 32/9) {
+    .minimap {
+        transform: scale(0.8); /* Shrink so it doesn't block the wider cinematic view */
+        opacity: 0.7; /* Lower opacity to reduce peripheral distraction */
+    }
+}
+```
+
+:::tip[The Best of Both Worlds]
+In the Hybrid Approach, you never have to guess or calculate `vw` offsets to push elements around if they need to stick to the center. 
+The defined size of the `.safe-zone-layer` handles the positioning automatically. 
+
+You only use Media Queries when you want to execute highly specific design changes based on the screen's shape, leaving your CSS clean, scalable, and easy to maintain.
+:::
+
+## Resolution vs. Orientation Queries
+
+While `aspect-ratio` is your primary tool for responsive game UI, Gameface also supports specific size and orientation expressions: `min-width`, `max-width`, `min-height`, `max-height`, and `orientation`.
+
+You can chain multiple expressions together using the `and` operator to create highly specific targeting.
+
+* **`min-width` / `max-width`:** Use these when a specific UI component physically runs out of room to render its content correctly. For example, if your settings menu becomes illegible below 1280px wide regardless of the aspect ratio, use `@media (max-width: 1280px)` to switch the layout to a more compact design.
+* **`orientation`:** Gameface supports the values `landscape` and `portrait`. If you are developing a mobile game or a companion app, the player might physically rotate their device, altering the width/height ratio. 
+
+For example, you can seamlessly switch a mobile inventory layout from a horizontal grid to a vertically scrolling list when the device is held upright:
+
+```css title="mobile-inventory.css"
+/* Default: Landscape (Horizontal Layout) */
+.inventory-grid {
+    display: flex;
+    flex-direction: row;
+}
+
+/* Portrait (Vertical Layout) */
+@media (orientation: portrait) {
+    .inventory-grid {
+        flex-direction: column;
+    }
+}
+```
+## Beyond Aspect Ratios: Custom Media Features
+
+Although managing aspect ratios is the most common use case for media queries, Gameface includes a powerful capability that extends this system: <Highlight>Custom Media Features</Highlight>. 
+
+Your game engine developers can expose custom game state variables directly to the styling engine. This allows frontend developers to write CSS that reacts instantly to changes in the game's settings without needing to write complex JavaScript event listeners.
+
+For example, backend engineers might expose the current game language or graphics settings as custom media features. Multiple values concerning one feature are mutually exclusive, meaning if `(language: en)` is enabled, `(language: de)` is automatically disabled. 
+
+```css title="custom-features.css"
+/* Change the font family dynamically based on the game's active language */
+@media (language: en) {
+    .dialogue-text {
+        font-family: 'Open Sans', sans-serif;
+    }
+}
+
+@media (language: jp) {
+    .dialogue-text {
+        font-family: 'Noto Sans JP', sans-serif;
+    }
+}
+
+/* Simplify expensive UI effects if the player sets Dynamic Range to standard */
+@media (dynamic-range: standard) {
+    .health-bar {
+        /* Fallback for lower-end devices */
+        background-color: red; 
+    }
+}
+```
+
+:::tip[Performance Impact]
+It is important to know that whenever the game engine toggles a custom media feature on or off, it triggers a full style recalculation of the page. While this is highly efficient for global state changes (like switching languages or graphics presets), it should not be used for high-frequency updates (like tracking player health).
+:::

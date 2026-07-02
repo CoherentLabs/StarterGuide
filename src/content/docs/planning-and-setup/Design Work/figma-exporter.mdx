@@ -1,0 +1,77 @@
+---
+title: "Figma Exporter"
+description: "Use the Coherent Gameface Exporter Figma plugin to convert design frames into Gameface-compatible HTML and CSS. Learn how to install it, export a frame, and understand its intended scope and limitations."
+sidebar:
+    order: 2
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import Link from 'coherent-docs-theme/components/Link.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+<Summary>
+    The <Highlight>Coherent Gameface Exporter</Highlight> is an official Figma plugin that converts design frames into Gameface-compatible HTML and CSS. It is designed to reduce boilerplate - giving developers a structural starting point from the design file - rather than generating a complete, production-ready UI.
+</Summary>
+
+## What the Exporter Does
+
+The exporter reads a selected Figma frame and outputs:
+
+- HTML structure matching the frame's layer hierarchy.
+- CSS with layout properties (flexbox/absolute positioning), colors, typography, and basic sizing.
+- Exported raster assets for image layers.
+
+The output gives you a **head start on the HTML/CSS scaffolding** that would otherwise need to be written by hand. From there, a developer takes the output and completes the integration: wiring up data bindings, adding interactivity, and adjusting styles for Gameface-specific behavior.
+
+:::caution[This is a boilerplate tool, not a one-click solution]
+The exporter helps with structural HTML and static visual properties. It does not export interactions, animations, data bindings, state changes, or custom Gameface components. Expect to do meaningful development work after every export.
+:::
+
+## Installing the Plugin
+
+<Steps>
+
+1. Open Figma and navigate to the <Link href="https://www.figma.com/community/plugin/1595556380268929590/coherent-gameface-exporter">Coherent Gameface Exporter plugin page</Link> in the Figma Community.
+
+2. Click **Open in…** and select the file you want to use the plugin with, or click **Try it out** to add it to your saved plugins.
+
+3. Once saved, access it from any Figma file via **Main Menu → Plugins → Coherent Gameface Exporter** (or the **Resources** panel → **Plugins** tab).
+
+</Steps>
+
+## Exporting a Frame
+
+<Steps>
+
+1. **Select a frame** in your Figma canvas. The exporter works on top-level frames that correspond to a single Gameface view or component.
+
+2. **Open the plugin** via the Plugins menu.
+
+3. **Configure the export settings** - choose your output folder, image format for raster assets, and any available layout options.
+
+4. **Run the export.** The plugin generates an HTML file and a CSS file (and any image assets) in the selected output location.
+
+5. **Preview in the Player** - drag the exported HTML file onto the Gameface Player or load it via the address bar. Always preview in the Player, not a browser: font rendering, CSS subset support, and box model behavior differ between Gameface and Chrome.
+
+</Steps>
+
+## Performance Consideration: Keep Designs Lean
+
+:::caution[Fewer elements, better performance]
+The exporter generates one HTML element per Figma layer. Designs with many small grouped layers, decorative effects, or deeply nested components produce large, complex DOM trees that are expensive to lay out and render in Gameface.
+
+Before exporting, flatten decorative groups, merge static layers that do not need to be individually interactive, and remove any hidden layers. A leaner Figma frame produces a leaner HTML output.
+:::
+
+## Known Limitations
+
+The plugin is actively developed. At launch, some features exported from Figma may not translate fully or at all:
+
+- **Interactions and animations** - click events, hover states, Smart Animate transitions, and Figma prototyping links are not exported.
+- **Data bindings** - `data-bind-*` attributes are not generated. Data wiring must be added manually.
+- **Gameface UI components** - the exporter outputs raw HTML elements, not `Block`, `Button`, `Flex`, or other Gameface UI library components. Replacing generic elements with library components is a post-export task.
+- **Complex effects** - advanced Figma effects (blur, blend modes, complex gradients, SVG masks applied in Figma) may not export accurately or may require manual CSS adjustments.
+- **Custom fonts** - ensure your fonts are available to the Player at the same path referenced in the exported CSS. The exporter uses the font family name from Figma; you need to configure `@font-face` or `Config.toml` accordingly.
+
+Always review the exported HTML and CSS before using it as a base, and test in the Player early to catch any rendering differences.

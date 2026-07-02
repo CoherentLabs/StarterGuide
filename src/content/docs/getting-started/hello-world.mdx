@@ -1,0 +1,45 @@
+---
+title: "Hello World: Your First Gameface UI"
+description: "An overview of what comes next: the recommended tech stack for Gameface UI development, and a pointer to the hands-on inventory tutorial to get you building immediately."
+sidebar:
+    order: 7
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import Link from 'coherent-docs-theme/components/Link.astro';
+
+<Summary>
+    You have seen how the Player works and how data flows between the engine and the UI. This article bridges you into the rest of the guide: the recommended tech stack, what the next section covers, and where to start if you want to get building immediately.
+</Summary>
+
+## What Comes Next: Planning & Setup
+
+The **Planning & Setup** section is where you go from understanding Gameface to actively building with it. It covers:
+
+- **Recommended Tech Stack** - which tools and frameworks work best with Gameface and why.
+- **Setting Up** - scaffolding a real project, connecting it to the Player, and getting HMR running.
+- **Prototyping & Developing** - a tour of the official Gameface UI component library and boilerplate.
+- **The Prototyping Workflow** - a hands-on walkthrough that builds a complete inventory screen from scratch.
+- **Design Work** - tools like the Figma Exporter that bridge your design files to the engine.
+
+## The Recommended Tech Stack
+
+For most Gameface projects we recommend:
+
+| Layer | Tool | Why |
+|---|---|---|
+| **Bundler** | <Link href="https://vite.dev/">Vite</Link> | Fast dev server, native HMR, simple config, great ecosystem |
+| **Framework** | <Link href="https://www.solidjs.com/">SolidJS</Link> | Fine-grained reactivity with minimal runtime overhead - ideal for a game engine environment |
+| **Component Library** | <Link href="https://gameface-ui.coherent-labs.com/">Gameface UI</Link> | Official boilerplate with game-ready components pre-configured for Vite + SolidJS |
+| **Styling** | SCSS | Nesting, variables, and mixins with zero runtime cost |
+
+This stack is covered in depth in [Recommended Tech Stack Overview](/planning-and-setup/recommended-tech-stack/recommended-tech-stack-overview/), including alternatives and the rationale behind each choice.
+
+## Start Building Now
+
+The fastest path to hands-on development is the **Prototyping Workflow** series. It walks you through building a real inventory screen step-by-step using the Gameface UI boilerplate - covering layout, components, styling, and interactivity.
+
+Start here: [**Section Overview: Prototyping an Inventory**](/planning-and-setup/the-prototyping-workflow/section-overview/)
+
+If you prefer to understand the tooling and project setup first, begin with [Recommended Tech Stack Overview](/planning-and-setup/recommended-tech-stack/recommended-tech-stack-overview/) and follow the Planning & Setup articles in order.

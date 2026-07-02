@@ -1,0 +1,21 @@
+<style is:global>
+  /* Define the light theme override globally */
+  [data-theme='light'] {
+    --highlight-color: #8e6400 ;
+  }
+
+   [data-theme='dark'] {
+    --highlight-color: #F5BC35 ;
+  }
+</style>
+
+<style>
+    .highlight {
+        color: var(--highlight-color);
+        font-weight: 600;
+    }
+</style>
+
+<span class="highlight">
+    <slot />
+</span>

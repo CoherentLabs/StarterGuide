@@ -1,0 +1,24 @@
+{
+  "name": "content-creation-guide",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.37.6",
+    "astro": "5.17.1",
+    "coherent-docs-theme": "^1.0.13",
+    "gray-matter": "^4.0.3",
+    "sharp": "^0.34.2",
+    "starlight-auto-sidebar": "^0.1.4"
+  },
+  "overrides": {
+    "zod": "3.25.76",
+    "@astrojs/sitemap": "3.6.0"
+  }
+}

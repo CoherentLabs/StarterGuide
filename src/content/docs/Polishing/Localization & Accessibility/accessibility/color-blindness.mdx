@@ -1,0 +1,167 @@
+---
+title: "Color Blindness & Theming"
+description: "Structure your SCSS and CSS custom properties so that colorblind-safe palettes can be activated with a single root class swap, without duplicating style logic."
+sidebar:
+    order: 3
+draft: false
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+
+<Summary>
+Color blindness support retrofitted into an existing codebase is expensive. The right approach is to build it into your token architecture from day one: define colors through <Highlight>semantic CSS custom properties</Highlight> rather than raw hex values, and swap the entire palette by toggling a single class on the root element. This article walks through the pattern, the three most common color blindness types, and a practical SCSS implementation.
+</Summary>
+
+:::tip[Token Architecture Prerequisite]
+This article assumes your UI already uses semantic CSS custom properties for all color values. If you haven't set up that foundation yet, read [Managing Variables: CSS Custom Properties vs. SCSS](/layout-assets-and-styling/dynamic-styling--variables/managing-variables/) first. The patterns there establish the semantic token layer that makes colorblind theming a single override block instead of a component-by-component audit.
+:::
+
+## Why "We'll Add It Later" Fails
+
+A typical game UI hardcodes colors like `background: #e74c3c` (red for danger) and `background: #2ecc71` (green for safe) directly into component stylesheets. When a colorblind accessibility request comes in, every component needs to be found and updated individually. The longer the codebase runs with hardcoded values, the more painful that audit becomes.
+
+The architectural solution costs almost nothing to put in place before you write a single component: name your colors by semantic role, not by their value, and define them as CSS custom properties at the root level. Swapping the palette for any audience becomes a single override block.
+
+---
+
+## The Three Main Types
+
+Knowing the most common types of color blindness tells you which color relationships to avoid and which alternative pairings are safe.
+
+| Type | Approximate prevalence | What is affected |
+|---|---|---|
+| Deuteranopia / Deuteranomaly | ~6% of males | Red and green appear similar |
+| Protanopia / Protanomaly | ~2% of males | Red appears very dark; confused with black |
+| Tritanopia | Rare | Blue and yellow confused; rare but worth testing |
+
+Red/green is by far the most common pairing to avoid. Elements that use red to mean "bad/danger" and green to mean "good/safe" are immediately ambiguous for roughly 8% of male players.
+
+---
+
+## Step 1: Define a Semantic Color Token System
+
+Stop referencing raw hex values in component stylesheets. Instead, define a set of purpose-named custom properties at the root that carry all color values for the default theme.
+
+```scss title="tokens/_colors.scss"
+// Default (standard vision) palette
+:root {
+    // Status colors - semantic names, not "red" or "green"
+    --color-status-danger:   #e74c3c;   // health low, threat indicator
+    --color-status-safe:     #2ecc71;   // health full, success state
+    --color-status-warning:  #f39c12;   // ammo low, caution state
+    --color-status-neutral:  #3498db;   // informational, no urgency
+
+    // UI surface colors
+    --color-bg-panel:        #1a1a2e;
+    --color-bg-overlay:      rgba(0, 0, 0, 0.75);
+
+    // Text colors
+    --color-text-primary:    #f0f0f0;
+    --color-text-secondary:  #9e9e9e;
+    --color-text-on-danger:  #ffffff;
+}
+```
+
+Every component in the codebase references these tokens, never a hardcoded hex value.
+
+```scss title="components/_health-bar.scss"
+.health-bar {
+    &__fill {
+        // Uses the token, not a raw hex value
+        background-color: var(--color-status-safe);
+    }
+
+    &--low &__fill {
+        background-color: var(--color-status-danger);
+    }
+}
+```
+
+---
+
+## Step 2: Define a Colorblind-Safe Override Block
+
+Create a second override block that redefines only the tokens that change for the colorblind-safe palette. Non-color tokens (backgrounds, text, surfaces) are inherited from `:root` and do not need to be repeated.
+
+```scss title="tokens/_colors.scss"
+// Colorblind-safe palette override (deuteranopia / protanopia safe)
+// Replaces red/green with blue/orange - distinguishable to all common types
+:root.theme-colorblind {
+    --color-status-danger:   #e67e22;   // orange replaces red
+    --color-status-safe:     #2980b9;   // blue replaces green
+    --color-status-warning:  #8e44ad;   // purple replaces yellow-orange
+    // --color-status-neutral stays the same - already safe
+}
+```
+
+The entire UI updates when `.theme-colorblind` is added to `:root`, because every component already uses `var(--color-status-*)`. Zero component files need to be touched.
+
+:::note[TODO - Screenshot needed]
+Add a side-by-side HUD screenshot: **LEFT** shows the default red/green palette (health bar green, alert badge red); **RIGHT** shows the colorblind-safe palette after adding `class="theme-colorblind"` to `<html>` (health bar blue `#2980b9`, alert badge orange `#e67e22`). This is the central proof point for the palette swap.
+
+File path: `src/assets/phase-5/accessibility/image-1.png`
+:::
+
+---
+
+## Step 3: Apply the Theme Class
+
+The theme class can be applied at any time via JavaScript. The most practical approach is to read a player preference from the game engine and apply it once on load.
+
+```js title="settings.js"
+// Called once when the UI initializes, before first render
+function applyAccessibilitySettings(playerPrefs) {
+    if (playerPrefs.colorBlindMode) {
+        // Single class toggle swaps the entire color palette
+        document.documentElement.classList.add('theme-colorblind');
+    } else {
+        document.documentElement.classList.remove('theme-colorblind');
+    }
+}
+```
+
+If the setting can be changed at runtime (from the in-game settings menu), the same function can be called on preference change. Because all colors are CSS custom properties, the update is instant with no layout recalculation.
+
+---
+
+:::tip[Extending to High Contrast and Other Themes]
+The same root-class pattern extends to high contrast mode, night mode, or any other visual variant. See [High Contrast Mode](/polishing/localization--accessibility/accessibility/high-contrast-mode/) for the complete high-contrast palette definition, WCAG contrast ratio guidance, and how to compose both themes simultaneously.
+:::
+
+---
+
+## What to Avoid
+
+### Communicating state through color alone
+
+Color should not be the only indicator of a state change. A health bar that goes from green to red communicates nothing to a deuteranope. Add a secondary signal: an icon, a text label, a shape change, or an animation.
+
+```html title="hud.html"
+<!-- Only color differentiates states - fails for colorblind users -->
+<div class="health-bar health-bar--low"></div>
+
+<!-- Better: color + icon + aria-label all carry the state -->
+<div class="health-bar health-bar--low" aria-label="Health critical: 12 of 100">
+    <span class="health-bar__icon health-bar__icon--warning">⚠</span>
+    <div class="health-bar__fill"></div>
+</div>
+```
+
+### Hardcoded color values in component files
+
+Any file that writes `color: #e74c3c` directly is opting out of the theming system. Enforce the use of tokens with a SCSS lint rule or a code review checklist.
+
+---
+
+## Quick Checklist
+
+Use this to verify your UI meets a baseline accessibility standard for color:
+
+- All status colors are defined as semantic custom properties, not hardcoded values
+- A `.theme-colorblind` override block exists and is tested with an actual palette simulation tool
+- No UI state is communicated by color alone (icon, label, or shape provides a secondary signal)
+- The theme class can be toggled at runtime and updates instantly with no layout recalculation
+- All colorblind-safe palette pairs have been verified with a contrast ratio tool (target: 4.5:1 for body text, 3:1 for large text and UI components)
+
+---

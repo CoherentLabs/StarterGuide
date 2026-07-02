@@ -1,0 +1,58 @@
+---
+title: Mastering Gameface
+description: Your step-by-step journey to building high-performance, cinematic game interfaces using HTML5 technology!.
+template: splash
+hero:
+  tagline: Your step-by-step journey to building high-performance, cinematic game interfaces using HTML5 technology!
+  actions:
+    - text: Get started
+      link: /getting-started/introduction/
+      icon: right-arrow
+    - text: Create a new project
+      link: /getting-started/hello-world/
+      icon: right-arrow
+      variant: secondary
+---
+import { Card, CardGrid, Steps } from '@astrojs/starlight/components';
+import CourseCard from '../../components/CourseCard.astro';
+import {content} from '../../data/content.ts';
+import AuroraGlowBg from '../../components/AuroraGlowBg.astro';
+import CoursesTimeline from '../../components/CoursesTimeline.astro';
+
+<style>
+{`	
+main:has(.hero) footer {
+    display: none;
+}
+
+.hero {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.hero h1 {
+    font-size: clamp(3rem, 10vw, 5rem);
+    line-height: var(--sl-line-height-headings);
+    letter-spacing: -0.1rem;
+    font-weight: 900;
+    background-image: linear-gradient(to right, var(--sl-color-white) 50%, var(--gameface-cyan) 60%, var(--gameface-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero .stack,
+.hero .copy {
+    align-items: center;
+}
+
+.hero .tagline {
+    text-align: center;
+}
+`}
+</style>
+
+<AuroraGlowBg />
+<CoursesTimeline />

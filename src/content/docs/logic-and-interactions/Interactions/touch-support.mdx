@@ -1,0 +1,230 @@
+---
+title: "Touch Support & Mobile Inputs"
+description:
+    Handle mobile interactions in Gameface using standard DOM touch events or the Interaction Manager touchGestures module for complex patterns.
+sidebar:
+    order: 5
+---
+
+import Summary from "coherent-docs-theme/components/Summary.astro";
+import Highlight from "coherent-docs-theme/components/Highlight.astro";
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+<Summary>
+    This article covers three ways to handle touch in Gameface: native DOM touch events for simple cases, the Interaction Manager's{" "}
+    <Highlight>touchGestures</Highlight> module for named gesture patterns (tap, hold, drag, swipe, pinch, and rotate), and the{" "}
+    <Highlight>touchEnabled</Highlight> flag that extends IM modules you already have wired for mouse. It also covers configuring the Gameface Player
+    to simulate touch during development.
+</Summary>
+
+## Native touch events
+
+Gameface fires the `touchstart`, `touchmove`, `touchend`, and `touchcancel` events on DOM elements. You can attach them using the standard
+`addEventListener` method, and they work identically to mouse event listeners in a browser environment.
+
+This is the most direct path for simple, self-contained interactions like a tap that toggles a panel or a touch that activates a button highlight. The
+following example shows how to wire a basic touch trigger to a button.
+
+<Tabs>
+    <TabItem label="SolidJS">
+
+    ```tsx title="TouchButton.tsx"
+    import Button from '@components/Basic/Button/Button';
+
+    const TouchButton = () => (
+        <Button id="touch-target" onTouchStart={() => console.log('Element touched')}>
+            Touch Me
+        </Button>
+    );
+    ```
+
+    </TabItem>
+    <TabItem label="HTML">
+
+    ```html title="highlight-element.html"
+    <div id="touch-target" class="button">Touch Me</div>
+    ```
+
+    ```js title="touch-listener.js" ins="touchstart"
+    function onTouchStart() {
+        // This fires immediately when the finger contacts the element
+        console.log("Element touched");
+    }
+
+    const target = document.getElementById("touch-target");
+    target.addEventListener("touchstart", onTouchStart, false);
+    ```
+
+    </TabItem>
+</Tabs>
+
+
+
+While raw events cover simple triggers, identifying gesture patterns from them means writing your own timing, distance, and multi-touch logic. 
+The <Highlight>touchGestures</Highlight> module handles all of that for you.
+
+## Testing touch in the Gameface Player
+
+The Gameface Player **does not simulate** touch events by default. To enable touch input during development, you must pass the `--input touch` flag
+when launching the Player.
+
+Open your `Player.bat` file and append the flag to the existing command.
+
+```bat title="Player.bat" ins="--input touch"
+start "Player" /d "%wd%" "..\Player\Player.exe" --player "--url=coui://uiresources/Internal/DragAndDrop/drag-n-drop.html" --input touch
+```
+
+With this flag active, mouse clicks in the Player are forwarded as touch events.
+
+## The touchGestures IM module
+
+The <Highlight>touchGestures</Highlight> module wraps raw touch sequences and resolves them into named gesture callbacks. You can import it directly
+from the Interaction Manager and call the method for the gesture you want to detect, passing in the target element and a callback
+
+```js
+import { touchGestures } from "coherent-gameface-interaction-manager";
+
+touchGestures.tap({
+    element: ".menu-item",
+    callback: openMenuItem,
+});
+```
+
+### Managing Gesture Lifecycle
+
+Every gesture call returns an object with a `.remove()` method. You should save this return value whenever you need to clean up listeners on a screen
+unmount to prevent memory leaks.
+
+```js title="cleanup-example.js" ins="tap.remove()"
+const tap = touchGestures.tap({
+    element: ".menu-item",
+    callback: openMenuItem,
+});
+// On screen unmount or component destruction:
+tap.remove();
+```
+
+### Tap and Double-Tap
+
+Tap detects a quick put-and-lift of one or more fingers. You can increase the `tapsNumber` property to detect double-taps or any specific multi-tap
+count.
+
+```js title="double-tap.js"
+touchGestures.tap({
+    element: ".inventory-slot",
+    callback: function () {
+        openContextMenu();
+    },
+    tapsNumber: 2, // Required number of taps (default: 1)
+    tapTime: 200, // Max ms from down to up (default: 200)
+    betweenTapsTime: 500, // Max ms between consecutive taps (default: 500)
+});
+```
+
+### Hold
+
+The hold gesture fires a single time after a finger has been down for a set duration without lifting.
+
+```js title="hold.js"
+touchGestures.hold({
+    element: ".item",
+    callback: function () {
+        // Fires after holding for 1 second
+        showItemDetails();
+    },
+    time: 1000, // Duration in milliseconds (default: 1000)
+});
+```
+
+### Drag
+
+The drag module tracks a single finger moving across the screen. It provides three callbacks:
+
+- `onDragStart`: covering the starting coordinates,
+- `onDrag`: live position on every move tick,
+- `onDragEnd`: the final position on lift.
+
+```js title="drag.js" ins="onDragStart" ins="onDrag" ins="onDragEnd"
+touchGestures.drag({
+    element: ".draggable-panel",
+    onDragStart: function (event) {
+        // event.x and event.y are the finger starting coordinates
+        panel.classList.add("is-dragging");
+    },
+    onDrag: function (position) {
+        // position.x and position.y update on every touchmove
+        panel.style.transform = `translate(${position.x}px, ${position.y}px)`;
+    },
+    onDragEnd: function () {
+        panel.classList.remove("is-dragging");
+    },
+});
+```
+
+:::tip[Use touchEnabled for Slot Inventories]
+
+The `touchGestures.drag()` method provides only raw coordinates. If you require features like slot hit-testing, `dropType` logic, or axis locking, you
+should enable touch on the `draggable` or `dropzone` module instead. [See below](#adding-touch-to-existing-im-modules) for details.
+
+:::
+
+### Swipe
+
+Swipe detects a fast movement followed by a lift. The callback receives a direction string, allowing one handler to cover multiple directions like
+'top', 'bottom', 'left', or 'right'.
+
+```js title="swipe.js"
+touchGestures.swipe({
+    element: ".carousel",
+    callback: function (direction) {
+        // direction handles 8-way movement
+        if (direction === "left") carousel.next();
+        if (direction === "right") carousel.prev();
+    },
+    touchNumber: 1, // Fingers required for the swipe (default: 1)
+});
+```
+
+### Pinch and Rotate
+
+Both pinch and rotate are two-finger gestures. Pinch tracks the distance change between fingers, while Rotate tracks their movement around a midpoint.
+
+The pinch callback provides a `pinchDelta` (40 for stretching, -40 for pinching) and a `midpoint` coordinate.
+
+```js title="pinch.js"
+touchGestures.pinch({
+    element: ".map",
+    callback: function ({ pinchDelta, midpoint }) {
+        // midpoint.x and midpoint.y are between the two fingers
+        adjustZoom(pinchDelta, midpoint);
+    },
+});
+```
+
+The rotate callback provides an angle value between 0 and 360 degrees.
+
+```js title="rotate.js"
+touchGestures.rotate({
+    element: ".compass",
+    callback: function (angle) {
+        compass.style.transform = `rotate(${angle}deg)`;
+    },
+});
+```
+
+## Adding touch to existing IM modules
+
+Interaction Manager modules that support mouse input (draggable, dropzone, resize, rotate, and zoom) also support touch interactions. This
+functionality is disabled by default and can be activated by flipping a single property.
+
+```js title="touch-enabled.js" ins="touchEnabled = true"
+import { draggable, dropzone } from "coherent-gameface-interaction-manager";
+
+const panel = new draggable({ element: ".panel" });
+panel.touchEnabled = true; // The panel now responds to touch drags
+
+const inventory = new dropzone({ element: ".item", dropzones: [".slot"] });
+inventory.touchEnabled = true; // Items can be dragged into slots via touch
+```
+
+Setting `touchEnabled = false` removes the touch listeners without affecting the mouse path.

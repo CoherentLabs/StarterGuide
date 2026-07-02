@@ -1,0 +1,59 @@
+---
+title: Switching from Unity UI to Gameface
+description: A translation guide for Unity developers leaving UGUI or UI Toolkit for Gameface web-based UI.
+sidebar:
+    order: 5
+draft: true
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+
+<Summary>
+Coming from Unity's UGUI or UI Toolkit? This article maps the concepts you already know onto their Gameface equivalents so you can hit the ground running.
+</Summary>
+
+:::note[TO DO]
+This article is a stub. The outline below captures the planned content. Please expand each section with prose, code examples, and side-by-side comparisons.
+:::
+
+## RectTransforms vs. the CSS Box Model
+
+In Unity, every UI element has a **RectTransform** that describes its position, size, and anchor relative to its parent canvas. In Gameface, layout is handled by the standard **CSS Box Model** combined with CSS Flexbox.
+
+**Key mental shift:** You no longer think in terms of anchors and pivot points. Instead, you compose layouts by nesting flex containers.
+
+| Unity concept | Gameface equivalent |
+|---|---|
+| RectTransform anchors | `position: absolute` + CSS `top/left/right/bottom`, or a flex parent |
+| Canvas Scaler | Root `font-size` rem scaling (see [Building Scalable & Responsive Game UIs](/layout-assets-and-styling/styling--scalability/building-responsive-game-ui/)) |
+| Layout Group (Horizontal/Vertical) | `display: flex` with `flex-direction: row` or `column` |
+| Grid Layout Group | CSS Grid - note Gameface uses Yoga (Flexbox only); CSS Grid is not supported |
+
+:::note[TO DO]
+Add a side-by-side screenshot or code comparison: a Unity UGUI health bar anchor setup vs. the equivalent CSS flex layout.
+:::
+
+## Prefabs vs. Web Components / Frameworks
+
+Unity Prefabs let you create reusable, self-contained UI widgets. In Gameface, reusability is achieved through:
+
+- **[Gameface UI component library](https://gameface-ui.coherent-labs.com/)** - pre-built, production-ready UI components you can drop into any project.
+- **SolidJS / React components** - the framework component model, where a `.tsx` file is the equivalent of a Prefab.
+- **Web Components** - standard browser custom elements work in Gameface.
+
+:::note[TO DO]
+Add a code example: a Unity Prefab-based health bar vs. a SolidJS component equivalent.
+:::
+
+## MonoBehaviours vs. Frontend State + Engine Events
+
+In Unity, C# MonoBehaviours attached to a Canvas handle UI logic. In Gameface:
+
+- **UI logic** (opening menus, playing animations, toggling states) lives in **JavaScript/TypeScript** on the frontend.
+- **Game logic** (damage calculation, inventory management) stays in **C++/C# on the engine side**.
+- Communication between the two uses [Engine Communication: Setup & Events](/logic-and-interactions/engine-communication--data-mocking/engine-communication/).
+
+:::note[TO DO]
+Add a code comparison: a Unity C# script calling `healthBar.fillAmount = currentHealth / maxHealth` vs. the Gameface data-binding equivalent.
+:::

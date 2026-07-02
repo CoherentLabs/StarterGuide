@@ -1,0 +1,24 @@
+---
+title: "Arranging Your Designs"
+description: "How to structure your Figma files and design assets so they map cleanly to Gameface's View architecture and export correctly via the Figma Exporter."
+sidebar:
+    order: 1
+draft: true
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+
+<Summary>
+How you organize your Figma files directly affects how easily designs translate to Gameface views. This article covers the recommended file and frame structure, naming conventions, and asset organization that makes the handoff to developers - and the Figma Exporter plugin - as smooth as possible.
+</Summary>
+
+:::note[TO DO]
+This article is a stub. Planned content:
+
+1. **Mapping Figma frames to Gameface Views** - one top-level frame per View (HUD, Menu, Inventory, etc.); how the Figma Exporter interprets frame boundaries.
+2. **Component organization** - using Figma components/variants to represent states (hover, active, disabled) that will become CSS classes.
+3. **Naming conventions** - layer names that survive export; avoiding spaces and special characters that break CSS class generation.
+4. **Asset export settings** - which assets to export as SVG vs PNG, resolution recommendations, how to mark assets for export in Figma.
+5. **Design tokens** - using Figma Variables/Styles for colors, spacing, and typography that map to CSS custom properties or SCSS variables (see [Managing Variables](/layout-assets-and-styling/dynamic-styling--variables/managing-variables/)).
+:::
