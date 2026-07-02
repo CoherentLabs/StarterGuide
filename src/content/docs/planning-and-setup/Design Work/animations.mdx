@@ -1,0 +1,51 @@
+---
+title: "Animations: Mockup and Handoff"
+description: "How to concept, prototype, and hand off UI animations to developers for Gameface implementation - covering CSS, JavaScript libraries, and Lottie."
+sidebar:
+    order: 3
+draft: true
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+
+<Summary>
+A static mockup only tells half the story. To ensure your UI feels responsive and alive, designers need to properly concept and hand off animations. This article covers how to prototype animation ideas, which tools produce the best results in Gameface, and how to communicate timing and intent clearly to developers.
+</Summary>
+
+:::note[TO DO]
+The "Need to make a research..." section below is a placeholder for the mockup workflow - the process of creating animation reference material (Figma prototypes, After Effects comps, reference videos) before any code is written. This section needs to be researched and written.
+:::
+
+## Mockup Workflow
+
+:::note[TO DO]
+Document the recommended design-to-animation workflow. Consider covering:
+- Using Figma's interactive components and Smart Animate for quick motion mockups.
+- When to use After Effects + Bodymovin for complex animations destined for Lottie.
+- How to structure animation reference videos so developers can replicate them accurately.
+:::
+
+## Designing for Performance
+
+When mocking up animations, it is crucial to understand the tools the developer will use to implement them. Gameface animations can be created using standard CSS Animations or JavaScript libraries.
+
+When communicating your animation ideas to the dev team, keep these performance realities in mind:
+
+- **CSS Transitions & Keyframes:** CSS animations are more performant and should be your go-to for standard UI micro-interactions (like a button hover, a panel sliding in, or a simple fade). See [UI Animations: Transitions, Keyframes, and JS Control](/layout-assets-and-styling/animations/ui-animations/) for the implementation guide.
+- **JavaScript Libraries:** JS animations offer greater control for highly complex sequencing, but they come with a performance cost. See [Animation Libraries in Gameface](/layout-assets-and-styling/animations/animation-libraries/) for supported options.
+- **Lottie:** Lottie animations created in Adobe After Effects are fully supported. This is often the best bridge for complex vector animations, as the designer exports the exact JSON file for the developer to drop into the project.
+
+## Handoff Best Practices
+
+When handing off an animation mockup to a developer:
+
+1. **Provide a Reference Video:** A simple MP4 or GIF of the intended interaction goes a long way. Record the Figma prototype playback or After Effects preview.
+
+2. **Define Timing:** Explicitly state the duration (ms), easing curves (e.g., `ease-in-out`, cubic-bezier values), and any delays. The more precise, the less back-and-forth.
+
+3. **Deliver Lottie JSON:** If using After Effects, do not hand off an `.mp4` for the final game asset. Export the `.json` using the Bodymovin plugin so it can be rendered natively in the engine.
+
+:::caution
+Be cautious with CSS transitions during DOM insertion! Transitions often fail if an element's display changes simultaneously. Developers will usually need to leverage `@starting-style` to handle mount animations safely. Flag this in your handoff notes when an animation is meant to trigger on element appearance.
+:::

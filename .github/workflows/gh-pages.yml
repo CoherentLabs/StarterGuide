@@ -1,0 +1,36 @@
+name: Deploy Documentation
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["GamefaceUI release"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "20.10.0"
+
+      - name: Install modules
+        working-directory: ./docs
+        run: npm i
+
+      - name: Deploy to gh-pages branch
+        working-directory: ./docs
+        env:
+          TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          TAG: "${{ github.ref_name }}-${{ github.sha }}"
+          WORKSPACE_DIR: "${{ github.workspace }}"
+          GITHUB_SHA: "${{ github.sha }}"
+        run: npm run deploy-gh-pages

@@ -1,0 +1,209 @@
+---
+title: "Asset Preloading & Bundler Config"
+description: "Learn how Gameface's Instaload caching system works, why inline assets silently break single-frame loading, and how to configure Vite to produce engine-compatible build output."
+sidebar:
+    order: 5
+draft: false
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import { FileTree } from '@astrojs/starlight/components';
+
+<Summary>
+Gameface can preload your entire UI into an in-memory resource cache and render a complete view in a single frame, a feature called <Highlight>Instaload</Highlight>. This optimization only functions correctly if every asset referenced by your HTML is an external file with a URL the engine can resolve. Modern bundlers like Vite violate this requirement by default, silently inlining small files and injecting style tags at runtime. This article explains the caching rules and shows exactly how to configure your build to keep Instaload intact.
+</Summary>
+
+## How Gameface Loads Your UI
+
+The engine integration layer can pre-populate an in-memory resource cache with your build artifacts before a UI view initializes. Each resource - HTML, CSS, JavaScript, fonts, and images - gets stored under its URL as the cache key.
+
+The engine resolves every resource reference in the HTML against this cache when the view loads. All dependencies are already in memory, so the engine completes an entire render pass without a single disk read. The UI appears in one frame: no progressive paint, no white flash, no loading delay.
+
+This is <Highlight>Instaload</Highlight> (single frame loading). Game UIs benefit most from this on screens that must appear on demand: a pause menu, an in-match HUD, a character selection overlay. A loading delay or first-render stutter on any of these is exactly what Instaload eliminates.
+
+## The Golden Rule: External Files Only
+
+The cache is <Highlight>URL-keyed</Highlight>. An external stylesheet reference gives the engine a concrete path to look up:
+
+```html
+<!-- The engine resolves both URLs against the preloaded cache -->
+<link rel="stylesheet" href="/assets/index.css" />
+<script src="/assets/index.js"></script>
+```
+
+Inline content has no URL. A `<style>` block or inline `<script>` tag sits directly in the HTML string. There is no path for the engine to resolve, so it must parse that content at runtime from the raw HTML bytes on every single page load:
+
+```html
+<!-- No URL - the engine cannot cache this, it must parse it fresh every time -->
+<style>
+    .hud-container { position: absolute; top: 0; left: 0; }
+</style>
+
+<!-- Same problem - no URL, no cache lookup -->
+<script>
+    window.gameConfig = { maxPlayers: 4 };
+</script>
+```
+
+Instaload is bypassed for any view containing <Highlight>inline assets</Highlight>. The page still renders correctly, but loses the single-frame guarantee. If your UI flashes or delays on first render despite preloading being configured, inline asset injection is almost always the root cause.
+
+:::danger[Silent Build Regression]
+
+The engine raises no error when it encounters inline content. The view loads and looks correct in testing. The only symptom is a subtle flash or delay on first render in production. If Instaload stops working after a bundler update or config change, validate your build output before investigating anything else.
+
+:::
+
+## Bundler Configuration (Vite)
+
+Vite's default build settings produce <Highlight>inline assets</Highlight> in two distinct ways, and both require explicit overrides to maintain Instaload compatibility.
+
+### Disabling Asset Inlining
+
+Vite inlines any asset file smaller than 4 KB as a base64 data URI embedded directly inside your CSS or JavaScript. A small icon, a compact font subset, or a low-resolution thumbnail all get embedded rather than emitted as separate files. The resulting CSS contains content the engine has no URL to cache:
+
+```css
+/* Vite's default output - the engine cannot preload a data URI */
+.icon-close {
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAA...");
+}
+```
+
+`assetsInlineLimit: 0` forces Vite to emit every asset as an external file, regardless of size:
+
+```js title="vite.config.mts"
+import { defineConfig } from 'vite';
+import solidPlugin from 'vite-plugin-solid';
+
+export default defineConfig({
+    plugins: [solidPlugin()],
+    build: {
+        assetsInlineLimit: 0, // Always emit assets as external files, never inline as base64
+    }
+});
+```
+
+### Disabling CSS Code Splitting
+
+CSS code splitting (`cssCodeSplit: true` by default) ties each CSS file to its corresponding JavaScript chunk. Components loaded via dynamic imports do not get their CSS extracted to a `.css` file. Instead, Vite generates a JavaScript loader that injects a `<style>` tag at runtime when that chunk loads. That injected style block has no URL, so it bypasses the cache entirely.
+
+`cssCodeSplit: false` consolidates all CSS into a single external file:
+
+```js title="vite.config.mts"
+import { defineConfig } from 'vite';
+import solidPlugin from 'vite-plugin-solid';
+
+export default defineConfig({
+    plugins: [solidPlugin()],
+    build: {
+        assetsInlineLimit: 0,
+        cssCodeSplit: false, // Consolidate all CSS into one external .css file
+    }
+});
+```
+
+### Predictable Output Filenames
+
+Vite appends a content hash to every output filename by default (`index-B3kQ9a2x.js`, `index-Kp3mR0vT.css`). The engine integration must register specific file paths for preloading. A new hash on every build breaks those registrations silently.
+
+Fixed output names keep file paths stable between builds so the integration configuration stays valid:
+
+```js title="vite.config.mts"
+import { defineConfig } from 'vite';
+import solidPlugin from 'vite-plugin-solid';
+
+export default defineConfig({
+    plugins: [solidPlugin()],
+    build: {
+        assetsInlineLimit: 0,
+        cssCodeSplit: false,
+        rollupOptions: {
+            output: {
+                entryFileNames: 'assets/[name].js',    // assets/index.js
+                chunkFileNames: 'assets/[name].js',    // assets/vendor.js
+                assetFileNames: 'assets/[name].[ext]', // assets/index.css, assets/logo.png
+            }
+        }
+    }
+});
+```
+
+A correctly configured build produces a clean, flat asset directory with no inline content and no hashed filenames:
+
+<FileTree>
+
+- dist/
+  - assets/
+    - index.js
+    - vendor.js
+    - index.css
+    - icon-close.png
+    - ui-font.woff2
+  - index.html
+
+</FileTree>
+
+:::note[Validating Your Build Output]
+
+Run `npm run build`, then open `dist/index.html` and confirm it contains only `<link>` and `<script src="...">` tags with no `<style>` blocks. Then open `dist/assets/index.css` and search for the string `data:`. Any match means `assetsInlineLimit` has not taken effect for that file type and the asset is still being inlined.
+
+:::
+
+### Webpack Equivalent
+
+The same two constraints apply in Webpack. Use `MiniCssExtractPlugin` instead of `style-loader` to emit CSS as external files, and use `type: 'asset/resource'` on image and font rules to prevent base64 embedding:
+
+```js title="webpack.config.js"
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+
+module.exports = {
+    plugins: [
+        new MiniCssExtractPlugin({ filename: 'assets/[name].css' }),
+    ],
+    module: {
+        rules: [
+            {
+                test: /\.(png|jpg|gif|svg|woff2?)$/,
+                type: 'asset/resource',               // Emit as a file, never base64
+                generator: { filename: 'assets/[name][ext]' }
+            },
+            {
+                test: /\.css$/,
+                use: [
+                    MiniCssExtractPlugin.loader,      // Extract to file, not a <style> tag
+                    'css-loader',
+                ]
+            }
+        ]
+    }
+};
+```
+
+## Preloading Heavy Textures
+
+The engine can also load large image textures into GPU memory before they are referenced by the UI. Character portraits, map backgrounds, and skill tree illustrations are practical candidates - they are large enough that a cold disk read at render time causes a visible frame stall.
+
+Your HTML and CSS reference a preloaded texture with the exact same syntax as any other image:
+
+```html title="hud/index.html"
+<div class="character-card">
+    <img src="/assets/portraits/warrior-01.png" alt="Warrior portrait" />
+</div>
+```
+
+```css title="hud/ui.css"
+.character-card {
+    width: 20rem;
+    height: 28rem;
+    background-image: url('/assets/portraits/warrior-01.png');
+    background-size: cover;
+}
+```
+
+The engine resolves both the `<img>` `src` and the CSS `url()` against the texture cache. Both must use the exact path under which the image was registered. A path mismatch produces a <Highlight>cache miss</Highlight> and a live disk read, defeating the entire optimization.
+
+:::caution[Mismatched Paths Cause Silent Cache Misses]
+
+Vite remaps asset paths during the build. Files inside `/public/` are served at root `/`, while source-imported assets land under `/assets/`. Confirm the exact output paths in your `/dist` folder and share them with the integration team so the engine's preload registration matches exactly what your UI requests at runtime.
+
+:::

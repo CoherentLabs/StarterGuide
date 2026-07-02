@@ -1,0 +1,468 @@
+---
+title: "Animation Libraries in Gameface"
+description:
+    "Learn when to use tested animation libraries in Gameface, how to set them up, and which engine-specific limits to keep in mind before adding a
+    JavaScript animation library to your UI."
+sidebar:
+    order: 5
+tableOfContents:
+    maxHeadingLevel: 2
+---
+
+import Summary from "coherent-docs-theme/components/Summary.astro";
+import Highlight from "coherent-docs-theme/components/Highlight.astro";
+import Link from "coherent-docs-theme/components/Link.astro";
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+<Summary>
+    CSS transitions, CSS keyframes, SVG animations, WAAPI control, and sprite sheets should remain your default animation tools in Gameface. Animation
+    libraries are useful when the UI needs <Highlight>designer-authored motion</Highlight>, <Highlight>complex timeline sequencing</Highlight>, or
+    <Highlight>library-level callbacks</Highlight> that would be difficult to maintain with CSS alone.
+</Summary>
+
+## Use CSS First
+
+In browser UI development, it is common to install an animation library as soon as a screen needs motion. In a game UI, that habit needs more
+discipline. JavaScript animation libraries calculate values on the JavaScript thread, usually on every animation frame. That work competes with input
+handling, state updates, data-binding updates, and any other UI logic running in the same view.
+
+Gameface already gives you several native animation tools:
+
+1. **CSS transitions** for simple state changes like hover, focus, selected, disabled, or expanded.
+2. **CSS keyframes** for looping or multi-step effects that do not need runtime sequencing.
+3. **WAAPI control** for pausing, reversing, seeking, or replaying CSS-authored animations from JavaScript.
+4. **Sprite sheets** for pre-rendered VFX where the final visual should come from an offline art tool.
+
+Reach for an animation library only when the project needs behavior that those tools do not express cleanly. Common examples include a long
+end-of-match results sequence, an onboarding flow with multiple timed callouts, or an After Effects animation exported by the motion design team.
+
+:::note[The Practical Boundary]
+
+Libraries can organize complex motion, but they do not bypass Gameface's supported HTML, CSS, SVG, and DOM feature set. If a library tries to animate
+an unsupported property or relies on an unsupported browser API, that part of the animation still will not work.
+
+:::
+
+## Choosing a Library
+
+The libraries below are documented as tested options that can run out of the box in Gameface, within the feature boundaries of the engine. Treat them
+as separate tools rather than interchangeable ways to move elements on screen.
+
+- Use <Highlight>Lottie</Highlight> when the source of truth is an After Effects composition exported as JSON. It is best for designer-authored vector
+  motion that should play back as an asset.
+- Use <Highlight>GSAP</Highlight> when you need a maintained JavaScript timeline with sequencing, easing, callbacks, and runtime control across many
+  DOM elements.
+- Use <Highlight>AnimeJS</Highlight> when you need a lighter JavaScript animation library for DOM element tweening, simple sequencing, or staggered
+  effects.
+- Use <Highlight>Framer Motion</Highlight> when the UI is built in React and you want React-level animation primitives for components, variants, and
+  transitions.
+- Fallback to <Highlight>CSS or WAAPI</Highlight> when the animation is a simple UI state transition, an idle loop, a loading pulse, or a basic panel
+  entrance.
+
+Other animation libraries may also work, but they have not been explicitly tested in the same way. If a library almost works and only depends on a
+small missing DOM method, a narrow polyfill can be reasonable. If it depends on a larger unsupported rendering feature, choose a different approach
+instead.
+
+The tabs below show a minimal setup for each tested library and the Gameface-specific rules that matter most when using it.
+
+<Tabs>
+    <TabItem label="Lottie">
+        Lottie usually refers to two related pieces: a JSON animation exported from After Effects, often through the Bodymovin plugin, and the
+        JavaScript library that renders that JSON at runtime. Gameface officially supports <Highlight>Lottie Light</Highlight>, which renders through
+        SVG and does not support expressions or effects.
+
+        Use Lottie when the animation should be owned by motion design rather than recreated by hand in CSS. Level-up bursts, reward reveals, stylized
+        loaders, and branded transition moments are good candidates.
+
+        ### Installation & Setup
+
+        Install it through your package manager for project with bundlers (like Vite or Webpack):
+
+        ```bash title="Terminal"
+        npm i lottie-web-light
+        ```
+
+        For a direct script setup, download the Lottie Light build and serve it with the rest of your UI assets:
+
+        ```html title="lottie-page.html"
+        <script src="./vendor/lottie_light.js"></script>
+        <script src="./level-up-lottie.js"></script>
+        ```
+
+        ### Basic Usage
+
+        Start with a concrete container. `Bodymovin` usually generates an inline SVG with `width="100%"` and `height="100%"`, so the parent element **must
+        have an explicit size:**
+
+        <Tabs>
+            <TabItem label="SolidJS">
+
+            ```tsx title="LevelUpLottie.tsx"
+            import { onMount } from 'solid-js';
+            import Block from '@components/Layout/Block/Block';
+
+            const LevelUpLottie = () => {
+                let containerRef!: HTMLElement;
+
+                onMount(() => {
+                    const container = document.getElementById("level-up-lottie");
+
+                    const animation = bodymovin.loadAnimation({
+                        container,
+                        path: "./assets/animations/level-up.json",
+                        renderer: "svg",
+                        loop: false,
+                        autoplay: true,
+                    });
+
+                    // Snap playback to exported frames instead of interpolating subframes.
+                    animation.setSubframe(false);
+                });
+
+                return <Block ref={containerRef} id="level-up-lottie" class="level-up-lottie" />;
+            };
+            ```
+
+            </TabItem>
+            <TabItem label="HTML">
+
+            ```html title="lottie-container.html"
+            <div id="level-up-lottie" class="level-up-lottie"></div>
+            ```
+
+            Then load the animation with the SVG renderer. The example below uses the global `bodymovin` object from `lottie_light.js`:
+
+            ```js title="level-up-lottie.js" ins="renderer: \"svg\"" ins="animation.setSubframe(false);"
+            const container = document.getElementById("level-up-lottie");
+
+            const animation = bodymovin.loadAnimation({
+                container,
+                path: "./assets/animations/level-up.json",
+                renderer: "svg",
+                loop: false,
+                autoplay: true,
+            });
+
+            // Snap playback to exported frames instead of interpolating subframes.
+            animation.setSubframe(false);
+            ```
+
+            </TabItem>
+        </Tabs>
+
+        ```css title="lottie-container.css"
+        .level-up-lottie {
+            width: 32vh;
+            height: 32vh;
+        }
+        ```
+
+
+        :::tip[When Lottie Fits]
+
+        Lottie is a good fit when the animation is mostly vector-based and the exported JSON is the asset you want to ship. If the composition depends
+        on many embedded raster images, a sprite sheet or video may be easier to budget and test.
+
+        :::
+
+        :::caution[Lottie-Specific Limits]
+
+        Use the SVG renderer and prefer the Lottie Light build. The Lottie web player does not work out of the box in Gameface, and `dotLottie` is not
+        currently supported. SVG filters, `mix-blend-mode` inside SVG, WebP images inside the Lottie asset, multiline text, and dynamic After Effects
+        text boxes are not supported by the documented Gameface Lottie path.
+
+        :::
+    </TabItem>
+    <TabItem label="GSAP">
+        GSAP is useful when the <Highlight>UI needs a timeline</Highlight> rather than a single animation. A post-match screen, for example, might fade in the panel, count up
+        rewards, stagger player rows, reveal buttons, and fire callbacks at specific points in the sequence.
+
+        ### Installation & Setup
+
+        For project with bundlers (like Vite or Webpack):
+        ```bash title="Terminal"
+        npm i gsap
+        ```
+
+        For a direct script setup, download the production build and serve it with the rest of your UI assets:
+        ```html title="match-results-page.html"
+        <script src="./vendor/gsap.min.js"></script>
+        <script src="./match-results.js"></script>
+        ```
+
+        ### Basic Usage
+
+        The markup can stay ordinary. The library controls the elements through selectors:
+
+        <Tabs>
+            <TabItem label="SolidJS">
+
+            ```tsx title="MatchResults.tsx"
+            import { onMount } from 'solid-js';
+            import Block from '@components/Layout/Block/Block';
+            import TextBlock from '@components/Basic/TextBlock/TextBlock';
+            import Button from '@components/Basic/Button/Button';
+
+            const MatchResults = () => {
+                let fillRef!: HTMLElement;
+
+                onMount(() => {
+                    // gsap.to(fillRef, { width: '100%', duration: 1.5 });
+                });
+
+                return (
+                    <Block class="match-results">
+                        <TextBlock class="match-results__title">Victory</TextBlock>
+                        <Block class="match-results__xp-bar">
+                            <Block ref={fillRef} class="match-results__xp-fill" />
+                        </Block>
+                        <Button class="match-results__continue">Continue</Button>
+                    </Block>
+                );
+            };
+            ```
+
+            </TabItem>
+            <TabItem label="HTML">
+
+            ```html title="match-results.html"
+            <section class="match-results">
+                <h2 class="match-results__title">Victory</h2>
+                <div class="match-results__xp">
+                    <div class="match-results__xp-fill"></div>
+                </div>
+                <button class="match-results__continue">Continue</button>
+            </section>
+            ```
+
+            </TabItem>
+        </Tabs>
+
+        A single tween is enough for a simple property change:
+
+        :::caution[Animating `width` triggers a full layout solve every frame]
+
+        Tweening `width` causes Gameface to run a full **Yoga flex layout solve** on every animation frame - one of the most expensive operations in the pipeline. This example uses it for clarity. For production use, consider one of the two approaches below.
+
+        **Option A - `width` (used in this example):** straightforward; triggers `SolveFlexLayout` on every tween frame for the 1.5 s duration.
+
+        **Option B - `transform: scaleX()` (recommended for performance):** set the fill element to `width: 100%; transform-origin: left center;` and tween `scaleX` from `0` to `1` instead. The parent track must use `overflow: hidden`. GSAP handles this with `{ scaleX: 1 }` and the animation stays on the cheaper `Update Node Transforms` path, never touching Yoga.
+
+        :::
+
+        ```js title="match-results.js"
+        gsap.to(".match-results__xp-fill", {
+            width: "100%",
+            duration: 1.5,
+            ease: "power2.out",
+        });
+        ```
+
+        Timelines are where GSAP becomes more useful. They let you describe the order of a sequence in one place:
+
+        ```js title="match-results-timeline.js" ins="gsap.timeline"
+        const resultsTimeline = gsap.timeline({ paused: true });
+
+        resultsTimeline
+            .from(".match-results", {
+                opacity: 0,
+                y: 24,
+                duration: 0.35,
+                ease: "power2.out",
+            })
+            .to(".match-results__xp-fill", {
+                width: "100%",
+                duration: 1.2,
+                ease: "power2.out",
+            })
+            .from(".match-results__continue", {
+                opacity: 0,
+                y: 12,
+                duration: 0.25,
+            });
+
+        resultsTimeline.play();
+        ```
+
+        :::note[The Tradeoffs]
+
+        GSAP gives you strong sequencing, callbacks, easing presets, and runtime control. The cost is that <Highlight>the animated values are computed in
+        JavaScript</Highlight>, so it should be reserved for screen-level choreography rather than hover states, small idle loops, or basic fades that CSS can run
+        natively.
+
+        :::
+    </TabItem>
+    <TabItem label="AnimeJS">
+        AnimeJS is a smaller JavaScript animation library for DOM element tweening, sequencing, and staggered effects. It is a reasonable choice when a
+        screen needs <Highlight>a little more orchestration than CSS provides</Highlight>, but the project does not need the full GSAP timeline feature set.
+
+        ### Installation & Setup
+
+        For project with bundlers (like Vite or Webpack):
+        ```bash title="Terminal"
+        npm i animejs
+        ```
+
+        For a direct script setup, download the browser build and serve it with the rest of your UI assets:
+
+        ```html title="loadout-page.html"
+        <script src="./vendor/anime.min.js"></script>
+        <script src="./loadout-menu.js"></script>
+        ```
+
+        ### Basic Usage
+
+        A common use case is a menu where items enter in order:
+
+        <Tabs>
+            <TabItem label="SolidJS">
+
+            ```tsx title="LoadoutMenu.tsx"
+            import { onMount } from 'solid-js';
+            import Block from '@components/Layout/Block/Block';
+            import Button from '@components/Basic/Button/Button';
+
+            const ITEMS = ['Sword', 'Shield', 'Bow', 'Staff'];
+
+            const LoadoutMenu = () => {
+                let menuRef!: HTMLElement;
+
+                onMount(() => {
+                    // anime({ targets: menuRef.querySelectorAll('.loadout-item'), ... });
+                });
+
+                return (
+                    <Block ref={menuRef} as="nav" class="loadout-menu">
+                        {ITEMS.map((item) => (
+                            <Button class="loadout-item">{item}</Button>
+                        ))}
+                    </Block>
+                );
+            };
+            ```
+
+            </TabItem>
+            <TabItem label="HTML">
+
+            ```html title="loadout-menu.html"
+            <nav class="loadout-menu">
+                <button class="loadout-menu__item">Weapons</button>
+                <button class="loadout-menu__item">Armor</button>
+                <button class="loadout-menu__item">Consumables</button>
+                <button class="loadout-menu__item">Quest Items</button>
+            </nav>
+            ```
+
+            </TabItem>
+        </Tabs>
+
+        The configuration object defines the target elements, final values, timing, easing, and stagger:
+
+        ```js title="loadout-menu.js" ins="anime.stagger(80)" ins="translateX: [\"-4vh\", \"0vh\"]"
+        anime({
+            targets: ".loadout-menu__item",
+            opacity: [0, 1],
+            translateX: ["-4vh", "0vh"],
+            delay: anime.stagger(80),
+            duration: 450,
+            easing: "easeOutQuad",
+        });
+        ```
+
+        Always include explicit units for dimensional values. For example, use `top: "100px"` rather than `top: 100`, and use `"4vh"` rather than `4`
+        when the target property expects a length.
+
+        :::caution[SVG Animation Boundary]
+
+        AnimeJS can animate regular DOM elements in Gameface, but some AnimeJS SVG animation features are not supported or are not part of the tested
+        path. Before relying on SVG path motion, SVG attribute tweening, or shape animation through AnimeJS, test that exact use case in Gameface
+        Player. For production SVG animation, CSS keyframes, CSS transitions, WAAPI control, or direct attribute updates are usually safer.
+
+        :::
+
+        :::note[The Tradeoffs]
+
+        AnimeJS keeps simple staggered sequences compact, but it still runs animation work through JavaScript. Use it for bounded UI sequences, not for
+        permanent idle effects or basic state changes that CSS can express directly.
+
+        :::
+    </TabItem>
+    <TabItem label="Framer Motion">
+        Framer Motion is a React animation library. Use it only when the UI screen is already built in React and the team wants component-level
+        animation APIs such as variants, transitions, layout-aware component states, or declarative entrance and exit behavior.
+
+        ### Installation & Setup
+
+        Install it in the React project that builds your Gameface view:
+
+        ```bash title="Terminal"
+        npm install framer-motion
+        ```
+
+        ### Basic Usage
+
+        The basic React pattern is to import `motion` and replace the element you want to animate with a motion-enabled element:
+
+        ```jsx title="RewardPanel.jsx" ins="motion."
+        import { motion } from "framer-motion";
+
+        export function RewardPanel() {
+            return (
+                <motion.section
+                    className="reward-panel"
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                >
+                    <h2>Reward Unlocked</h2>
+                    <button>Continue</button>
+                </motion.section>
+            );
+        }
+        ```
+
+        :::note[The Tradeoffs]
+
+        Framer Motion is useful when <Highlight>animation state should live with React component state</Highlight>. It is not a reason to move a non-React screen to React, and
+        it should not replace simple CSS transitions or CSS keyframes for routine visual feedback.
+
+        :::
+    </TabItem>
+</Tabs>
+
+## Gameface Constraints
+
+Each library is limited by the same rendering and DOM capabilities as the rest of your Gameface UI. A library can provide timing, sequencing, easing,
+and callbacks, but it cannot make an unsupported CSS property, SVG feature, asset format, or browser API behave as if it were supported.
+
+For GSAP, AnimeJS, and Framer Motion, the practical rule is simple: <Highlight>animate properties that Gameface already supports</Highlight>.
+Transforms, opacity, and supported dimensional properties are safer choices than library demos copied directly from browser-focused examples.
+
+For Lottie, test the exported animation early in the Gameface Player. After Effects compositions can contain features that are valid in the Lottie
+ecosystem but outside the supported Gameface path, such as SVG filters, SVG blend modes, dynamic text, or unsupported embedded image formats.
+
+For libraries not listed above, start with the smallest representative prototype. Test the exact property, SVG feature, DOM method, callback, or
+module format that your screen depends on. If the gap is small and local, such as a missing DOM convenience method, a focused polyfill may be enough.
+If the library depends on unsupported rendering behavior, a polyfill will not make that feature render correctly.
+
+:::note[Event Timing]
+
+Gameface supports the `animationend` event for CSS animations. If all you need is to run code after a CSS animation finishes, you may not need a
+library. Use a library when you need timeline callbacks at specific points during a longer sequence, not only at the end.
+
+:::
+
+:::tip[Keep the Library Layer Small]
+
+The best use of an animation library in Gameface is orchestration. Let the library decide when a bounded sequence starts, waits, staggers, or calls
+back into your UI code. Keep routine visual states in CSS so the engine can handle them without JavaScript per-frame work.
+
+:::
+
+## Learn More
+
+- <Link href="https://airbnb.io/lottie/#/README">Lottie Web documentation</Link>
+- <Link href="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.13.0/lottie_light.min.js">Lottie Light download page</Link>
+- <Link href="https://gsap.com/docs/v3/">GSAP documentation</Link>
+- <Link href="https://animejs.com/documentation/">AnimeJS documentation</Link>
+- <Link href="https://www.framer.com/motion/">Framer Motion documentation</Link>

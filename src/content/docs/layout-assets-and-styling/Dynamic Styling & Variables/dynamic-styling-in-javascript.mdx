@@ -1,0 +1,300 @@
+---
+title: "Dynamic Styling in JavaScript: Classes, Typed OM, and Extensions"
+description: "Learn how to dynamically update your game UI styles using high-performance JavaScript techniques, from toggling classes to utilizing Gameface DOM extensions."
+sidebar:
+    order: 1
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+<Summary>
+    Updating UI styles dynamically at 60 frames per second requires strict performance management. In a game engine environment, standard web development habits can accidentally trigger massive layout recalculations or flood the system with memory garbage. 
+
+    This guide explores the performance cost of inline string styles and details the high-performance alternatives. We will cover toggling pre-compiled classes for discrete states, using the <Highlight>CSS Typed Object Model</Highlight> for continuous values, and leveraging proprietary <Highlight>Gameface DOM Extensions</Highlight> for ultimate frame-rate performance.
+</Summary>
+
+## The Cost of Inline String Styles
+
+When building a standard web application, developers frequently update dynamic styles by manipulating the DOM `style` object and concatenating strings.
+
+```javascript
+// The standard vanilla JS way (Avoid doing this every frame!)
+let newPos = 150;
+myNode.style.left = newPos + "px";
+```
+
+In a standard desktop browser, this overhead often goes unnoticed. However, in a game UI running at 60 frames per second, doing this for multiple elements (like tracking moving player icons on a minimap) is a severe performance killer. 
+
+Here is the hidden pipeline that executes every single frame when you concatenate a string style:
+1. JavaScript takes your raw number (`newPos`), converts it to a string, and appends `"px"`.
+2. This creates a brand new string in memory. Doing this every frame generates a massive amount of "JavaScript garbage" that the engine must eventually pause your game to clean up.
+3. This newly created string is handed over to the underlying layout engine.
+4. The layout engine is forced to parse that string *back* into a raw number in order to mathematically update the element's position on the screen.
+
+:::danger[The Performance Pitfall]
+This unnecessary round-trip wastes critical CPU cycles. To keep your UI rendering lightning-fast, <Highlight>you must eliminate string concatenation</Highlight>. 
+:::
+
+## State Changes: The Classes-First Method
+
+For discrete UI state changes (such as opening a menu, hiding a tooltip, or marking an inventory slot as active), 
+you should completely avoid inline JavaScript styles. Instead, prioritize toggling simple, <Highlight>pre-defined CSS classes</Highlight>.
+
+<Tabs>
+    <TabItem label="SolidJS">
+
+        ```tsx title="WeaponSlot.tsx"
+        import Block from '@components/Layout/Block/Block';
+        import { createSignal } from 'solid-js';
+
+        const WeaponSlot = () => {
+            const [active, setActive] = createSignal(false);
+            return <Block class={`weapon-slot${active() ? ' is-active' : ''}`} onClick={() => setActive(a => !a)} />;
+        };
+        ```
+
+    </TabItem>
+    <TabItem label="HTML">
+
+    ```html title="inventory-slot.html"
+    <body>
+        <div id="weapon-slot" class="slot"></div>
+    </body>
+    ```
+
+    ```javascript title="inventory-manager.js"
+    const weaponSlot = document.getElementById('weapon-slot');
+
+    function equipWeapon() {
+        // Instantly applies the new pre-compiled styles without string parsing
+        weaponSlot.classList.add('is-active');
+    }
+    ```
+
+    </TabItem>
+</Tabs>
+
+```css title="inventory-slot.css"
+.slot {
+    border: 2px solid gray;
+    opacity: 0.5;
+}
+
+/* The pre-compiled state class */
+.is-active {
+    border: 2px solid gold;
+    opacity: 1.0;
+}
+```
+
+:::note[The Performance Win]
+This method is highly performant because the engine has already compiled the `is-active` CSS rules at startup. Toggling a class keeps your JavaScript incredibly clean and entirely avoids runtime string generation. 
+:::
+
+## Continuous Updates: CSS Typed Object Model
+
+While classes are perfect for static states, they cannot help you if you need to update a continuous, highly dynamic value (such as enemy position on a minimap).
+
+To solve the string parsing problem for continuous data, Gameface supports the <Highlight>CSS Typed Object Model (CSSTOM)</Highlight>. The CSS Typed Object Model is part of the Houdini APIs. 
+It allows the manipulation of CSS styles through objects, reducing the number **of** strings and strings concatenations required. 
+This can lead to improved performance, lower memory cost and less time spent on GC (Garbage Collection).
+
+### Understanding the Core API
+
+Before diving into the code, it is important to understand the three main components of the CSSTOM API:
+* **`attributeStyleMap`:** This is a property available on DOM elements that represents the inline styles of the element as an accessible map. It replaces the traditional `element.style` object, allowing you to manipulate styles using `get`, `set`, or `delete`.
+* **`CSSStyleValue.parse(property, value)`:** This factory method takes a standard CSS property and its string value, parsing it into a structured CSSTOM object. For simple properties like width, it creates a `CSSUnitValue`, which internally separates the numeric value from its string unit (like "px").
+* **Component Objects:** When parsing complex properties like transforms, the API returns a structured list (a `CSSTransformValue` ). 
+This list contains individual component members, such as `CSSTranslate` , `CSSScale` , or `CSSRotate` - which themselves contain `CSSUnitValue` properties for their specific values (e.g., `x`, `y`, `angle`).
+
+:::tip[Performance Best Practices]
+The key to using CSSTOM successfully is separating your initialization logic from your update loop. Instead of feeding the engine a new string every frame, you create a dedicated CSS object once and continually update its numeric value inside your game loop.
+:::
+
+```html title="health-bar.html"
+<body>
+    <div class="health-container">
+        <div id="health-fill" class="health-fill"></div>
+    </div>
+</body>
+```
+
+```javascript title="hud-manager.js"
+const hpFill = document.getElementById('health-fill');
+
+// --- INITIALIZATION (Run Once) ---
+
+// 1. Cache the attributeStyleMap to avoid fetching it every frame.
+const hpStyleMap = hpFill.attributeStyleMap;
+
+// 2. Parse and create the CSSTOM object ONCE.
+// This creates a CSSUnitValue that internally separates the number from the "px" unit.
+let widthObj = CSSStyleValue.parse("width", "100px");
+
+// --- GAME LOOP (Run Every Frame) ---
+
+function updateHUD() {
+    // Assume getPlayerHealth() fetches the current HP number from the engine
+    let currentHP = getPlayerHealth(); 
+    
+    // 3. Update the raw numeric value directly. There is no string concatenation!
+    widthObj.value = currentHP; 
+    
+    // 4. Apply the reused object to the cached style map.
+    hpStyleMap.set("width", widthObj);
+    
+    requestAnimationFrame(updateHUD);
+}
+
+requestAnimationFrame(updateHUD);
+```
+
+### Where CSSTOM Really Shines: Complex Transforms
+
+While using CSSTOM for a single width property is great, the place where this API really shines is when you need to update a transformation of multiple elements on the screen very often. 
+
+Imagine you are tracking 10 enemy blips on a radar. Each blip needs to update its X position, Y position, scale, and rotation every single frame. Using modern vanilla JavaScript, 
+you would likely write a template literal like this:
+
+``element.style.transform = `translate(${x}px, ${y}px) scale(${sX}, ${sY}) rotate(${angle}deg)`;``
+
+Even though template literals look clean to a frontend developer, JavaScript still evaluates them into brand new strings under the hood. Doing that for 10 elements at 60 FPS generates hundreds of new string allocations per second. 
+
+#### Anatomy of a Parsed Transform
+
+With CSSTOM, you parse the initial transform string once. When you parse a complex string like `"translate(...) scale(...) rotate(...)"`, the API returns a `CSSTransformValue` object. This object acts like an array containing each operation in the exact order you wrote them:
+
+* **Index 0 (`transformObj[0]`):** Becomes a `CSSTranslate` object with `x`, `y`, and `z` properties.
+* **Index 1 (`transformObj[1]`):** Becomes a `CSSScale` object with `x`, `y`, and `z` properties.
+* **Index 2 (`transformObj[2]`):** Becomes a `CSSRotate` object, which has an `angle` property.
+
+Each of these properties (like `x` or `angle`) is itself a `CSSUnitValue` object that holds a numeric `value` and a string unit. This is why you must access `transformObj[0].x.value` to update the actual number.
+
+Here is how you use this structure to update the radar without a single string allocation:
+
+```html title="radar.html"
+<body>
+    <div class="radar-container">
+        <div class="enemy-blip"></div>
+        <div class="enemy-blip"></div>
+    </div>
+</body>
+```
+
+```javascript title="radar-manager.js"
+// --- INITIALIZATION (Run Once) ---
+
+// 1. Create our CSSTransform object ONCE.
+// Parsing here is fine since we do it only once during initialization.
+let transformObj = CSSStyleValue.parse("transform", "translate(0px, 0px) scale(1, 1) rotate(0deg)");
+
+let elements = document.querySelectorAll(".enemy-blip");
+let attributeStyleMaps = [];
+
+// 2. Save the attributeStyleMaps that will get reused often for significantly improved performance.
+for(let i = 0; i < elements.length; i++) {
+    attributeStyleMaps.push(elements[i].attributeStyleMap); 
+}
+
+// --- GAME LOOP (Run Every Frame) ---
+
+// Assume updateValues is a 2D array of raw numbers: [[x, y, scaleX, scaleY, angle], ...]
+function updateRadar(updateValues) {
+    for(let i = 0; i < attributeStyleMaps.length; i++) {
+        // 3. Update the CSSTransformComponent members directly using raw floats.
+        // If done with regular CSSOM, this would require 10 string concatenations.
+        
+        // Update the CSSTranslate component 
+        transformObj[0].x.value = updateValues[i][0]; 
+        transformObj[0].y.value = updateValues[i][1]; 
+        
+        // Update the CSSScale component 
+        transformObj[1].x.value = updateValues[i][2]; 
+        transformObj[1].y.value = updateValues[i][3]; 
+        
+        // Update the CSSRotate component 
+        transformObj[2].angle.value = updateValues[i][4]; 
+        
+        // 4. Apply the updated object to the specific element's cached map.
+        attributeStyleMaps[i].set("transform", transformObj); 
+    }
+    
+    requestAnimationFrame(() => updateRadar(getNewEngineData()));
+}
+```
+
+:::danger[Common CSSTOM Pitfalls]
+To actually see the performance gains from CSSTOM and avoid flooding the garbage collector, you must strictly avoid these three common mistakes inside your game loop:
+1. **Not saving the `attributeStyleMap`:** Always cache the map in an array or variable during setup instead of looking up `element.attributeStyleMap` every frame.
+2. **Recreating objects:** Avoid creating new CSSTOM objects on every update, instead of reusing CSSTOM objects and only setting their values.
+3. **Sharing objects across properties:** Never use one CSSTOM object for DIFFERENT CSS properties. For example, do not use your `width` object to update `left-padding`. They could have different internal representations which would slightly reduce performance.
+:::
+
+## Direct DOM Communication: Gameface DOM Extensions
+
+While CSSTOM is incredibly powerful for complex properties like `transform`, setting up parsed objects and caching style maps can feel like overkill if you just need to update a simple `left` position or a `width` property.
+
+For these simpler dimensional updates, it is often better to skip the CSSTOM structure entirely. Gameface provides a proprietary shortcut that bypasses standard DOM limitations: the `StylePositioningAttributes` extensions directly on the DOM node. These extensions expose unit-specific properties like `leftPX`, `topVW`, `heightVMAX`, and `widthREM`. 
+
+This allows you to directly inject raw numbers into the layout engine without any string parsing or object creation overhead.
+
+```html title="minimap.html"
+<body>
+    <div class="minimap-container">
+        <div id="player-blip" class="blip"></div>
+    </div>
+</body>
+```
+
+```javascript title="minimap-tracker.js"
+const playerBlip = document.getElementById('player-blip');
+
+// --- GAME LOOP (Run Every Frame) ---
+function updateMinimapPosition() {
+    // Assume getPlayerCoordinates() fetches the current X/Y from the game engine
+    let coords = getPlayerCoordinates();
+
+    // We assign raw floats directly to the engine's custom extensions.
+    // There are no strings, no parsing, and no JS objects required.
+    // This is perfectly safe and highly performant to execute every single frame.
+    playerBlip.leftPX = coords.x;
+    playerBlip.topPX = coords.y;
+
+    // Schedule the next frame update
+    requestAnimationFrame(updateMinimapPosition);
+}
+
+// Start the continuous update loop
+requestAnimationFrame(updateMinimapPosition);
+```
+
+:::tip[When to use Extensions]
+This is the absolute fastest and most efficient way to update an element's dimensions or position. Use these extensions whenever you need to tightly couple a UI element to high-frequency game data (such as a custom cursor, a tracked 3D world marker, or an interactive drag-and-drop element).
+:::
+
+### Supported Gameface DOM Extensions Reference
+
+To help you maximize performance without guessing which properties have custom DOM extensions, here is the complete reference list of supported Gameface dimension and positioning attributes. 
+
+Instead of concatenating strings like `element.style.width = value + "px"`, you can append the unit directly to the property name and pass a raw numeric value. The supported suffix units are **PX**, **VW**, **VH**, **REM**, and **PERCENT**.
+
+#### Positioning Extensions
+* `topPX`, `topVW`, `topVH`, `topREM`, `topPERCENT` 
+* `bottomPX`, `bottomVW`, `bottomVH`, `bottomREM`, `bottomPERCENT` 
+* `leftPX`, `leftVW`, `leftVH`, `leftREM`, `leftPERCENT` 
+* `rightPX`, `rightVW`, `rightVH`, `rightREM`, `rightPERCENT` 
+
+#### Sizing Extensions
+* `widthPX`, `widthVW`, `widthVH`, `widthREM`, `widthPERCENT` 
+* `heightPX`, `heightVW`, `heightVH`, `heightREM`, `heightPERCENT` 
+* `minWidthPX`, `minWidthVW`, `minWidthVH`, `minWidthREM`, `minWidthPERCENT` 
+* `minHeightPX`, `minHeightVW`, `minHeightVH`, `minHeightREM`, `minHeightPERCENT` 
+* `maxWidthPX`, `maxWidthVW`, `maxWidthVH`, `maxWidthREM`, `maxWidthPERCENT` 
+* `maxHeightPX`, `maxHeightVW`, `maxHeightVH`, `maxHeightREM`, `maxHeightPERCENT` 
+
+#### Text Decoration Extensions
+Gameface also supports dynamic scaling of text decorations using the following extensions:
+* `textUnderlineOffsetPX`, `textUnderlineOffsetVW`, `textUnderlineOffsetVH`, `textUnderlineOffsetREM`, `textUnderlineOffsetPERCENT` 
+* `textDecorationThicknessPX`, `textDecorationThicknessVW`, `textDecorationThicknessVH`, `textDecorationThicknessREM`, `textDecorationThicknessPERCENT`

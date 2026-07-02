@@ -6,11 +6,11 @@ hero:
   tagline: Your step-by-step journey to building high-performance, cinematic game interfaces using HTML5 technology!
   actions:
     - text: Get started
-      link: /introduction/hello-world
+      link: /getting-started/introduction/
       icon: right-arrow
-    - text: Resume
-      link: https://starlight.astro.build
-      icon: external
+    - text: Create a new project
+      link: /getting-started/hello-world/
+      icon: right-arrow
       variant: secondary
 ---
 import { Card, CardGrid, Steps } from '@astrojs/starlight/components';
@@ -37,7 +37,7 @@ main:has(.hero) footer {
     line-height: var(--sl-line-height-headings);
     letter-spacing: -0.1rem;
     font-weight: 900;
-    background: linear-gradient(to right, var(--sl-color-white) 50%, var(--gameface-cyan) 60%, var(--gameface-blue));
+    background-image: linear-gradient(to right, var(--sl-color-white) 50%, var(--gameface-cyan) 60%, var(--gameface-blue));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

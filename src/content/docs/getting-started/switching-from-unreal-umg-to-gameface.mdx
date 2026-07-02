@@ -1,0 +1,60 @@
+---
+title: Switching from Unreal UMG to Gameface
+description: A direct translation guide for Unreal developers moving away from Slate/UMG to the Gameface middleware.
+sidebar:
+    order: 6
+draft: true
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+
+<Summary>
+Coming from Unreal's UMG or Slate? This article maps the concepts you already know onto their Gameface equivalents so you can hit the ground running.
+</Summary>
+
+:::note[TO DO]
+This article is a stub. The outline below captures the planned content. Please expand each section with prose, code examples, and side-by-side comparisons.
+:::
+
+## Canvas Panel vs. DOM Layouts
+
+UMG's **Canvas Panel** uses absolute anchors to position widgets at fixed points on screen. Gameface uses the **CSS Box Model** and **Flexbox** for layout - a fundamentally responsive system where elements flow relative to their container.
+
+**Key mental shift:** Stop thinking in absolute X/Y coordinates for every widget. Use flex containers for structural layout, and reserve `position: absolute` only for HUD overlays that genuinely need to float at a specific screen corner.
+
+| UMG concept | Gameface equivalent |
+|---|---|
+| Canvas Panel (absolute anchors) | `position: absolute` + CSS `top/left/right/bottom` |
+| Horizontal/Vertical Box | `display: flex` with `flex-direction: row` or `column` |
+| Size Box | Explicit `width` / `height` or `flex-basis` |
+| DPI Scale rule | Root `font-size` rem scaling (see [Building Scalable & Responsive Game UIs](/layout-assets-and-styling/styling--scalability/building-responsive-game-ui/)) |
+
+:::note[TO DO]
+Add a side-by-side: a UMG Canvas Panel health bar layout vs. the equivalent CSS flex layout.
+:::
+
+## Widget Blueprints vs. JavaScript / TypeScript
+
+UMG **Widget Blueprints** combine visual layout with event-graph logic. In Gameface, these two concerns are cleanly separated:
+
+- **Layout** → HTML + CSS (and optionally a SolidJS/React `.tsx` component for reusable widgets)
+- **Logic** → TypeScript / JavaScript (event handlers, state management, engine communication)
+
+This separation makes it easy for artists to work in HTML/CSS while engineers handle the logic layer, without touching the same files.
+
+:::note[TO DO]
+Add a code comparison: a UMG Blueprint button click event vs. a Gameface data-bind event or IM action binding.
+:::
+
+## Data Binding vs. Property Bindings & Tick Events
+
+UMG uses property bindings (which poll a function every tick) or delegates to sync data. Gameface uses a **push-based data-binding model** - the engine writes to a named model object, and the HTML automatically reflects the change without any polling.
+
+This approach is significantly more performant because updates only happen when data actually changes, not every frame.
+
+See [Core Concepts & Information Flow](/getting-started/core-concepts-and-information-flow/) for a full explanation of the push model, and [Data-Binding Basics](/logic-and-interactions/data-binding--ui-state/data-binding-basics/) for implementation.
+
+:::note[TO DO]
+Add a code comparison: a UMG tick-based health binding vs. a Gameface `data-bind-style-width` binding.
+:::

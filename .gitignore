@@ -3,6 +3,10 @@ dist/
 # generated types
 .astro/
 
+#AI 
+./claude
+./cursor
+
 # dependencies
 node_modules/
 

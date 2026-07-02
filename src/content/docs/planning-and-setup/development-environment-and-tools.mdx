@@ -1,0 +1,106 @@
+---
+title: "Development Environment & Tools"
+description: "Configure your workspace with the essential editor plugins, linters, and workflow practices required for Gameface development."
+sidebar:
+    order: 1
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import Link from 'coherent-docs-theme/components/Link.astro';
+
+<Summary>
+    To set you up for success with Gameface, we provide a suite of specialized tools designed to streamline your workflow. 
+    
+    This guide covers the core utilities you need to write, preview, and debug your UI, including IDE extensions, engine-specific linters, and the workflow practices that let you build completely independently from the game engine.
+</Summary>
+
+## 1. The Code Editor & Plugins
+
+We highly recommend **Visual Studio Code (VS Code)** for Gameface development. Beyond standard code editing, VS Code allows you to attach your debugger directly to the Gameface Player or your game engine. This means you can set breakpoints, step through your UI's JavaScript, and inspect variables without ever leaving your editor.
+
+To further improve your workflow, we provide several official tools:
+
+### Data Binding Autocomplete
+
+Your frontend will communicate heavily with the game engine's backend data. The **Data Binding Autocomplete** extension provides context-aware IntelliSense for `data-bind-*` attributes inside VS Code, helping you quickly reference model properties and preventing typos when linking to engine data.
+
+The extension ships as a `.visx` file inside your Gameface package. Install it via **Extensions → Views and More Actions → Install from VSIX** in VS Code. Full installation steps are in the <Link href="https://frontend-tools.coherent-labs.com/data-binding-autocomplete/getting-started/installation/">Data Binding Autocomplete documentation</Link>.
+
+### ESLint Plugin for Gameface
+
+Because Gameface is optimized for raw performance, it does not support every web feature found in a standard browser. The official **eslint-plugin-gameface** catches unsupported patterns - in CSS, SCSS, HTML, JSX/TSX, and JavaScript - before you ever run the game.
+
+**Install:**
+
+```bash
+npm install --save-dev eslint eslint-plugin-gameface
+```
+
+**Configure** by adding an `eslint.config.js` in your project root:
+
+```js title="eslint.config.js"
+import gameface from "eslint-plugin-gameface";
+
+export default [
+    { ignores: ["**/node_modules/**", "dist/**"] },
+    ...gameface.configs["flat/recommended"],
+];
+```
+
+This preset checks HTML, CSS/SCSS, JS, and JSX/TSX files for Gameface-incompatible patterns. To get inline squiggles in VS Code, install the ESLint extension (`dbaeumer.vscode-eslint`) and add the following to `.vscode/settings.json`:
+
+```json title=".vscode/settings.json"
+{
+    "eslint.validate": [
+        "javascript", "javascriptreact",
+        "typescript", "typescriptreact",
+        "css", "html", "scss"
+    ]
+}
+```
+
+For advanced configuration (custom data-bind attributes, model validation, tuning rule severity), see the full <Link href="https://frontend-tools.coherent-labs.com/eslint-plugin-gameface/getting-started/installation/">installation</Link> and <Link href="https://frontend-tools.coherent-labs.com/eslint-plugin-gameface/getting-started/configuration/">configuration</Link> documentation.
+
+## 2. The Local Sandbox: Gameface Player
+
+When building Gameface UI, you preview your work in the **Gameface Player** rather than a standard web browser.
+
+The Player is a standalone, lightweight version of Gameface. It acts as your local sandbox, ensuring that what you see on your development screen is exactly how the UI will render and perform in the final compiled game. 
+
+* **Why the Player and not the browser:** The Player renders using the same Gameface engine as the final game. Several CSS properties, fonts, and performance behaviors differ from what Chrome or Firefox produce. Always validate in the Player before declaring anything done.
+* **Where to find it:** The `Player.bat` (Windows) or `Player.sh` (macOS) launcher is located in your core Gameface package directory.
+* **Full reference:** See [The Gameface Player](/getting-started/the-gameface-player/) for loading options, keyboard shortcuts, command-line flags, font configuration, and Player Overrides.
+* **How to connect it:** See [Setting up the Gameface Stack](/planning-and-setup/recommended-tech-stack/setting-up-the-gameface-stack/) for the step-by-step guide to pointing the Player at your local dev server with HMR.
+
+## 3. The Debugger: Gameface Inspector
+
+The Gameface Inspector is Chrome DevTools connected remotely to the running Player or game engine.
+
+**To open it:**
+
+1. Start the Player (it listens on port `9444` by default).
+2. Open **Google Chrome** and navigate to `http://localhost:9444`.
+3. A list of available views appears - click the view you want to inspect.
+
+The Inspector lets you:
+
+* Inspect and modify the DOM tree in real-time.
+* Tweak CSS values on the fly to perfect your layouts.
+* Use the **Data Binding tab** to inspect `data-bind-*` attributes and their evaluated values.
+* Profile layout and rendering performance to ensure your UI hits target frame rates.
+* View console logs and JavaScript errors thrown inside the engine.
+
+For a full breakdown of all supported DevTools panels and their Gameface-specific features, see [The Gameface Player](/getting-started/the-gameface-player/#devtools-and-debugging).
+
+## 4. Separation of Concerns: Your Workflow Philosophy
+
+The key to an efficient Gameface project is keeping the UI team completely decoupled from the engine team. In practice, this means:
+
+* **Frontend developers** work entirely within the UI codebase - HTML, CSS, TypeScript - using the Player and mock data. They never wait for a C++ or Blueprint engineer to recompile the game.
+* **Engine developers** integrate data models and expose API calls, working off a well-defined contract shared with the UI team.
+* **Mock data** stands in for real engine data during development. See [Mocking Data Models](/logic-and-interactions/engine-communication--data-mocking/mocking-data/) for the detailed implementation guide.
+
+:::tip[Live Reloading Pipeline]
+Configure your IDE and Vite dev server so that every file save is immediately reflected in the Player via Hot Module Replacement. This is pre-configured in both Gameface UI starter templates. See [Setting up the Gameface Stack](/planning-and-setup/recommended-tech-stack/setting-up-the-gameface-stack/) for details.
+:::

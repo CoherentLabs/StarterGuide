@@ -1,0 +1,192 @@
+---
+title: "The Gameface Player"
+description: "Use the Gameface Player to load, preview, and debug your game UI without needing a running game engine. Covers loading UI, keyboard shortcuts, configuration, DevTools access, and Player Overrides."
+sidebar:
+    order: 3
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import Link from 'coherent-docs-theme/components/Link.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+<Summary>
+    The <Highlight>Gameface Player</Highlight> is a standalone desktop application that lets you preview and test your game UI as you develop it. It loads HTML pages, handles input, and gives you access to profiling and debugging tools - all without needing to integrate your UI into a game engine first.
+
+    The biggest bottleneck in traditional game UI development is the engine. Waiting for Unreal or Unity to compile just to see if a widget is centered or a health bar updates ruins iteration speed. The Player removes that bottleneck: drag and drop your HTML files and see them render exactly as they would in the game.
+</Summary>
+
+## Running the Player
+
+The Player ships with your Gameface package. Run it with the provided launcher for your platform:
+
+- **Windows:** `Player.bat`
+- **macOS:** `Player.sh`
+
+## Loading UI
+
+The Player supports several ways to load your HTML pages:
+
+- **Drag and drop** - drag an HTML file from your file system directly onto the Player window.
+- **Address bar** - type a URL (local file path or `http://` address) directly into the address bar.
+- **Bookmarks** - use the bookmark bar and manager for quick access to frequently used pages. Bookmarks are stored in `CohtmlBookmarks.html` next to the Player executable, using the standard HTML bookmarks format, so you can import bookmarks exported from any browser.
+- **HTTP and WebSockets** - the Player supports loading from a local HTTP server, which enables <Highlight>Hot Module Replacement (HMR)</Highlight> with tools like Vite and Webpack. See [Setting up the Gameface Stack](/planning-and-setup/recommended-tech-stack/setting-up-the-gameface-stack/) for the full HMR setup.
+
+## Input Handling
+
+The Player forwards mouse and keyboard input to your view. On Windows, gamepad and touch input are also supported.
+
+:::note[Gamepad Support]
+The Player currently only supports Microsoft Xbox controllers on Windows. To use a Sony PlayStation DualShock controller, use third-party software such as DS4Windows to emulate it as an Xbox controller.
+:::
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|---|---|
+| F1 | Opens the Player documentation in your browser |
+| F5 | Reloads the current view |
+| Ctrl+L | Focuses the address bar |
+| Ctrl+F11 | Toggles the Player GUI |
+| F12 | Opens DevTools in Chrome (see below) |
+| Ctrl+F12 | Toggles internal profiling at level 1 |
+| Ctrl+Shift+F12 | Toggles internal profiling at level 2 |
+
+## Command-Line Options
+
+You can pass options to the Player at launch to control the initial URL, window size, renderer, and more:
+
+```
+Player.exe [OPTIONS] [positional_url...]
+
+--url TEXT          Initial URL(s) to load (comma-separated for multiple views)
+--root TEXT         Sets the root directory for "coui://"
+--width INT         Sets the window width in pixels (default: 1280)
+--height INT        Sets the window height in pixels (default: 720)
+--renderer ENUM     Graphics renderer: dx11, dx12, opengl (default: dx11)
+--remote-debugging-port INT
+                    Port for DevTools access (default: 9444); set to -1 to disable
+--input ENUM        Input event type: mouse or touch (default: mouse)
+--default-font TEXT Sets the default font family (default: Droid Sans)
+--redraw-all        Repaints views every frame (useful for debugging)
+--config TEXT       Path to a configuration file (default: Config.toml)
+```
+
+Run `Player.exe --help` for the full option list.
+
+### Configuration File
+
+Instead of passing all options on the command line, you can use a `Config.toml` file. The Player looks for it in the following locations, in order of priority:
+
+1. The path specified by `--config`
+2. The current working directory
+3. The directory containing the Player executable
+
+Any command-line argument can also be set in `Config.toml`. Command-line flags always override the file.
+
+## Font Loading
+
+The recommended way to load fonts is via `@font-face` in your CSS. You can also register fonts in `Config.toml`:
+
+```toml
+default-font = "MyFont"
+
+[register-font]
+path = "URL or path to a font"
+family = ""
+sdf = "auto"
+style = "auto"
+weight = "auto"
+```
+
+Run `Player.exe register-font --help` for all available font registration options.
+
+:::note
+The Player previously used a `Config.json` file with a limited set of options (`coui-root`, `register-fonts`). That format is deprecated. Update any existing config files to `Config.toml`.
+:::
+
+## DevTools and Debugging
+
+Press **F12** while the Player is running to open DevTools. The Player starts an HTTP server on port **9444** by default, and Chrome connects to it as a remote debugging target.
+
+**To connect:**
+
+1. Start the Player with your UI loaded.
+2. Open **Google Chrome** (required - other browsers are not supported) and navigate to:
+   ```
+   http://localhost:9444
+   ```
+3. A list of available views appears. Click the view you want to inspect.
+
+From there, DevTools gives you:
+
+- **Elements panel** - inspect and modify the DOM tree, view computed styles, and use the **Data Binding tab** to inspect `data-bind-*` attributes and their evaluated values.
+- **Console** - view JavaScript logs and errors.
+- **Sources** - debug JavaScript and set breakpoints.
+- **Performance** - profile rendering: style recalculations, layout, script execution, GPU time, and paint.
+- **Network** - inspect resource requests and WebSocket messages.
+- **Data Binding Models** - access via More Tools (⋮) → Data Binding Models to view, edit, and export all registered data-binding models live.
+- **Cohtml panel** - access via More Tools (⋮) → Cohtml to toggle GPU debugging options: Paint Flashing (highlights dirty regions re-evaluated each frame), Redraw Flashing (highlights elements physically repainted), Emit Rendering Metadata (links DOM nodes to GPU draw calls), and Rendering Caches configuration. These are the fastest tools for isolating rendering overhead during a debugging session.
+
+:::tip[Source Maps]
+The DevTools inspector does not understand the `coui://` protocol, so source maps must be embedded. See the <Link href="https://github.com/CoherentLabs/InlineSourceMaps">InlineSourceMaps</Link> tool for embedding source maps, and configure `build.sourcemap: 'inline'` in your Vite config for development builds.
+:::
+
+If your UI uses absolute URLs (for example, URLs generated by Webpack or Vite), set the `coui://` root via `--root` at startup, or convert the absolute URLs to relative ones.
+
+For deeper coverage of profiling, layout debugging, and the Gameface-specific DevTools panels, see the Debugging, Profiling & Testing articles.
+
+## Player Overrides
+
+The Player supports customization through a <Highlight>PlayerOverrides.dll</Highlight>. This is useful for testing features that require engine-side implementation - such as localization callbacks - without building the full game.
+
+**To set up Player Overrides:**
+
+1. Open `PlayerOverrides.sln` located in `Player/PlayerOverrides/` inside your Gameface directory.
+2. Implement your desired behavior using the `CohtmlOverrides` interface in `PlayerOverrides.cpp`.
+3. Build the solution. The compiled `PlayerOverrides.dll` is placed automatically in the same folder as `Player.exe`.
+
+If the overrides loaded successfully, the message `"Player Overrides Initialized"` appears in the console when the Player starts. If it does not, verify that `PlayerOverrides.dll` is in the same folder as `Player.exe` and that the build completed without errors.
+
+To preserve or switch between different override configurations, keep multiple `PlayerOverrides.dll` files and place the one you need next to `Player.exe` before launching.
+
+<Internal>
+
+## Exploring the Demo Environment
+
+:::note[Download Link Placeholder]
+[Click here to download the latest version of the Gameface Player](#) *(Note: Link will be updated when the public Player goes live).*
+:::
+
+The public Player ships with a **Home Page** featuring a menu of pre-built UI samples - the perfect sandbox to see what Gameface is capable of right out of the box.
+
+<Steps>
+
+1. #### **Play with a Sample**
+    From the Home Page, click on one of the featured samples.
+
+    *[Placeholder: Briefly describe the specific sample here once it is live, e.g., "Open the Inventory sample to see a fully animated drag-and-drop grid, or the HUD sample to see a live minimap and compass."]* Take a moment to click around. Notice how fluid the animations are and how instantly the UI responds. This is all running on standard web technologies, powered by the Gameface renderer.
+
+2. #### **Navigate to the Demo Page**
+    Once you are done exploring the samples, head over to the **"Demo"** page using the main navigation.
+
+    This page is designed to isolate and showcase the specific technical features of Gameface. It is an interactive playground where you can tweak values and see the engine react in real-time.
+
+3. #### **Test Live Data-Binding**
+    The first feature you will see on the Demo page is **Data-Binding**. In a real game, data coming from the engine (like player health or ammo) is bound to your HTML elements and displayed on the page in real-time. Here, we are simulating that live connection.
+
+    * **The UI Element:** On the right side of the screen, you will see a visual element (like a health bar or a character stat block).
+    * **The Controls:** On the left side, you will find a series of input fields and sliders.
+
+    Try changing the values in the inputs on the left. You will see the UI element on the right update <Highlight>instantly</Highlight>. You are actively modifying the data-bound attributes of the element, proving that you can fully test your UI's logic and data states without ever waiting for a backend programmer to hook up the real game data.
+
+4. #### **Explore the Next Features**
+    Data-binding is just the beginning. At the top of the Demo page, you will find a **dropdown menu**. Use this to switch to the next Gameface feature sandbox.
+
+    *[Placeholder: Add a quick sentence about the next feature once decided, e.g., "Switch to the 'Live Views' tab to see how Gameface renders 3D engine textures directly onto a 2D DOM element, or check out the 'Spatial Navigation' demo."]*
+
+</Steps>
+
+Feel free to spend some time exploring the rest of the dropdown features on the Demo page. Whenever you write new UI code, the Player is where you will preview it - and you can debug it directly using the [DevTools and Debugging](#devtools-and-debugging) workflow described above.
+
+</Internal>

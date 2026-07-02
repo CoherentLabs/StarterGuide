@@ -1,0 +1,370 @@
+---
+title: Laying out the screen
+description: Learn how to architect your game UI using absolute anchors and flexbox for peak performance - including how Gameface's Yoga engine classifies layout work, the two optimizations that eliminate the worst-case performance cliff, and when to use Gameface's proprietary display modes.
+sidebar:
+    order: 1
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+<Summary>
+    In game UI, layout isn't just about making things look good - it is about predictability and respecting the strict frame budget. 
+
+    This article covers the Gameface Flexbox-only layout model, how to architect your screen using absolute anchors versus flexbox flows, how the engine classifies CSS changes as cheap or expensive layout work, and the two CSS rules that eliminate the worst-case performance cliff in deep DOM trees.
+</Summary>
+
+## How Layout Works in Gameface
+
+If you are coming from traditional web development, the biggest mental shift when authoring for Gameface is understanding the layout engine.
+
+In a standard browser, you have multiple layout algorithms: `block`, `inline`, `grid`, `flex`, and `table`. Gameface uses the <Highlight>Yoga layout engine</Highlight> (developed by Meta/Facebook) as its sole layout algorithm. `display: grid` is entirely absent - all `grid-*` properties are silently ignored. Display values like `inline-block`, `inline-flex`, `contents`, and `inline-grid` are unsupported. The only valid display values are `flex` and `none`.
+
+Even elements that default to block in a browser are internally treated as flex containers by Gameface. Every layout calculation goes through Yoga.
+
+Because everything is flex-based, every time an element's size, position, or content changes, the engine evaluates how that change affects the surrounding document. This is called a <Highlight>layout pass</Highlight>. Because flexbox distributes space dynamically, elements are highly dependent on their siblings and parents.
+
+Gameface's layout engine is fast, but the environment is extremely demanding. A game targeting 60 FPS has exactly <Highlight>16.6 milliseconds</Highlight> per frame. The UI is usually allocated only 1–2ms of that. A 15ms layout recalculation that goes unnoticed in a browser blows the entire frame budget in a game engine.
+
+## Transforms vs. Full Layout Solves
+
+The engine classifies every CSS change as one of two types of layout work:
+
+A <Highlight>Full Layout Solve</Highlight> runs whenever a property that affects document flow changes - `width`, `height`, `margin`, `padding`, `flex-basis`, `flex-grow`, `flex-shrink`, `left`, `right`, `top`, `bottom`. Yoga traverses the affected subtree and recalculates positions and sizes from scratch.
+
+A <Highlight>Transform Update</Highlight> runs when only `transform` or `opacity` has changed. Untransformed positions have not shifted, so Yoga is skipped entirely. The engine runs a lighter pass without touching the layout tree.
+
+The CPU cost difference is significant. Floating damage numbers are a clear illustration:
+
+<Tabs>
+    <TabItem label="SolidJS">
+
+    ```tsx title="DamageNumber.tsx"
+    import Absolute from '@components/Layout/Absolute/Absolute';
+    import TextBlock from '@components/Basic/TextBlock/TextBlock';
+
+    const DamageNumber = (props: { value: number }) => (
+        <Absolute class="damage-number">
+            <TextBlock>-{props.value}</TextBlock>
+        </Absolute>
+    );
+    ```
+
+    </TabItem>
+    <TabItem label="HTML">
+
+    ```html
+    <div class="damage-number">-245</div>
+    ```
+
+    </TabItem>
+</Tabs>
+
+```css title="hud.css"
+/* ❌ Animating 'top' - triggers a full layout solve every frame */
+@keyframes float-bad {
+    from { top: 0;      opacity: 1; }
+    to   { top: -5rem;  opacity: 0; }
+}
+
+/* ✅ Animating 'transform' - Yoga is skipped entirely */
+@keyframes float-good {
+    from { transform: translateY(0);     opacity: 1; }
+    to   { transform: translateY(-5rem); opacity: 0; }
+}
+
+.damage-number {
+    position: absolute;
+    animation: float-good 0.8s ease-out forwards;
+}
+```
+
+**Rule: Always animate with `transform` and `opacity`. Never animate `top`, `left`, `width`, or `height`.** This applies to CSS keyframes and JavaScript-driven animations alike.
+
+## The Layout Performance Cliff
+
+Yoga's algorithm has <Highlight>O(4^Depth)</Highlight> worst-case complexity. A tree with 8 nodes at depth 4 produces 172 layout calls in the worst case and only 9 in the best case. Real shipped Gameface UIs have DOM depths between 14 and 28 nodes, where unoptimized subtrees can generate thousands of redundant calls per frame.
+
+The worst case requires all three conditions to be true simultaneously:
+
+1. **No defined flex dimensions.** Children without `flex-basis`, `width`, or `height` force Yoga to recurse into their subtree to measure natural size.
+2. **Cross-axis stretching.** `align-items: stretch` (the CSS *default*) forces Yoga to re-enter each child after measuring to grow it to fill the cross-axis.
+3. **Wrapping enabled.** `flex-wrap: wrap` causes repeated line re-evaluation.
+
+```css title="inventory.css"
+/* ❌ All three worst-case conditions active - inventory-grid with unsized slots */
+.inventory-grid {
+    display: flex;
+    flex-wrap: wrap;       /* Condition 3 */
+    /* align-items defaults to 'stretch' - condition 2 is active silently */
+}
+
+.item-slot {
+    display: flex;
+    flex-direction: column;
+    /* No flex-basis, no width - condition 1: Yoga must recurse to measure each slot */
+}
+```
+
+:::danger[align-items: stretch Is the CSS Default]
+You do not need to write `align-items: stretch` to trigger it - any flex container without an explicit `align-items` declaration is already using it. A deep, wrapping UI tree can be silently running in worst-case performance mode.
+:::
+
+## How to Optimize Layouts
+
+Two fixes eliminate the worst-case conditions. Both can be applied independently and their effects are cumulative.
+
+### Define Dimensions on Flex Items
+
+A defined `flex-basis` (or explicit `width`/`height`) on every flex item eliminates the recursive `measure` call. Gameface's own internal stress tests show this reduces layout time from ~2,000ms to ~17ms on a realistic 4,400-node UI tree - a 99%+ reduction for the same visual output.
+
+```css title="inventory.css"
+/* ✅ Defined dimensions eliminate the measure call at every level */
+.inventory-grid {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.item-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex-basis: 8rem;     /* Defined - Yoga skips the measure pass for this subtree */
+    height: 10rem;
+}
+
+.item-slot__icon {
+    width: 6rem;          /* Leaf node sized - no recursive measure needed */
+    height: 6rem;
+}
+```
+
+### Use align-items Sparingly
+
+Each `align-items: stretch` on a flex container adds two extra layout calls per line per frame. Replace `stretch` with explicit `flex-start`, `flex-end`, or `center` on containers where children do not need to fill the cross-axis:
+
+```css title="inventory.css"
+/* ❌ 'stretch' is default - three containers silently trigger cross-axis traversals */
+.inventory-grid  { display: flex; flex-wrap: wrap; }
+.item-slot       { display: flex; flex-direction: column; }
+.item-slot__info { display: flex; }
+
+/* ✅ Explicit non-stretch values - cross-axis recursive calls eliminated */
+.inventory-grid  { display: flex; flex-wrap: wrap;        align-items: flex-start; }
+.item-slot       { display: flex; flex-direction: column; align-items: flex-start; }
+.item-slot__info { display: flex;                         align-items: center; }
+```
+
+:::note[The Combined Effect]
+Both fixes together reduce Yoga's traversal from O(4^Depth) to O(N) - a single pass. For the 8-node reference tree, call count drops from 172 to 9.
+:::
+
+## High-Performance Layout Patterns
+
+With the performance rules established, here are the practical "Do's and Don'ts" for structuring your screens.
+
+### Use Absolute Positioning for Top-Level Widgets
+
+`position: absolute` removes the element from the normal flow and is computed separately. If an absolutely positioned widget changes its internal size, it never pushes siblings around. Use it for all top-level HUD widgets.
+
+#### Centering a Crosshair
+
+<Tabs>
+    <TabItem label="SolidJS">
+
+    ```tsx title="Crosshair.tsx"
+    import Absolute from '@components/Layout/Absolute/Absolute';
+    import Image from '@components/Media/Image/Image';
+
+    const Crosshair = () => (
+        <Absolute class="crosshair-wrapper" center>
+            <Image class="crosshair" src="crosshair.svg" />
+        </Absolute>
+    );
+    ```
+
+    </TabItem>
+    <TabItem label="HTML">
+
+    ```html
+    <div class="crosshair-wrapper">
+        <img class="crosshair" src="crosshair.png" alt="Crosshair" />
+    </div>
+    ```
+
+    </TabItem>
+</Tabs>
+
+```css title="hud.css"
+.crosshair-wrapper {
+    position: absolute;
+    width: 2rem;
+    height: 2rem;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+.crosshair {
+    transition: transform 0.1s ease-out;
+    width: 100%;
+    height: 100%;
+}
+```
+
+When the crosshair scales using `transform`, the layout engine ignores it entirely - it repaints independently, preserving your frame budget.
+
+#### Anchoring to a 3D Object (Nameplates)
+
+Nameplates receive updated screen coordinates from the engine every frame as the camera moves. Using an absolutely positioned element means those constant `left`/`top` updates only affect that specific node:
+
+<Tabs>
+    <TabItem label="SolidJS">
+
+    ```tsx title="Nameplate.tsx"
+    import Absolute from '@components/Layout/Absolute/Absolute';
+    import TextBlock from '@components/Basic/TextBlock/TextBlock';
+
+    const Nameplate = (props: { name: string }) => (
+        <Absolute class="nameplate">
+            <TextBlock>{props.name}</TextBlock>
+        </Absolute>
+    );
+    ```
+
+    </TabItem>
+    <TabItem label="HTML">
+
+    ```html
+    <div class="nameplate">Player 1</div>
+    ```
+
+    </TabItem>
+</Tabs>
+
+```css title="hud.css"
+.nameplate {
+    position: absolute;
+    width: 15rem;
+    height: 3rem;
+    left: 0; /* Updated via JS every frame */
+    top: 0;
+}
+```
+
+If this nameplate were inside a flex container, updating its position 60 times per second would force continuous, heavy layout recalculations.
+
+### Use Flexbox for Internal Content
+
+Absolute positioning is impractical for elements that relate to each other (lists, rows, grids). Use `display: flex` for internal widget layout, and always define explicit dimensions on flex children.
+
+#### Centering within a Control
+
+<Tabs>
+    <TabItem label="SolidJS">
+
+    ```tsx title="ActionButton.tsx"
+    import Button from '@components/Basic/Button/Button';
+    import Flex from '@components/Layout/Flex/Flex';
+    import Block from '@components/Layout/Block/Block';
+    import TextBlock from '@components/Basic/TextBlock/TextBlock';
+
+    const ActionButton = () => (
+        <Button class="action-button">
+            <Flex>
+                <Block class="action-icon" />
+                <TextBlock class="action-text">Attack</TextBlock>
+            </Flex>
+        </Button>
+    );
+    ```
+
+    </TabItem>
+    <TabItem label="HTML">
+
+    ```html
+    <div class="action-button">
+        <div class="action-icon"></div>
+        <span class="action-text">Attack</span>
+    </div>
+    ```
+
+    </TabItem>
+</Tabs>
+
+```css title="button.css"
+.action-button {
+    display: flex;
+    width: 15rem;
+    height: 4rem;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.action-icon {
+    width: 2rem;
+    height: 2rem;
+}
+```
+
+#### Mixing Both: Notification Badge on an Inventory Slot
+
+Setting the parent to `position: relative` creates a local coordinate system that lets a badge use `position: absolute` while remaining visually anchored to the item:
+
+<Tabs>
+    <TabItem label="SolidJS">
+
+    ```tsx title="InventorySlot.tsx"
+    import Relative from '@components/Layout/Relative/Relative';
+    import Absolute from '@components/Layout/Absolute/Absolute';
+    import TextBlock from '@components/Basic/TextBlock/TextBlock';
+
+    const InventorySlot = (props: { badgeCount?: number }) => (
+        <Relative class="inventory-slot">
+            {/* item icon goes here */}
+            {props.badgeCount && (
+                <Absolute class="notification-badge">
+                    <TextBlock>{props.badgeCount}</TextBlock>
+                </Absolute>
+            )}
+        </Relative>
+    );
+    ```
+
+    </TabItem>
+    <TabItem label="HTML">
+
+    ```html
+    <div class="inventory-slot">
+        <div class="item-icon"></div>
+        <div class="notification-badge">3</div>
+    </div>
+    ```
+
+    </TabItem>
+</Tabs>
+
+```css title="inventory.css"
+.inventory-slot {
+    display: flex;
+    width: 5rem;
+    height: 5rem;
+    position: relative; /* Creates local anchor for the badge */
+}
+
+.notification-badge {
+    position: absolute;
+    width: 1.5rem;
+    height: 1.5rem;
+    top: -0.5rem;
+    right: -0.5rem;
+}
+```
+
+Notification badges toggle frequently. Because the badge is absolutely positioned, hiding or showing it does not force the surrounding inventory grid to recalculate its flex spacing.
+
+### Advanced: Gameface Proprietary Display Modes
+
+For views where *every* direct child is absolutely positioned (pure HUD views, floating nameplate containers, tooltip layers), Gameface provides `display: simple` on the parent element. This bypasses Yoga's layout solve entirely for that container, eliminating layout calculation cost on every frame. See [Gameface CSS: Simple Layout & Opacity](/layout-assets-and-styling/gameface-css/) for the full guide.

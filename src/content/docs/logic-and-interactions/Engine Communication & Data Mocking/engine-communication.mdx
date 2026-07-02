@@ -1,0 +1,425 @@
+---
+title: "Engine Communication: Setup & Events"
+description:
+    "Learn how to initialize the Gameface engine bridge safely, subscribe and clean up events, and choose between trigger and call patterns with
+    practical mock-driven workflows."
+sidebar:
+    order: 1
+---
+
+import Summary from "coherent-docs-theme/components/Summary.astro";
+import Highlight from "coherent-docs-theme/components/Highlight.astro";
+import Link from "coherent-docs-theme/components/Link.astro";
+import { Steps } from "@astrojs/starlight/components";
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+<Summary>
+    This article explores how the <Highlight>cohtml.js</Highlight> library bridges the connection between the UI and the game engine, how to handle
+    the asynchronous lifecycle of the engine, and how to utilize different communication patterns to synchronize your UI with the game state.
+</Summary>
+
+## The Layer of Communication
+
+In a typical browser environment the data is usually fetched from a server. In Gameface however the case is a bit different. Since the UI is running
+in a game engine environment, that <Highlight>engine is the "server"</Highlight> that the UI needs to communicate with.
+
+To establish a connection with the server you need the `cohtml.js` library. This script must be included in every HTML page that needs to exchange
+data with the game.
+
+Once this script is loaded, it exposes a global `engine` object. This object is the single point of entry for all native communication: from updating
+a player's health bar to triggering a "Quit Game" sequence passes through it.
+
+### Including the cohtml.js Library
+
+The `cohtml.js` library is included in your Gameface package, typically in the `Player/Samples/uiresources/library` folder.
+
+<Tabs>
+    <TabItem label="Vanilla JS">
+     To include it in your project you need to reference the library in your HTML file. 
+     You must place it before any other scripts to ensure it is loaded first (either in the head or body tags).
+
+     ```html ins={7}
+    <!DOCTYPE html>
+    <html>
+        <head></head>
+        <body>
+            <div id="health-bar"></div>
+
+            <script src="js/cohtml.js"></script>
+            <script src="js/ui-logic.js"></script>
+        </body>
+    </html>
+     ```
+
+     This will expose the `engine` object globally in your JavaScript code. You can then use it in every script file that communicates with the game engine.
+
+    </TabItem>
+
+    <TabItem label="Framework">
+
+    To include it in your project you need to reference the library before the framework's loading script. You have two options:
+
+    #### Option 1: Add it to the index.html file before the `index.js` file
+
+    ```html ins={6}
+    <!DOCTYPE html>
+    <html lang="en">
+        <head></head>
+        <body>
+            <div id="root"></div>
+            <script src="js/cohtml.js"></script>
+            <script src="./index.tsx" type="module"></script>
+        </body>
+    </html>
+    ```
+
+    #### Option 2: Import it in the `index.jsx/tsx` file before the `render` function
+
+    ```tsx title="index.tsx" ins={4}
+    import { render } from 'solid-js/web';
+    import Menu from './Menu';
+    import './index.css';
+    import 'js/cohtml.js';
+
+    const root = document.getElementById('root');
+
+    render(() => <Menu />, root!);
+    ```
+
+    Both methods will expose the `engine` object globally and allow you to use it in every component of your project.
+
+    </TabItem>
+
+</Tabs>
+
+<Internal>
+
+:::note[Upcoming: cohtml.js auto-embedding]
+
+In a future release of Gameface, `cohtml.js` will be automatically embedded into the page by the engine. Manual inclusion via `<script>` tag or import will no longer be required for production builds running inside Gameface.
+
+The mock/development setup (importing the library manually for local browser preview) will remain unchanged. This note will be updated and the inclusion instructions above revised when the feature ships.
+
+:::
+
+</Internal>
+
+### IDE Autocomplete & TypeScript Support
+
+To get the most out of your development environment, you should use the `cohtml.d.ts` declaration file. This allows editors like VS Code to provide
+full IntelliSense for the engine API.
+
+<Tabs>
+    <TabItem label="JavaScript">
+    For <Highlight dark="#F7DF1E">JavaScript</Highlight> projects you have two options depending on your needs:
+
+    - For global autocomplete you can add a `jsconfig.json` file to your project root and add the following content:
+        ```json title="jsconfig.json" ins={7}
+        {
+            "compilerOptions": {
+            "module": "esnext",
+            "target": "esnext",
+            "checkJs": true
+        },
+            "include": ["src/**/*"]
+        }
+        ```
+
+        :::caution[File Location]
+
+        Using this example, you must ensure that the `cohtml.d.ts` file is in the `src` folder of your project.
+
+        :::
+    - For file-specific autocomplete you can add a reference comment to the file you need to use the `engine` object in.
+        ```javascript title="file.js"
+        /// <reference path="correct/path/to/cohtml.d.ts" />
+        ```
+    </TabItem>
+
+    <TabItem label="TypeScript">
+    For <Highlight dark="#007ACC" light="#007ACC">TypeScript</Highlight> projects you simply need to reference the `cohtml.d.ts` file in the `cohtml.js` file.
+    ```javascript title="cohtml.js" ins={1}
+    /// <reference path="correct/path/to/cohtml.d.ts" />
+    ```
+
+    The TypeScript compiler will automatically pick up the `cohtml.d.ts` file and use it to
+    provide autocomplete and documentation for the `engine` object regardless of the file it is in.
+    </TabItem>
+
+</Tabs>
+
+## Initialization & Lifecycle
+
+Once you have included the `cohtml.js` library and the `cohtml.d.ts` declaration file, you can start using the `engine` object to communicate with the
+game engine. However, there is an important timing constraint to be aware of.
+
+Your JavaScript may execute the moment the script is loaded, but the underlying game engine may still be initializing its own systems. Attempting to
+send or receive data before this handshake is complete will result in failed communication.
+
+The engine provides a specific promise-based lifecycle method: <Highlight>engine.whenReady</Highlight>. You should treat this as the "Main" entry
+point for your UI logic.
+
+```javascript title="ui-logic.js"
+engine.whenReady.then(() => {
+    console.log("Gameface bridge is active.");
+
+    // Safe place to register listeners or request initial game data.
+    initializeMenu();
+});
+```
+
+:::caution[Project Initialization]
+
+For any logic that runs immediately on page load, you must always make sure that `engine.whenReady` is wrapping that logic before executing it. This
+applies to event registrations, initial `engine.call` or `engine.trigger` invocations, and top-level initialization.
+
+:::
+
+:::danger[Avoid `engine.on('Ready')`]
+
+In some older documents you might find `engine.on('Ready')` calls. You should avoid this approach and always use the `engine.whenReady` promise
+instead.
+
+:::
+
+## Engine Event Subscription
+
+Gameface provides a way to subscribe to events that are triggered by the game engine. This is useful for when you need to react to something that
+happens in the game (for example, the player took damage, the score changed, or the match ended).
+
+To subscribe to an event sent from the game engine you can use the <Highlight>engine.on(eventName, callback)</Highlight> method.
+
+The `engine.on()` method takes two required arguments:
+
+- The name of the event to subscribe to.
+- A JavaScript function that will be executed when the event is triggered.
+
+```javascript title="ui-logic.js" ins={7}
+function updateScore(newScore) {
+    const scoreEl = document.getElementById("score-display");
+    scoreEl.innerText = `Score: ${newScore}`;
+}
+
+// Listen for the 'PlayerScoreChanged' event from the game
+engine.on("PlayerScoreChanged", updateScore);
+```
+
+:::note[The `context` Parameter]
+
+`engine.on` accepts an optional third argument: a `context` object that sets the `this` binding inside your callback. By default, `this` refers to the
+`engine` object. If your callback is a method on a class instance, you can pass that instance as the context to avoid manual `.bind()` calls.
+
+```js
+class ScoreDisplay {
+    constructor(elementId) {
+        this.element = document.getElementById(elementId);
+    }
+
+    update(newScore) {
+        // Without context, 'this' would point to the engine object
+        // and this.element would be undefined.
+        this.element.innerText = `Score: ${newScore}`;
+    }
+}
+
+const scoreDisplay = new ScoreDisplay("score-display");
+
+// Pass scoreDisplay as context so 'this' inside update() is correct
+engine.on("PlayerScoreChanged", scoreDisplay.update, scoreDisplay);
+```
+
+:::
+
+### Unsubscribing and Cleanup
+
+To prevent memory leaks or logic errors, you should unregister your handlers using <Highlight>engine.off(eventName, callback)</Highlight>.
+
+To unregister successfully, you must pass the <Highlight>exact same function reference</Highlight> to `engine.off` that you used in `engine.on`.
+
+```js
+engine.off("PlayerScoreChanged", updateScore);
+```
+
+:::caution[Anonymous Functions]
+
+If you use an anonymous arrow function inside `engine.on`, you will not be able to unregister it later because you have no reference to pass to
+`engine.off`.
+
+❌ Avoid:
+
+```js
+engine.on("PlayerScoreChanged", () => {
+    console.log("Score updated");
+});
+// ❌ There is no way to call engine.off for this handler.
+```
+
+:::
+
+## Communicating with the Engine: Triggers & Calls
+
+Communication from the UI back to the game follows two distinct paths: <Highlight>Triggers</Highlight> and <Highlight>Calls</Highlight>. Choosing the
+right one depends on whether you expect a response from the game engine.
+
+### engine.trigger (Fire-and-Forget)
+
+Use <Highlight>engine.trigger(eventName, ...args)</Highlight> when you want to signal the game but don't need any data back. It is a one-way message,
+similar to a notification: "The player clicked the 'Resume' button."
+
+You can pass arguments alongside the trigger to provide context to the game side:
+
+```js
+function handleResumeClick() {
+    // Send a signal to the game to unpause
+    engine.trigger("UI_ResumeGame");
+}
+
+function selectDifficulty(level) {
+    // Send a value alongside the event
+    engine.trigger("UI_DifficultySelected", level);
+}
+```
+
+An important characteristic of `engine.trigger` is that it supports <Highlight>multiple handlers</Highlight> on the game side. When the game registers
+several functions for the same event name, all of them execute when you trigger it.
+
+```js
+function handleQuitClick() {
+    // One trigger, but the game side may have multiple systems
+    // reacting to this: save system, audio, networking, analytics, etc.
+    engine.trigger("UI_QuitGame");
+}
+```
+
+This "one signal, many listeners" pattern makes `engine.trigger` the correct choice for broadcasting UI actions where you don't need any data back
+from the game.
+
+### engine.call (Request-Response)
+
+Use <Highlight>engine.call(eventName, ...args)</Highlight> when you need the game to give you a specific piece of information. This method returns a
+standard <Highlight>ES6 Promise</Highlight>. The game will perform its logic and then resolve the promise with the requested data.
+
+```js ins="call" ins="then"
+// Ask the game for the player's name and update the DOM
+engine.call("getPlayerName").then((name) => {
+    const playerName = document.getElementById("playerName");
+    playerName.innerHTML = name;
+});
+```
+
+Unlike `engine.trigger`, a call supports only <Highlight>one handler</Highlight> on the game side. This is by design: a single function processes the
+request and returns a value. If you need multiple systems to react, use `trigger` instead.
+
+You can also use `async/await` syntax for cleaner sequential logic:
+
+```js
+async function loadPlayerProfile() {
+    try {
+        const name = await engine.call("getPlayerName");
+        const level = await engine.call("getPlayerLevel");
+
+        document.getElementById("playerName").innerHTML = name;
+        document.getElementById("playerLevel").innerHTML = `Lvl ${level}`;
+    } catch (err) {
+        console.error("Failed to load player profile:", err);
+    }
+}
+```
+
+:::tip[Send Data and Await a Response]
+
+`engine.call` is not limited to read-only queries. The same optional `...args` you pass to `engine.trigger` work here too. You can send data to the
+game and wait for a response to show a confirmation message to the user.
+
+```js
+engine.call("SetMasterVolume", someValue).then((success) => {
+    if (!success) {
+        // Toggle error state on the UI - e.g., flash the slider red
+        volumeSlider.classList.add('is-error');
+    }
+});
+```
+
+Use this when the UI must confirm that the game accepted an action (rename, purchase, equip). If you only need to notify the game and do not care
+about a return value, `engine.trigger` is the lighter choice.
+
+:::
+
+### When to Use Which
+
+| Pattern          | Response               | Game-side Handlers | Use Case                                                     |
+| ---------------- | ---------------------- | ------------------ | ------------------------------------------------------------ |
+| `engine.trigger` | None (fire-and-forget) | Multiple           | Broadcasting actions (button clicks, UI state changes)       |
+| `engine.call`    | Promise with data      | Single             | Requesting specific data (player stats, inventory, settings) |
+
+:::tip[Rule of Thumb]
+
+- Need data from the game? Use `engine.call`.
+- Need to signal the game that something happened in the UI? Use `engine.trigger`.
+- Only the UI needs to be notified (game pushes data to the frontend)? Use `engine.on`.
+
+:::
+
+## Reserved Event Names
+
+Gameface uses a set of internal event names to manage its lifecycle and debugging systems. You must avoid using these names for your own events, as
+doing so will cause conflicts and unpredictable behavior:
+
+| Event Name     | Purpose                                                                               |
+| -------------- | ------------------------------------------------------------------------------------- |
+| `'Ready'`      | Fired internally when the view is ready for bindings. Use `engine.whenReady` instead. |
+| `'*'`          | The wildcard event (see below).                                                       |
+| `'_Unhandled'` | Fired when no handler exists for a triggered event.                                   |
+| `'_Result'`    | Internal communication for call results.                                              |
+| `'_OnReady'`   | Internal lifecycle event.                                                             |
+| `'_OnError'`   | Internal error propagation.                                                           |
+
+:::danger[Naming Collisions]
+
+Never use any of the event names listed above for your own game events. Triggering or subscribing to these names outside of their intended use will
+interfere with the engine's internal communication layer.
+
+:::
+
+### The Wildcard Listener (`*`)
+
+Sometimes, especially during early development or debugging, you need to see every signal passing through the bridge. Gameface allows you to subscribe
+to all events simultaneously using the <Highlight>`*`</Highlight> symbol.
+
+```javascript
+// A global logger for debugging engine traffic
+engine.on("*", (...args) => {
+    const eventName = args[0];
+    console.log(`[Engine Event]: ${eventName}`, args.slice(1));
+});
+```
+
+This wildcard listener acts as a catch-all. It receives every event fired from the game side, with the event name as the first element of the
+arguments array.
+
+:::danger[Performance Overhead]
+
+Subscribing to the `*` event creates additional performance overhead for every single event fired by the game, even if your handler does nothing
+meaningful with the data. Use this **exclusively during development and debugging**. For production builds, always subscribe to specific, named
+events.
+
+:::
+
+### The Unhandled Event (`_Unhandled`)
+
+If an event gets triggered but Gameface does not find any callback registered for it, an `_Unhandled` event will be emitted. This is a useful
+debugging tool that lets you catch events with no subscriber, helping you identify typos in event names or missing registrations early in development.
+
+```javascript
+engine.on("_Unhandled", (...args) => {
+    const eventName = args[0];
+    console.warn(`No handler registered for event: "${eventName}"`);
+});
+```
+
+:::note[Wildcard Does Not Count as "Handled"]
+
+Subscribing to the `*` event does not prevent `_Unhandled` from firing. The engine only considers an event "handled" if it has a dedicated handler
+registered via `engine.on` with that specific event name.
+
+:::
