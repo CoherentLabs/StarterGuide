@@ -19,6 +19,7 @@
   },
   "overrides": {
     "zod": "3.25.76",
-    "@astrojs/sitemap": "3.6.0"
+    "@astrojs/sitemap": "3.6.0",
+    "pagefind": "1.4.0"
   }
 }

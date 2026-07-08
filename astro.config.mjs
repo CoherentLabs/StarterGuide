@@ -8,7 +8,7 @@ import starlightAutoSidebar from 'starlight-auto-sidebar'
 export default defineConfig({
 	integrations: [
 		starlight({
-			title: 'UI workflow guide',
+			title: 'UI Workflow Guide',
 			social: [  
 				{  
 					icon: 'laptop',  
@@ -23,7 +23,7 @@ export default defineConfig({
 			],
 			plugins: [
 				...coherentTheme({
-					documentationSearchTag: 'UI workflow guide',
+					documentationSearchTag: 'UI Workflow Guide',
 					showPageProgress: true,
 				}),
 				starlightAutoSidebar()
