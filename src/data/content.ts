@@ -27,7 +27,7 @@ export const content = [
   { 
     heading: 'Polishing', 
     desc: "The final steps to make your UI production-ready. Master native localization, accessibility features, and deep performance profiling while utilizing Gameface-exclusive rendering effects.", 
-    link: '/Polishing/localization--accessibility/localization/',
+    link: '/polishing/localization--accessibility/localization/',
     current: false,
   },
 ];
