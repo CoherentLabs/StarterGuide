@@ -34,6 +34,7 @@ jobs:
           git fetch origin gh-pages
           git checkout gh-pages
           rsync -av --delete --exclude=.git --exclude=CNAME --exclude=.nojekyll --exclude=dist dist/ ./
+          rm -rf dist
           git add -A
           git diff --staged --quiet || git commit -m "deploy: ${{ github.sha }}"
           git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" gh-pages
