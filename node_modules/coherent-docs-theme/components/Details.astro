@@ -1,0 +1,37 @@
+---
+interface Props {
+    summary: string;
+    [key: string]: any;
+}
+
+const { summary, ...rest } = Astro.props;
+
+if (!summary) {
+    throw new Error("[Details Component] No summary provided!");
+}
+---
+
+<details {...rest}>
+    <summary>{summary}</summary>
+
+    <div class="details-content">
+        <slot />
+    </div>
+</details>
+
+<style>
+    .details-content {
+        margin-top: 1rem;
+        padding-left: 1rem;
+        border-left: 2px solid var(--sl-color-gray-5);
+    }
+
+    summary {
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    summary:hover {
+        color: var(--sl-color-accent);
+    }
+</style>

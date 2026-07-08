@@ -1,0 +1,30 @@
+---
+export interface Props {
+    light?: string;
+    dark?: string;
+}
+
+const { 
+    light = '#8e6400',
+    dark = '#F5BC35'
+} = Astro.props;
+---
+
+<span class="highlight" style={`--light-color: ${light}; --dark-color: ${dark};`}>
+    <slot />
+</span>
+
+<style>
+    .highlight {
+        font-weight: 600;
+        color: var(--light-color); 
+    }
+
+    :global([data-theme='dark']) .highlight {
+        color: var(--dark-color);
+    }
+    
+    :global([data-theme='light']) .highlight {
+        color: var(--light-color);
+    }
+</style>

@@ -1,0 +1,28 @@
+---
+export interface Props {
+    href: string;
+    product: string;
+    type: "unity" | "unreal" | "cpp";
+}
+
+const { href, product, type } = Astro.props;
+
+const currentProduct = product || process.env.DOCS_PRODUCT || "gameface";
+const currentType = type || process.env.DOCS_TYPE || "cpp";
+
+const productPaths: Record<string, string> = {
+    gameface: `${currentType}-gameface`,
+    prysm: `${currentType}-prysm`,
+};
+
+const urlSegment =
+    productPaths[currentProduct.toLowerCase()] ||
+    `${currentType}-${currentProduct.toLowerCase()}`;
+
+const baseUrl = `https://docs.coherent-labs.com/${urlSegment}`;
+
+const cleanHref = !href ? "/" : href.startsWith("/") ? href : `/${href}`;
+const fullUrl = `${baseUrl}${cleanHref}`;
+---
+
+<a href={fullUrl} target="_blank" rel="noopener noreferrer"><slot /></a>

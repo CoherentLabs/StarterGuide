@@ -1,0 +1,29 @@
+---
+import ChangelogRow, {
+    type ChangelogProps,
+} from "../internal-components/ChangelogRow.astro";
+
+interface Props extends ChangelogProps {}
+
+const { engine, description } = Astro.props;
+---
+
+{
+    Astro.slots.has("default") ? (
+        <ChangelogRow
+            badgeText="Fix"
+            badgeVariant="danger"
+            engine={engine}
+            description={description}
+        >
+            <slot />
+        </ChangelogRow>
+    ) : (
+        <ChangelogRow
+            badgeText="Fix"
+            badgeVariant="danger"
+            engine={engine}
+            description={description}
+        />
+    )
+}

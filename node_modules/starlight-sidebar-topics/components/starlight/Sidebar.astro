@@ -1,0 +1,8 @@
+---
+import Topics from '../Topics.astro'
+
+const { hasSidebar } = Astro.locals.starlightRoute
+const { isPageWithTopic } = Astro.locals.starlightSidebarTopics
+---
+
+{hasSidebar && isPageWithTopic && <Topics />}

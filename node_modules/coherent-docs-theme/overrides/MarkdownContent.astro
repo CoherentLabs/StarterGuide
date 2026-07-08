@@ -1,0 +1,14 @@
+---
+import DefaultMarkdownContent from '@astrojs/starlight/components/MarkdownContent.astro';
+
+const pathname = Astro.url.pathname.toLowerCase();
+const isApiReference = pathname.includes('/api_reference') || pathname.includes('/api-reference');
+
+const pageWeight = isApiReference ? "0.1" : "1.0";
+---
+
+<div data-pagefind-weight={pageWeight} style="display: contents;">
+  <DefaultMarkdownContent {...Astro.props}>
+    <slot />
+  </DefaultMarkdownContent>
+</div>
