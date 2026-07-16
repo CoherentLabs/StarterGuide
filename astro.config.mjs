@@ -28,7 +28,9 @@ export default defineConfig({
 				}),
 				starlightAutoSidebar()
 			],
+			favicon: '/favicon-32x32.png',
 			customCss: ['./src/styles/custom.css'],
+			lastUpdated: true,
 			sidebar: content.map((topic) => {
 				return {
 					label: topic.heading,

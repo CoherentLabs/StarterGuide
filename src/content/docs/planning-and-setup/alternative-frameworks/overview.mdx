@@ -1,0 +1,60 @@
+---
+title: "Overview"
+description: "Coherent Labs maintains ready-to-use Gameface starter templates for React, Vue, Preact, and Svelte, each pre-configured with our tooling so you can build UIs in the framework your team already knows."
+sidebar:
+    order: 1
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import Link from 'coherent-docs-theme/components/Link.astro';
+
+<Summary>
+    SolidJS is our recommended framework for Gameface, but the engine itself is <Highlight>framework agnostic</Highlight>. If your team already works in React, Vue, Preact, or Svelte, you can keep that stack and still ship a Gameface UI.
+
+    We build and maintain a starter template for each of these frameworks. Every template comes pre-configured with our Gameface tooling, so your UI renders correctly in the Player from the first run and you skip the manual setup.
+</Summary>
+
+## What the templates give you
+
+Each starter is a full <Highlight>Vite + TypeScript</Highlight> project with the Gameface-specific pieces already wired in. You get the build, the styling pipeline, and the linter out of the box instead of configuring them yourself:
+
+* **A Gameface-ready Vite config** that outputs relative asset paths and engine-friendly bundles, so you can drag the production build straight into the Player.
+* **A styling pipeline** built around <Link href="https://frontend-tools.coherent-labs.com/vite-gameface-style-transformer/getting-started/">vite-plugin-gameface-styles</Link> and UnoCSS, which turns static inline styles into flat, cache-friendly classes.
+* **Gameface linting** through <Link href="https://frontend-tools.coherent-labs.com/eslint-plugin-gameface/getting-started/">eslint-plugin-gameface</Link>, which flags data-binding mistakes and unsupported patterns - in CSS, SCSS, HTML, JSX/TSX, and JavaScript before they reach the engine.
+* **A working sample view** so you can see a real Gameface UI running and use it as a reference for your own screens.
+
+The exact components and helpers differ slightly per framework, so each guide below documents what ships in its template.
+
+## Scaffolding a project
+
+We install the templates with our command line tool, <Link href="https://frontend-tools.coherent-labs.com/create-gameface-app/getting-started/">create-gameface-app</Link>. Run it with no arguments to launch the interactive wizard:
+
+```bash
+npm create gameface-app
+```
+
+The wizard handles the whole setup: it asks for a project name, lets you pick a framework template from the list, and offers to install the dependencies for you. It prints the commands you need to start the development server once it finishes.
+
+:::tip[Skip the prompts]
+
+Already know which template you want? Pass it up front with the `--template` flag to scaffold in a single command. Each framework guide lists the exact command for its template.
+
+:::
+
+## Pick your framework
+
+Each guide walks you through installing its template and the caveats that come with that framework in the Player.
+
+| Framework | Template | Guide |
+| --- | --- | --- |
+| React | `react` | [React](/planning-and-setup/alternative-frameworks/react/) |
+| Preact | `preact` | [Preact](/planning-and-setup/alternative-frameworks/preact/) |
+| Vue | `vue` | [Vue](/planning-and-setup/alternative-frameworks/vue/) |
+| Svelte | `svelte` | [Svelte](/planning-and-setup/alternative-frameworks/svelte/) |
+
+:::note[Should you still reach for SolidJS?]
+
+Usually, yes. These frameworks run in Gameface, but most rely on a Virtual DOM or a heavier runtime that competes with the game for frame time. Start from the [Recommended Tech Stack](/planning-and-setup/recommended-tech-stack/recommended-tech-stack-overview/) when you do not have an existing investment in one of them.
+
+:::

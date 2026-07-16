@@ -29,8 +29,9 @@ Before we begin, ensure you have the following installed on your machine:
 
 Depending on your project requirements, you can either start with a structured blank project or a fully development ready UI component library. 
 
-To download these starter projects, we use a command line tool called `degit`. 
-This tool simply grabs a clean copy of the template files from our repository and places them on your computer, without bringing along any messy version control history.
+To scaffold these starter projects, we provide a command line tool called 
+<Link href="https://frontend-tools.coherent-labs.com/create-gameface-app/getting-started/">create-gameface-app</Link>.
+It downloads the template of your choice, optionally installs its dependencies, and leaves you with a project that is ready to run.
 
 ### Option A: The Gameface UI project
 
@@ -49,99 +50,55 @@ We will explore more of the features and components of this library in-depth in 
 To get started with the Gameface UI template, run this command in your terminal:
 
 ```bash
-npx degit CoherentLabs/Gameface-UI my-game-ui
-cd my-game-ui
-npm install
+npm create gameface-app -- --template gameface-ui --yes
 ```
 
-This will create a new folder called `my-game-ui` with the boilerplate code, install all dependencies, and get you ready to start developing your game UI.
+This command will run an installation wizard which will ask you to provide a name for your project and then install the needed dependencies.
 
-### Option B: Scaffold a SolidJS Project from Scratch
+:::tip[Full wizard]
+Alternatively, you can run the command without any arguments to go through an interactive wizard that will guide you through the setup process.
 
-If you prefer full control over your setup, you can scaffold a clean <Highlight>Vite + SolidJS</Highlight> project yourself using the official `create-solid` tool and then apply a few Gameface-specific configurations.
+```bash
+npm create gameface-app
+```
+:::
+
+### Option B: A Bare SolidJS Template
+
+If you prefer full control over your setup, start from our bare `solid` template. It gives you a clean <Highlight>Vite + SolidJS + TypeScript</Highlight> project with all the Gameface-specific configurations already applied, but without any of the pre-built components from Option A.
 
 This route is ideal if you want to build your own UI architecture and components entirely from scratch, without any pre-built boilerplate.
 
-<Steps>
+To scaffold it, run:
 
-1. #### Create the Project
-    Open a terminal in the directory where you want to create your project and run:
+```bash
+npm create gameface-app -- --template solid --yes
+```
 
-    ```bash
-    npm init solid
-    ```
+This command will run an installation wizard which will ask you to provide a name for your project, 
+install the dependencies, and leaves you with a project that already renders correctly in the Player - no manual Vite configuration required.
 
-    Follow the prompts to set up your project:
-    * **Project name:** enter your desired project name (e.g. `my-game-ui`).
-    * **What type of project would you like to create?** select `SolidJS + Vite`.
-    * **Use TypeScript?** select `Yes` to use TypeScript.
-    * **Which template would you like to use?** select `basic`.
+This is not a stock `create-solid` project. Our Gameface tooling comes wired into `vite.config.mts`, so none of it is left for you to set up:
 
-2. #### Install Dependencies
-    Navigate into your project directory and install the dependencies:
+* The <Link href="https://frontend-tools.coherent-labs.com/vite-gameface-style-transformer/getting-started/">vite-plugin-gameface-styles</Link> plugin runs with `isSolidProject: true` and turns static inline styles into flat `gf-prop--*` classes. UnoCSS and `presetGameface()` decode those class names back into real CSS.
+* The `vite-gameface` plugin applies the Solid-specific compile options the engine needs, loaded after the Solid plugin.
+* `vite-plugin-solid` runs with explicit compiler flags that preserve closing tags and attribute quotes.
+* <Link href="https://frontend-tools.coherent-labs.com/eslint-plugin-gameface/getting-started/">eslint-plugin-gameface</Link> is wired to a `gameface-models/Model.json` file for data-binding checks.
 
-    ```bash
-    cd my-game-ui
-    npm install
-    ```
+You also get a sample entry screen, complete with an animated background, an achievements panel, player stats, and an interactive carousel menu, which doubles as a working reference for your own views.
 
-    :::caution[Known install issue]
-    The `basic` template may fail to install because of a problem resolving the `solid-devtools` dependency.
-    As a temporary workaround, install the dependencies using `npm i --legacy-peer-deps` instead.
-    :::
+:::caution[Leave the Solid compiler flags alone]
 
-3. #### Configure Closing Tags
-    By default, SolidJS optimizes performance by omitting the last closing tag of an element and the quotes around attributes. However, Gameface expects strict, valid HTML, so you must disable these optimizations to prevent console warnings and runtime errors.
+SolidJS omits the last closing tag of an element and the quotes around attributes by default to save bytes. Gameface expects strict, valid HTML, so the template already disables those optimizations. Turning `omitLastClosingTag`, `omitNestedClosingTags`, or `omitQuotes` back on brings the console warnings and runtime errors straight back.
 
-    Set the following options to `false` in your `vite.config.ts`:
-
-    * `omitNestedClosingTags`
-    * `omitLastClosingTag`
-    * `omitQuotes`
-
-    Your `vite.config.ts` should look like this:
-
-    ```js
-    import { defineConfig } from 'vite';
-    import solidPlugin from 'vite-plugin-solid';
-    import devtools from 'solid-devtools/vite';
-
-    export default defineConfig({
-      plugins: [devtools(), solidPlugin({
-        solid: {
-          omitLastClosingTag: false,
-          omitNestedClosingTags: false,
-          omitQuotes: false,
-        }
-      })],
-      server: {
-        port: 3000,
-      },
-      base: './',
-      build: {
-        target: 'esnext',
-      },
-    });
-    ```
-
-    :::note
-    The `base: './'` option ensures all assets are referenced relative to `index.html` when you build for production (`npm run build`). This lets you preview the build by drag-and-dropping the generated `dist/index.html` into the Player.
-    :::
-
-</Steps>
-
-Once the configuration is complete, you can see how to preview the project in Gameface in the next section.
-
-:::tip[Helpful plugins]
-To smooth out the development experience, Coherent Labs also maintains a couple of Vite plugins worth considering:
-* **Gameface Vite Plugin** — properly closes all HTML tags, fixes empty text nodes generated by SolidJS, and correctly quotes SVG attributes.
-* **Solid Style to CSS Plugin** — converts inline `style` properties to `class`, improving performance through better caching and reusability.
 :::
 
-:::caution[Known limitations]
+## Known SolidJS Limitations
+
+Both starting points build on SolidJS, so these apply whichever option you picked.
+
 * **Routing:** the official SolidJS router is currently not compatible with Gameface. If you need routing, use the routing solution provided by the Gameface UI library (Option A).
 * **Empty text nodes:** SolidJS generates empty text nodes that older versions of Gameface may strip out, causing errors. Use Gameface `v2.2.0` or greater to avoid this.
-:::
 
 ## Connect to the Gameface Player
 
@@ -150,7 +107,7 @@ Regardless of which option you chose above, the steps to start your local server
 <Steps>
 
 1. #### Start the Development Server
-    Open your terminal inside your new `my-game-ui` folder and run:
+    Open your terminal inside your new project folder and run:
 
     ```bash
     npm run dev
@@ -181,8 +138,8 @@ Regardless of which option you chose above, the steps to start your local server
     Because our setup supports Hot Module Replacement (HMR), every time you save a file in your code editor, the Player will instantly update!
 
     :::caution[Gameface UI URL]
-    Gameface UI comes with 2 pre built in samples.
-    If you went with the Gameface UI template, make sure to change the url to `http://localhost:3000/menu/` or `http://localhost:3000/hud/` depending on which preset sample you wish to preview.
+    The Gameface UI template ships with a set of pre-built sample views (such as a main menu and a HUD).
+    If you went with the Gameface UI template, append the sample's route to the URL - for example `http://localhost:3000/menu/` - to preview a specific sample. Check the template's README for the full, up-to-date list of available views.
     Otherwise you will see a blank page.
     :::
 
