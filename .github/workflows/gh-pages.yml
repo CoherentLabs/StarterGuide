@@ -29,12 +29,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          deploy_dir="../gh-pages-deploy"
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin gh-pages
-          git checkout gh-pages
-          rsync -av --delete --exclude=.git --exclude=CNAME --exclude=.nojekyll --exclude=dist dist/ ./
-          rm -rf dist node_modules
+          rm -rf "$deploy_dir"
+          git worktree add --track -B gh-pages "$deploy_dir" origin/gh-pages
+          rsync -av --delete --exclude=.git --exclude=CNAME --exclude=.nojekyll dist/ "$deploy_dir"/
+          rm -rf "$deploy_dir/node_modules"
+          cd "$deploy_dir"
           git add -A
           git diff --staged --quiet || git commit -m "deploy: ${{ github.sha }}"
           git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" gh-pages
