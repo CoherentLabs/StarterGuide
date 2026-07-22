@@ -8,18 +8,19 @@ import starlightAutoSidebar from 'starlight-auto-sidebar'
 export default defineConfig({
 	integrations: [
 		starlight({
+			favicon: '/favicon-32x32.png',
 			title: 'UI Workflow Guide',
-			social: [  
-				{  
-					icon: 'laptop',  
-					label: 'Site',  
-					href: 'https://coherent-labs.com/',  
-				},  
-				{  
-					icon: 'email',  
-					label: 'Email',  
-					href: 'https://coherent-labs.com/get-in-touch'  
-				},  
+			social: [
+				{
+					icon: 'laptop',
+					label: 'Site',
+					href: 'https://coherent-labs.com/',
+				},
+				{
+					icon: 'email',
+					label: 'Email',
+					href: 'https://coherent-labs.com/get-in-touch'
+				},
 			],
 			plugins: [
 				...coherentTheme({
