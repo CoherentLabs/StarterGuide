@@ -1,0 +1,240 @@
+---
+title: "Svelte"
+description: "Scaffold a Gameface-ready Svelte 5, TypeScript, and Vite project with the create-gameface-app template, then learn the Svelte-specific caveats for the Player."
+sidebar:
+    order: 5
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import Link from 'coherent-docs-theme/components/Link.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+<Summary>
+    Our Svelte starter is a <Highlight>Svelte 5 + Vite + TypeScript</Highlight> project, pre-configured to render correctly in the Gameface Player. It uses the Svelte 5 `mount()` API rather than the legacy `new App({ target })` constructor.
+
+    Svelte compiles components down to direct DOM updates instead of diffing a Virtual DOM at runtime, which puts it ahead of React and Vue on runtime overhead. SolidJS still comfortably outperforms it in our own measurements, so reach for Svelte when your team already works in it rather than for the performance. The [Recommended Tech Stack](/planning-and-setup/recommended-tech-stack/recommended-tech-stack-overview/) covers the full rationale.
+</Summary>
+
+## Install the template
+
+We scaffold the project with <Link href="https://frontend-tools.coherent-labs.com/create-gameface-app/getting-started/">create-gameface-app</Link>, passing the `svelte` template so the CLI skips the framework prompt.
+
+<Steps>
+
+1. #### Scaffold the project
+    Run the initializer and let it install the dependencies for you:
+
+    ```bash
+    npm create gameface-app -- --template svelte --yes
+    ```
+
+    The CLI asks you to name your project, then scaffolds it and installs the dependencies.
+
+2. #### Start the development server
+    Move into the new folder and start Vite:
+
+    ```bash
+    cd your-project-name
+    npm run dev
+    ```
+
+    The dev server runs on port 3000.
+
+3. #### Open it in the Player
+    Point the Gameface Player at `http://localhost:3000/`. The sample UI loads, and Hot Module Replacement updates it every time you save a file.
+
+</Steps>
+
+## What's included
+
+The template opens on a sample <Highlight>entry screen</Highlight> that doubles as a working reference for your own views. It contains:
+
+* A parallax-style animated background.
+* An `Achievements` panel in the left column.
+* A `PlayerStats` panel in the top right.
+* An interactive `CarouselMenu` along the bottom center.
+* A `START GAME` action button.
+
+The project also ships a `gameface-models/Model.json` file, which wires up the data-binding checks that the linter runs against your markup.
+
+## Styling
+
+The template keeps styles flat and cache-friendly, which is what Gameface needs to hold a high frame rate. It layers a few approaches:
+
+| Layer | Approach |
+| --- | --- |
+| Component layout | SCSS modules, one `.module.scss` per component |
+| Utilities | UnoCSS with `presetGameface()` |
+| Inline styles | `style:prop` directives for dynamic values only, such as `style:width="{percent}%"` on the `ProgressBar`. Static values become `gf-prop--*` classes through the <Link href="https://frontend-tools.coherent-labs.com/vite-gameface-style-transformer/getting-started/">vite-plugin-gameface-styles</Link> plugin |
+| Responsive sizing | `rem` units relative to the `html` font size, scaled from a 1920x1080 reference by the `useResponsiveRootFontSize` composable |
+
+The plugin and the preset work as a pair. `vite-plugin-gameface-styles` pulls static inline styles out of your markup and encodes them into `gf-prop--*` class names. `presetGameface()` is the UnoCSS preset that decodes those names back into real CSS, so the generated classes resolve to actual styles instead of nothing. The template wires both together in `uno.config.ts`. Dropping UnoCSS costs you the automatic class generation from inline styles, unless you write a preset of your own to replace it.
+
+Vite is set up with the Sass `modern-compiler`, `base: './'`, and `cssCodeSplit: false` so the output loads cleanly in the engine.
+
+## Scripts
+
+The template ships with the standard set of scripts:
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the dev server on port 3000 |
+| `npm run build` | Run `svelte-check` and build the production bundle to `dist/` |
+| `npm run lint` | Run ESLint with `eslint-plugin-gameface` |
+| `npm run preview` | Preview the production build locally |
+
+## Data-binding and mocked models
+
+Data-binding and mocked models are not part of the template, so this section covers wiring them up in Svelte. The footer's FPS and ping counters serve as the example: right now they read from a hardcoded `systemStats` object. The steps below move them onto a <Highlight>Gameface model</Highlight> instead. The same pattern covers any model the game exposes later.
+
+The steps below only cover the Svelte-specific mechanics. [Mocking Data Models](/logic-and-interactions/engine-communication--data-mocking/mocking-data/) explains what a model is, and [Data-Binding Basics](/logic-and-interactions/data-binding--ui-state/data-binding-basics/) covers the full binding syntax.
+
+<Steps>
+
+1. #### Add the cohtml library
+    Data-binding needs the `engine` global, which comes from `cohtml.js`. Copy `cohtml.js` and `cohtml.d.ts` out of your Gameface package (`Player/Samples/uiresources/library`) into `src/data/`, then import the library once in your entry point:
+
+    ```diff lang="ts" title="src/main.ts"
+    import 'virtual:uno.css';
+    import './styles/global.scss';
+    +import './data/cohtml';
+    import App from './App.svelte';
+    ```
+
+2. #### Describe the model
+    Add one JSON file per model under `gameface-models/`. The file name becomes the model name, and only the shape matters, so the values are placeholders:
+
+    ```json title="gameface-models/SystemStats.json"
+    {
+        "fps": 60,
+        "ping": 12
+    }
+    ```
+
+    `eslint-plugin-gameface` reads this directory and checks every binding expression against it. A typo such as `{{SystemStats.fpsx}}` fails `npm run lint` instead of silently rendering nothing.
+
+3. #### Declare the global
+    `engine.createJSModel` exposes the model as a global variable. Declare it next to the type so TypeScript knows it exists:
+
+    ```diff lang="ts" title="src/data/types.ts"
+    export type SystemStats = {
+        fps: number;
+        ping: number;
+    };
+    +
+    +declare global {
+    +    var SystemStats: SystemStats;
+    +}
+    ```
+
+    :::tip[The declaration buys you autocomplete]
+
+    Declaring the global does more than silence a TypeScript error on an untyped `SystemStats`. Your editor now completes the model's properties as you type and checks every write against them, so `SystemStats.fps` is verified while a typo like `SystemStats.fsp` fails the build instead of quietly doing nothing at runtime.
+
+    :::
+
+4. #### Create the model
+    Register the model once the engine is ready. The template already exports a `systemStats` object, so pass it straight in. Returning a function from `onMount` gives you the teardown. The interval stands in for the game pushing new values, and every change needs `updateWholeModel` followed by `synchronizeModels` to reach the DOM:
+
+    ```diff lang="svelte" title="src/App.svelte"
+    <script lang="ts">
+    +  import { onMount } from "svelte";
+       import Achievements from "./components/Achievements.svelte";
+
+       let selectedModeId = $state("multiplayer");
+
+       useResponsiveRootFontSize();
+
+    +  onMount(() => {
+    +    let intervalId: number | undefined;
+    +
+    +    engine.whenReady.then(() => {
+    +      engine.createJSModel('SystemStats', systemStats);
+    +      engine.synchronizeModels();
+    +
+    +      intervalId = window.setInterval(() => {
+    +        SystemStats.fps = Math.round(Math.random() * 100);
+    +        SystemStats.ping = Math.round(Math.random() * 100);
+    +        engine.updateWholeModel(SystemStats);
+    +        engine.synchronizeModels();
+    +      }, 1000);
+    +    });
+    +
+    +    return () => {
+    +      window.clearInterval(intervalId);
+    +      engine.unregisterModel(SystemStats);
+    +    };
+    +  });
+    </script>
+    ```
+
+5. #### Bind the markup
+    Replace the `{@html}` interpolation with `data-bind-value` on the same elements. Wrap the expression in curly braces so Svelte hands the engine a plain string:
+
+    ```diff lang="svelte" title="src/App.svelte"
+    <footer class={styles['app__footer']}>
+    -  <span class={styles['app__stat']}>FPS: {@html systemStats.fps}</span>
+    -  <span class={styles['app__stat']}>PING: {@html systemStats.ping}ms</span>
+    +  <span class={styles['app__stat']}>
+    +    FPS: <span data-bind-value={"{{SystemStats.fps}}"}></span>
+    +  </span>
+    +  <span class={styles['app__stat']}>
+    +    PING: <span data-bind-value={"{{SystemStats.ping}}"}></span>ms
+    +  </span>
+    </footer>
+    ```
+
+    :::caution[Wrap the expression in `{" "}`]
+
+    Svelte treats `{` as the start of an expression, so a bare `data-bind-value="{{SystemStats.fps}}"` parses as an object literal rather than the text the engine expects. Writing `data-bind-value={"{{SystemStats.fps}}"}` passes a string expression instead, and the double curly braces reach the engine untouched.
+
+    :::
+
+</Steps>
+
+Run `npm run dev` and open the Player. The counters now change every second, driven by the model rather than by Svelte.
+
+## Build for production
+
+Build the production bundle when you are ready to ship:
+
+```bash
+npm run build
+```
+
+Load the generated `dist/index.html` in the Gameface Player. The template sets `base: './'`, so every asset resolves relative to that file and the build runs from any location.
+
+## Svelte and Gameface notes
+
+The app mounts onto `#app` in `index.html`. The style transformer understands Svelte's `style:prop` directives and merges the generated `gf-prop` classes with any `class` attribute already on the element, so you never have to pick between the two.
+
+Dynamic `style:prop` values, meaning the ones containing `{...}` interpolation, are left untouched. UnoCSS and Gameface therefore never receive a class name built from a runtime value, which is what would otherwise produce invalid class names.
+
+### Render state with `{@html}`
+
+State interpolated as plain text does not render in Gameface. A `{state}` expression leaves the element empty in the Player instead of printing the value, so pass the value through `{@html state}` to get it on screen.
+
+```svelte
+<script lang="ts">
+    let playerName = $state('Commander');
+</script>
+
+<!-- Stays empty in the Player -->
+<span>{playerName}</span>
+
+<!-- Renders the value -->
+<span>{@html playerName}</span>
+```
+
+### Click events
+
+Svelte 5's property-style event syntax does not currently fire in Gameface. The legacy directive still works, at the cost of a deprecation warning from the Svelte compiler.
+
+| Syntax | Behavior in Gameface |
+| --- | --- |
+| `onclick` | Does not fire |
+| `on:click` | Works, logs a Svelte deprecation warning |
+| `onclickcapture` | Works |
+
+Wire your handlers with `on:click` and live with the warning, or use `onclickcapture` when handling the click on the capture phase suits you.

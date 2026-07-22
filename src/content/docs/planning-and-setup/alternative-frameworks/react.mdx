@@ -1,0 +1,220 @@
+---
+title: "React"
+description: "Scaffold a Gameface-ready React 19, TypeScript, and Vite project with the create-gameface-app template, then learn the React-specific caveats for the Player."
+sidebar:
+    order: 2
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import Link from 'coherent-docs-theme/components/Link.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+<Summary>
+    Our React starter is a <Highlight>React 19 + Vite + TypeScript</Highlight> project, pre-configured to render correctly in the Gameface Player. It is the quickest way to build a UI within Gameface when your team already works in React.
+
+    React uses a Virtual DOM, which adds more runtime overhead than SolidJS. That trade is worth making when your existing React experience saves more time than the overhead costs. The [Recommended Tech Stack](/planning-and-setup/recommended-tech-stack/recommended-tech-stack-overview/) covers the full performance rationale.
+</Summary>
+
+## Install the template
+
+We scaffold the project with <Link href="https://frontend-tools.coherent-labs.com/create-gameface-app/getting-started/">create-gameface-app</Link>, passing the `react` template so the CLI skips the framework prompt.
+
+<Steps>
+
+1. #### Scaffold the project
+    Run the initializer and let it install the dependencies for you:
+
+    ```bash
+    npm create gameface-app -- --template react --yes
+    ```
+
+    The CLI asks you to name your project, then scaffolds it and installs the dependencies.
+
+2. #### Start the development server
+    Move into the new folder and start Vite:
+
+    ```bash
+    cd your-project-name
+    npm run dev
+    ```
+
+    The dev server runs on port 3000.
+
+3. #### Open it in the Player
+    Point the Gameface Player at `http://localhost:3000/`. The sample UI loads, and Hot Module Replacement updates it every time you save a file.
+
+</Steps>
+
+## What's included
+
+The template opens on a sample <Highlight>entry screen</Highlight> that doubles as a working reference for your own views. It contains:
+
+* A parallax-style animated background.
+* An `Achievements` panel in the left column.
+* A `PlayerStats` panel in the top right.
+* An interactive `CarouselMenu` along the bottom center.
+* A `START GAME` action button.
+
+The project also ships a `gameface-models/Model.json` file, which wires up the data-binding checks that the linter runs against your markup.
+
+## Styling
+
+The template keeps styles flat and cache-friendly, which is what Gameface needs to hold a high frame rate. It layers a few approaches:
+
+| Layer | Approach |
+| --- | --- |
+| Component layout | SCSS modules, one `.module.scss` per component |
+| Utilities | UnoCSS with `presetGameface()` |
+| Inline styles | Kept minimal, for genuinely dynamic values like a progress bar width. Static values become `gf-prop--*` classes through <Link href="https://frontend-tools.coherent-labs.com/vite-gameface-style-transformer/getting-started/">vite-plugin-gameface-styles</Link> plugin |
+| Responsive sizing | `rem` units relative to the `html` font size, scaled from a 1920x1080 reference by the `useResponsiveRootFontSize` hook |
+
+The plugin and the preset work as a pair. `vite-plugin-gameface-styles` pulls static inline styles out of your markup and encodes them into `gf-prop--*` class names. `presetGameface()` is the UnoCSS preset that decodes those names back into real CSS, so the generated classes resolve to actual styles instead of nothing. The template wires both together in `uno.config.ts`. Dropping UnoCSS costs you the automatic class generation from inline styles, unless you write a preset of your own to replace it.
+
+Vite is set up with the Sass `modern-compiler`, `base: './'`, and `cssCodeSplit: false` so the output loads cleanly in the engine.
+
+## Scripts
+
+The template ships with the standard set of scripts:
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the dev server on port 3000 |
+| `npm run build` | Typecheck and build the production bundle to `dist/` |
+| `npm run lint` | Run ESLint with `eslint-plugin-gameface` |
+| `npm run preview` | Preview the production build locally |
+
+## Data-binding and mocked models
+
+Data-binding and mocked models are not part of the template, so this section covers wiring them up in React. The footer's FPS and ping counters serve as the example: 
+right now they read from a hardcoded `systemStats` object. The steps below move them onto a <Highlight>Gameface model</Highlight> instead. The same pattern covers any model the game exposes later.
+
+The steps below only cover the React-specific mechanics. [Mocking Data Models](/logic-and-interactions/engine-communication--data-mocking/mocking-data/) explains what a model is, and [Data-Binding Basics](/logic-and-interactions/data-binding--ui-state/data-binding-basics/) covers the full binding syntax.
+
+<Steps>
+
+1. #### Add the cohtml library
+    Data-binding needs the `engine` global, which comes from `cohtml.js`. Copy `cohtml.js` and `cohtml.d.ts` out of your Gameface package (`Player/Samples/uiresources/library`) into `src/data/`, then import the library once in your entry point:
+
+    ```diff lang="tsx" title="src/main.tsx"
+    import 'virtual:uno.css';
+    import './styles/global.scss';
+    +import './data/cohtml';
+    import App from './App';
+    ```
+
+2. #### Describe the model
+    Add one JSON file per model under `gameface-models/`. The file name becomes the model name, and only the shape matters, so the values are placeholders:
+
+    ```json title="gameface-models/SystemStats.json"
+    {
+        "fps": 60,
+        "ping": 12
+    }
+    ```
+
+    `eslint-plugin-gameface` reads this directory and checks every binding expression against it. A typo such as `{{SystemStats.fpsx}}` fails `npm run lint` instead of silently rendering nothing.
+
+3. #### Declare the global
+    `engine.createJSModel` exposes the model as a global variable. Declare it next to the type so TypeScript knows it exists:
+
+    ```diff lang="ts" title="src/data/types.ts"
+    export type SystemStats = {
+        fps: number;
+        ping: number;
+    };
+    +
+    +declare global {
+    +    var SystemStats: SystemStats;
+    +}
+    ```
+
+    :::tip[The declaration buys you autocomplete]
+
+    Declaring the global does more than silence a TypeScript error on an untyped `SystemStats`. Your editor now completes the model's properties as you type and checks every write against them, so `SystemStats.fps` is verified while a typo like `SystemStats.fsp` fails the build instead of quietly doing nothing at runtime.
+
+    :::
+
+4. #### Create the model
+    Register the model once the engine is ready. The template already exports a `systemStats` object, so pass it straight in. The interval stands in for the game pushing new values, and every change needs `updateWholeModel` followed by `synchronizeModels` to reach the DOM:
+
+    ```diff lang="tsx" title="src/App.tsx"
+    -import { useState } from 'react';
+    +import { useEffect, useState } from 'react';
+
+    export default function App() {
+        const [selectedModeId, setSelectedModeId] = useState('multiplayer');
+
+        useResponsiveRootFontSize();
+
+    +    useEffect(() => {
+    +        let intervalId: number | undefined;
+    +        let created = false;
+    +
+    +        engine.whenReady.then(() => {
+    +            engine.createJSModel('SystemStats', systemStats);
+    +            engine.synchronizeModels();
+    +            created = true;
+    +
+    +            intervalId = window.setInterval(() => {
+    +                SystemStats.fps = Math.round(Math.random() * 100);
+    +                SystemStats.ping = Math.round(Math.random() * 100);
+    +                engine.updateWholeModel(SystemStats);
+    +                engine.synchronizeModels();
+    +            }, 1000);
+    +        });
+    +
+    +        return () => {
+    +            if (intervalId !== undefined) window.clearInterval(intervalId);
+    +            if (created) engine.unregisterModel(SystemStats);
+    +        };
+    +    }, []);
+    ```
+
+5. #### Bind the markup
+    Replace the JSX interpolation with `data-bind-value` on the same elements. JSX leaves double curly braces untouched inside a quoted attribute, so the expression reaches the engine exactly as written:
+
+    ```diff lang="tsx" title="src/App.tsx"
+    <footer className={styles['app__footer']}>
+    -    <span className={styles['app__stat']}>FPS: {systemStats.fps}</span>
+    -    <span className={styles['app__stat']}>PING: {systemStats.ping}ms</span>
+    +    <span className={styles['app__stat']}>
+    +        FPS: <span data-bind-value="{{SystemStats.fps}}"></span>
+    +    </span>
+    +    <span className={styles['app__stat']}>
+    +        PING: <span data-bind-value="{{SystemStats.ping}}"></span>ms
+    +    </span>
+    </footer>
+    ```
+
+</Steps>
+
+Run `npm run dev` and open the Player. The counters now change every second, driven by the model rather than by React.
+
+:::caution[The guards are for `<StrictMode>` only]
+
+The template renders inside `<StrictMode>`, and React runs every effect twice in development: mount, cleanup, mount again. That cleanup fires before `engine.whenReady` resolves, so an unguarded `engine.unregisterModel(SystemStats)` runs against a global that does not exist yet and throws. You also end up registering the model twice and running two intervals.
+
+The `created` and `intervalId` guards exist purely for that development pass. Production builds strip StrictMode's double invoke, so the effect runs once in the Player and the guards never fire. Removing `<StrictMode>` from `main.tsx` drops the need for them, at the cost of a useful bug catcher.
+
+:::
+
+## Build for production
+
+Build the production bundle when you are ready to ship:
+
+```bash
+npm run build
+```
+
+Load the generated `dist/index.html` in the Gameface Player. The template sets `base: './'`, so every asset resolves relative to that file and the build runs from any location.
+
+## React and Gameface notes
+
+React 19 works in the Player, with one cosmetic quirk worth knowing about up front.
+
+:::note[The "test event listener" warning]
+
+React DOM runs a one-time feature probe at startup that adds and removes a throwaway `test` event listener. Gameface logs a message such as *"Attempting to remove test event listener..."* while this happens. The warning comes from React internals, not your code, and is safe to ignore.
+
+:::
