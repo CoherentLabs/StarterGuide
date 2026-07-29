@@ -26,7 +26,7 @@ We scaffold the project with <Link href="https://frontend-tools.coherent-labs.co
     Run the initializer and let it install the dependencies for you:
 
     ```bash
-    npm create gameface-app -- --template vue --yes
+    npm create gameface-app -- --template vue --default
     ```
 
     The CLI asks you to name your project, then scaffolds it and installs the dependencies.
@@ -137,7 +137,7 @@ The steps below only cover the Vue-specific mechanics. [Mocking Data Models](/lo
 4. #### Create the model
     Register the model once the engine is ready. The template already exports a `systemStats` object, so pass it straight in. The interval stands in for the game pushing new values, and every change needs `updateWholeModel` followed by `synchronizeModels` to reach the DOM:
 
-    ```diff lang="js" title="src/App.vue"
+    ```diff lang="ts" title="src/App.vue"
     -import { ref } from 'vue';
     +import { onMounted, onUnmounted, ref } from 'vue';
 
