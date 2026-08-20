@@ -1,0 +1,110 @@
+---
+title: "Overview"
+description: "Why coding agents get Gameface wrong out of the box, what we maintain to close the gap, and where you still have to stay in the loop."
+sidebar:
+    order: 1
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import Link from 'coherent-docs-theme/components/Link.astro';
+
+<Summary>
+    A coding agent that has never seen Gameface will write valid CSS that the engine warns about and then does not apply. It is not hallucinating - it is writing for the browser it was trained on, and Gameface ships a <Highlight>subset of the web platform</Highlight>.
+
+    This chapter covers the tooling we maintain to close that gap - an MCP server, a documentation corpus, a negative ruleset and a spec-first skill - and what we learned using them on three real UIs.
+</Summary>
+
+## Why an agent gets Gameface wrong
+
+The problem is not that agents write bad code. It is that the code they write is
+*correct for a browser* and wrong for the engine. Gameface does not throw on
+unsupported CSS - the stylesheet parser logs a warning to the engine console
+(`Unsupported CSS property detected (stylesheet parser)` and similar), does not
+resolve the declaration, and renders whatever is left.
+
+So the evidence exists. The catch is **where** it exists: in the Player's console,
+which is exactly the place an agent working from your editor cannot see. Nothing
+fails. The build succeeds, the dev server is happy, lint has nothing to say, and
+the agent's own training data insists the code is right. You get a screen that is
+subtly collapsed, unstyled or laid out in a single column, and the one thing that
+would explain it is sitting in a log nobody read.
+
+That shapes the whole chapter. Half the job is stopping the wrong CSS from being
+written; the other half is making sure something is actually
+[reading the console](/building-with-ai/gameface-mcp-server/#inspection) and the
+rendered result.
+
+A short sample of what an untrained agent reaches for first:
+
+| The agent writes | What happens in Gameface | What it should have written |
+| --- | --- | --- |
+| `display: grid` + `grid-template-columns` | No grid layout exists; the properties are ignored and children stack | Nested flex containers |
+| `oklch(0.52 0.16 35)` | Color function not parsed - the declaration is dropped | `rgb()` / `rgba()` / `color(srgb ...)` |
+| `padding: var(--space-md)` | `var()` inside a shorthand is not resolved; the whole declaration is dropped | The longhands - `padding-top`, `padding-right`, ... |
+| `width: clamp(20rem, 40vw, 60rem)` | `clamp`, `min` and `max` are not implemented | `calc()`, or compute the value in JS |
+| `box-shadow: inset 0 0 0 6px gold` | The `inset` keyword is rejected | A pseudo-element or child ring |
+| `border: 2px dashed` | `dashed` and `dotted` are rejected | Tiled edge gradients |
+
+None of these are exotic. They are the first thing a modern agent reaches for,
+which means an unprepared agent gets a meaningful share of every screen wrong
+before you have reviewed a single line.
+
+:::note[This is the same list you already know]
+Everything above is documented across the rest of this guide. The point of this
+chapter is not new engine knowledge - it is <Highlight>getting that knowledge in
+front of the agent</Highlight> at the moment it writes the code, instead of in a
+review comment afterwards.
+:::
+
+## What we maintain
+
+Four pieces, which work independently but are designed to stack:
+
+| Piece | What it is | Article |
+| --- | --- | --- |
+| **Gameface MCP server** | An MCP server that drives a live Gameface Player over the Chrome DevTools Protocol - inspect the DOM, screenshot, run layout assertions, lint for expensive patterns, measure frame timing | [Setting up the MCP server](/building-with-ai/gameface-mcp-server/) |
+| **Documentation corpus** | The contents of this guide, restructured into a retrievable corpus the agent can search while it writes | [Grounding the agent](/building-with-ai/grounding-the-agent/) |
+| **Negative ruleset** | An explicit "never emit this" list generated from engine feature detection, injected as a hard constraint | [Grounding the agent](/building-with-ai/grounding-the-agent/) |
+| **Game UI Conductor skill** | A skill that forces the agent to clarify requirements and get a written spec signed off *before* it writes code | [The Conductor skill](/building-with-ai/the-conductor-skill/) |
+
+All of it lives in one repository:
+<Link href="https://github.com/CoherentLabs/Gameface-MCP">github.com/CoherentLabs/Gameface-MCP</Link>.
+The skill files are shared across Claude Code, GitHub Copilot and Gemini CLI
+rather than duplicated per client.
+
+## What this tooling does not do
+
+Being straight about the limits is more useful than a feature list, so:
+
+* **It does not make the output correct.** It removes a category of engine
+  mistakes. It does not remove review, and it does not remove the need to know
+  Gameface yourself - you are still the one who has to spot the wrong thing.
+* **It will not invent a visual language.** This is the single biggest failure we
+  hit in our own testing. Given a design system, an agent applies it consistently;
+  given a blank canvas, it produces something that is competently built and
+  visually incoherent. [Design first](/building-with-ai/design-first/) is the
+  article to read before you start.
+* **It cannot tell you the UI feels wrong.** Assertions catch overflowing text and
+  overlapping boxes. Nothing in the toolchain catches "the panel is technically
+  fine but reads as an afterthought".
+* **It is not a substitute for the Player.** Anything that must work in a shipped
+  build has to be checked against a production build in the engine - not a dev
+  server, and not an agent's summary of what it did.
+
+## How to read this chapter
+
+The first six articles are the setup and the working method, in the order you
+would actually do them. The three articles under **In Practice** are write-ups of
+UIs we built ourselves with this toolchain, including the parts that did not go
+well.
+
+:::caution[The case studies are our own experiments]
+None of the three builds in **In Practice** is something you can download today.
+Two are prototypes we built to probe the workflow; the third is a screen in a
+Gameface sample that is still in development. They are there because the specifics
+are more useful than generalities - what the agent got right the first time, what
+needed a second pass, and what only surfaced in a production build. Treat them as
+evidence of what the workflow looks like, not as a promise of what you will get.
+Results vary with the model, the prompt and - above all - the design you hand it.
+:::

@@ -1,0 +1,279 @@
+---
+title: "Setting up the MCP Server"
+description: "Install and configure the Gameface MCP server so your coding agent can drive a live Player - inspect the DOM, screenshot it, assert on layout and measure frame timing."
+sidebar:
+    order: 2
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import Link from 'coherent-docs-theme/components/Link.astro';
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+<Summary>
+    The <Link href="https://github.com/CoherentLabs/Gameface-MCP">Gameface MCP server</Link> gives a coding agent direct control over a running Gameface Player through the <Highlight>Chrome DevTools Protocol</Highlight>.
+
+    Instead of writing code and hoping, the agent can launch the Player, look at the DOM it just produced, take a screenshot, assert that text actually fits its box, and measure what the screen costs per frame.
+</Summary>
+
+## Why an agent needs this
+
+Without it, an agent is writing Gameface UI blind. It produces markup, you run the
+Player, you describe what looks wrong, it guesses again. Every iteration goes
+through you, and the agent never sees the one thing that matters - what the engine
+actually rendered.
+
+With the server connected, the loop closes. The agent can check its own work
+against the real engine, which is also the only place a Gameface-specific failure
+shows up at all.
+
+:::caution[Gameface Player only]
+The server refuses to launch or connect to anything that is not Gameface Player.
+Every connection is verified over CDP - `navigator.userAgent` must contain
+`cohtml` - and anything else is killed. This is deliberate: it is not a general
+browser-automation server, and it should not be repurposed into one.
+:::
+
+## Prerequisites
+
+* **Node.js 18+** - the server uses the global `fetch` API.
+* **A local Gameface SDK with a Player executable.** The repository does not ship
+  one; you need your own Gameface licence and SDK. On Windows the executable is
+  usually at `.../Player/Player.exe` - note that `Player.exe` normally lives in a
+  `Player` *subfolder* under the SDK root, not at the root itself.
+* **Gameface 3.1.2 or newer** is recommended. See
+  [Version awareness](#version-awareness) below for why.
+
+## Installing
+
+<Steps>
+
+1. #### Clone and build
+
+    ```bash
+    git clone https://github.com/CoherentLabs/Gameface-MCP.git
+    cd Gameface-MCP
+    npm install
+    npm run build
+    ```
+
+    This compiles `src/` into `build/`, producing `build/index.js` - the server's
+    stdio entry point. That path is what every client config points at.
+
+2. #### Point it at your Player
+
+    Create `~/.gameface-mcp/config.json`. This is <Highlight>one file per developer
+    machine, not per project</Highlight> - the server is meant to be reused across
+    all your game repositories, so the Player path lives on your machine rather
+    than being committed into every project's MCP config.
+
+    ```json title="~/.gameface-mcp/config.json"
+    {
+      "browserExecutable": "D:/path/to/your/sdk/Player/Player.exe",
+      "browserArgs": ["--enable-gui=false"],
+      "port": 9444,
+      "cdpHost": "localhost"
+    }
+    ```
+
+    Every field is optional. `browserArgs` are merged into every launch.
+
+    :::tip[Set `--enable-gui=false`]
+    Without it, the Player's own toolbar and bookmark bar eat an inconsistent
+    chunk of the height you asked for, so the real viewport never quite matches
+    the resolution you requested. Every screenshot and layout assertion the agent
+    takes is then measured against the wrong canvas.
+    :::
+
+3. #### Wire it into your agent
+
+    Pick your client below. In every case, if you created the config file in step
+    2, the `args` array needs nothing beyond the path to `build/index.js` - the
+    Player path and port are picked up automatically.
+
+</Steps>
+
+## Client configuration
+
+<Tabs>
+<TabItem label="Claude Code">
+
+`.mcp.json` at your project root:
+
+```json title=".mcp.json"
+{
+  "mcpServers": {
+    "gameface": {
+      "command": "node",
+      "args": ["/absolute/path/to/Gameface-MCP/build/index.js"]
+    }
+  }
+}
+```
+
+</TabItem>
+<TabItem label="VS Code / Copilot">
+
+`.vscode/mcp.json` at your project root - the repository already ships one you can
+copy:
+
+```json title=".vscode/mcp.json"
+{
+  "servers": {
+    "gameface_local": {
+      "command": "node",
+      "args": ["build/index.js"]
+    }
+  }
+}
+```
+
+:::caution[The key is `servers`, not `mcpServers`]
+Copying a config from another client without changing this key is the most common
+mistake here, and it fails quietly - the server simply never appears.
+:::
+
+</TabItem>
+<TabItem label="Gemini CLI">
+
+`.gemini/settings.json` for a single project, or `~/.gemini/settings.json` to
+apply it everywhere:
+
+```json title=".gemini/settings.json"
+{
+  "mcpServers": {
+    "gameface": {
+      "command": "node",
+      "args": ["/absolute/path/to/Gameface-MCP/build/index.js"],
+      "timeout": 30000,
+      "trust": false
+    }
+  }
+}
+```
+
+</TabItem>
+<TabItem label="Claude Desktop">
+
+`claude_desktop_config.json` - on Windows under `%APPDATA%/Claude/`, on macOS
+under `~/Library/Application Support/Claude/`:
+
+```json title="claude_desktop_config.json"
+{
+  "mcpServers": {
+    "gameface": {
+      "command": "node",
+      "args": ["/absolute/path/to/Gameface-MCP/build/index.js"]
+    }
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+## What the agent gets
+
+The tools fall into four groups. You rarely call them yourself - the agent does,
+while it works - but it is worth knowing what is available, because that tells you
+what you can reasonably ask for.
+
+### Connection
+
+| Tool | What it does |
+| --- | --- |
+| `launch_browser` | Launches the Player with remote debugging enabled |
+| `connect_browser` | Connects to an already-running, debuggable Player |
+| `gameface_get_status` | Reports the current connection status and engine version |
+| `gameface_restart` | Disconnects, closes, relaunches and reconnects with the last-used parameters |
+| `navigate` | Points the connected view at a different URL |
+
+### Inspection
+
+| Tool | What it does |
+| --- | --- |
+| `get_dom_tree` | Snapshot of the DOM - node IDs, names, attributes, children |
+| `search_dom` | Finds nodes by text or XPath |
+| `get_computed_styles` | Computed CSS for a node - what the engine *kept*, not what you wrote |
+| `take_screenshot` | Full page, viewport, or a custom clip rect |
+| `get_console_logs` | Buffered console output plus Log-domain entries, including the engine's own unsupported-feature warnings |
+| `eval_js` | Runs JavaScript in the connected page |
+| `interact_element` | Click, type, hover, focus, scroll into view, or touch |
+
+Two of these carry more weight than the rest.
+
+`get_console_logs` is where the engine tells you what it refused. Unsupported CSS
+does not throw, but the stylesheet parser does log a warning naming the property -
+and that warning lands in the Player's console, which an agent working from your
+editor otherwise never sees. Piping it back is the difference between the agent
+knowing a declaration was rejected and the agent guessing why the panel looks odd.
+
+`get_computed_styles` answers the same question from the other side. It is how the
+agent finds out that the `padding: var(--space-md)` it just wrote computes to
+`0px`. The gap between the code it wrote and the styles the engine kept is exactly
+where Gameface-specific bugs live.
+
+### Layout assertions
+
+| Tool | What it checks |
+| --- | --- |
+| `assert_text_fits` | Whether an element's content overflows its own box |
+| `assert_no_overlap` | Whether two elements' rendered boxes intersect |
+| `assert_within_parent` | Whether an element stays inside its parent, an ancestor, or the viewport |
+
+These exist because they catch what a glance at a screenshot misses: a label
+clipped by two pixels, a tooltip covering the value it describes, a panel running
+off the bottom of a 21:9 screen.
+
+### Performance
+
+| Tool | What it does |
+| --- | --- |
+| `perf_lint` | A static, deterministic check for layout patterns the Gameface docs name as expensive - `align-items: stretch`, unsized flex items, `display: simple` misuse. No timing involved. |
+| `perf_measure` | Runs a fixed frame-timing scenario against the live connection and reports p50/p95/p99 against a recorded baseline |
+
+:::note[What `perf_measure` actually tells you]
+It compares against a noise floor recorded at 1920x1080 across five runs of 600
+frames, with the Player restarted between runs. It is a signal that a screen is
+unusually expensive - not a substitute for profiling your real UI under real game
+load. See [Performance and Memory Profiling](/polishing/debugging-profiling--testing/performance-and-memory-profiling/)
+for the real thing.
+:::
+
+### Resources
+
+Alongside the tools, the server exposes the documentation corpus and the engine
+constraints as MCP resources - `gameface://code-instructions` and
+`gameface://rag/<file>.md`. Those are the subject of the
+[next article](/building-with-ai/grounding-the-agent/).
+
+## Version awareness
+
+The server talks to the Player over CDP, and CDP support has changed across
+Gameface versions. `launch_browser`, `connect_browser` and `gameface_get_status`
+all report the connected `cohtmlVersion` and warn when it is below the
+recommended minimum - currently <Highlight>3.1.2</Highlight>, which introduced
+additional CDP protocol support.
+
+That minimum is a floor, not a guarantee. Our own development SDK - 3.2.0.2, well
+above the floor - still has quirks the server has to work around:
+
+* `DOM.resolveNode` returns an empty object instead of a usable reference. No
+  error, just nothing.
+* `DOM.setAttributeValue` silently no-ops.
+* `DOM.performSearch` never returns a search ID, which is why `search_dom` is less
+  dependable than the other inspection tools.
+
+The assertion tools work around the first two by resolving a node through
+`DOM.getBoxModel` and `document.elementFromPoint`. This is not an exhaustive list
+of quirks - it is what has been hit and fixed so far. If a tool returns something
+that makes no sense, an engine-side CDP gap is a realistic explanation before your
+own code is.
+
+## Checking it works
+
+Ask your agent to launch the Player and screenshot your current view. If it comes
+back with an image and a `cohtmlVersion`, the connection is live. If it comes back
+describing what it *expects* the screen to look like, the server is not connected
+and the agent is guessing - which is precisely the failure mode this article
+exists to remove.

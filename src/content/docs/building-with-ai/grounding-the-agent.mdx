@@ -1,0 +1,192 @@
+---
+title: "Grounding the Agent"
+description: "The documentation corpus and the negative ruleset - the two pieces of context that stop an agent writing browser CSS into a Gameface project."
+sidebar:
+    order: 3
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import Link from 'coherent-docs-theme/components/Link.astro';
+import { FileTree } from '@astrojs/starlight/components';
+
+<Summary>
+    Tooling that inspects a running Player catches mistakes *after* they are written. Grounding is about the step before that - giving the agent the right knowledge at the moment it writes the line.
+
+    Two pieces do this, and they work in opposite directions: a <Highlight>documentation corpus</Highlight> it searches on demand, and a <Highlight>negative ruleset</Highlight> that is always in context and only says "never".
+</Summary>
+
+## Why both, and why the negative half matters more
+
+A model's default answer for "center these cards in a responsive grid" is
+`display: grid`. That answer is correct, common, and heavily represented in
+everything it learned from. Handing it a document that describes the right way to
+do it in Gameface competes against that prior - and does not always win, because
+the model has to first *realize* that the situation is unusual.
+
+A negative rule works differently. It does not describe an alternative; it removes
+the option. "Never use CSS Grid; Gameface has no grid layout" is a constraint the
+model checks its own output against, rather than a fact it has to remember to
+apply.
+
+So the split is:
+
+| | Documentation corpus | Negative ruleset |
+| --- | --- | --- |
+| **Answers** | "How do I do X in Gameface?" | "Is this line allowed at all?" |
+| **Delivery** | Retrieved on demand, per query | Always in context |
+| **Content** | Patterns, concepts, examples, trade-offs | A flat list of what the engine drops |
+| **Written from** | This guide | Engine feature detection |
+
+Use both. The ruleset stops the wrong thing being written; the corpus tells the
+agent what to write instead.
+
+## The documentation corpus
+
+The corpus is this guide, restructured for retrieval. The prose you are reading
+is written for a person reading in order; the corpus is the same knowledge cut
+into self-contained chunks that make sense in isolation, because that is how an
+agent will encounter them.
+
+Every chunk carries metadata so retrieval can rank by more than keyword overlap:
+
+```markdown
+[TOPIC: layout] [TYPE: concept] [SEVERITY: critical] [SOURCE: laying-out-the-screen.mdx]
+## Flexbox-Only: Gameface Has No CSS Grid
+
+Gameface's layout engine relies exclusively on the Flexbox model (powered by the
+Yoga layout engine). CSS Grid is entirely absent - all `grid-*` properties are
+rejected by the parser and never applied...
+
+> GAMEFACE CONSTRAINT: `display: grid`, `display: inline-block`, `display: contents`
+> and `display: inline-grid` are rejected by the engine. Use `display: flex` exclusively.
+```
+
+`SEVERITY: critical` is the field that does the work. It lets a search for
+"flexbox layout" surface the constraint that breaks the screen ahead of the
+stylistic advice that merely improves it.
+
+### What is in it
+
+<FileTree>
+
+- prompts/rag
+  - 01-engine-bridge.md
+  - 02-layout.md
+  - 03-scalability.md
+  - 04-interactions.md
+  - 05-graphics.md
+  - 06-fonts-and-text.md
+  - 07-performance.md
+  - 08-gameface-ui.md
+  - 09_1-components-basic.md
+  - 09_2-components-complex.md
+  - 09_3-components-feedback.md
+  - 09_4-components-layout.md
+  - 09_5-components-media.md
+  - 09_6-components-utility.md
+  - 10-live-views.md
+  - 11-localization.md
+  - 12-custom-effects.md
+  - 13-accessibility.md
+  - 14-animations.md
+  - 15-tooling.md
+
+</FileTree>
+
+The six `09_*` files are the Gameface UI component library, split by category, and
+they are the ones that pay off fastest in day-to-day work: an agent that knows
+`Slider`, `Navigation` and `ScrollView` already exist will use them instead of
+building its own out of divs.
+
+### How the agent reaches it
+
+With the MCP server connected, the corpus is available two ways:
+
+* **`search_gameface_docs`** - the tool the agent calls while writing. It parses
+  the chunks once, scores them against the query, and returns only the relevant
+  ones. The server's own instructions tell the agent to call it *before* writing
+  markup, CSS or JS.
+* **`gameface://rag/<file>.md`** - each topic file as a browsable MCP resource,
+  plus `gameface://rag/index` for the list. This is for when the agent wants a
+  whole topic rather than an answer to a question.
+
+:::tip[Make the search habit explicit]
+Even with the tool available, an agent that is confident will skip it. Putting
+something like *"call `search_gameface_docs` before writing any CSS"* in your
+project instructions costs one line and measurably changes behavior.
+:::
+
+## The negative ruleset
+
+The ruleset is a single file - `prompts/negative-rules/negative-rules-injection.md`
+- exposed by the MCP server as the `gameface://code-instructions` resource. It is
+not written from documentation. It is generated from
+<Highlight>feature detection run against the engine</Highlight>, which is why it
+covers things no document would think to mention.
+
+It is organized as one short "supported, use freely" section followed by the
+prohibitions:
+
+| Section | Example rule |
+| --- | --- |
+| CSS - forbidden property families | Never use CSS Grid, multi-column, container queries, logical properties, scroll-snap, view transitions |
+| CSS - forbidden functions | Never use `oklch`/`lab`/`color-mix`; never use `clamp`/`min`/`max`; never use `repeating-linear-gradient` |
+| CSS - partial-value restrictions | `border-style` rejects `dashed` and `dotted`; `box-shadow` rejects `inset`; `border-radius` rejects percentages |
+| CSS - selector restrictions | `:has()`, `:checked`, `:disabled`, `:focus-visible` parse but never match |
+| HTML - forbidden tags and attributes | `<input type="checkbox">` is coerced to `type="text"`; `<table>` has no table layout; `<a href>` does not navigate |
+| JS - missing or stubbed APIs | No `fetch`, no `localStorage`, no `IntersectionObserver`, no Workers, no `AbortController` |
+
+Two entries are worth singling out, because they are the ones that ruin a
+stylesheet an agent wrote in good faith:
+
+* **`var()` does not work inside shorthands.** `border: 1px solid var(--c)` is not
+  a partial failure - the entire declaration is dropped. So is
+  `padding: var(--a) var(--b)`, and `transition: opacity var(--d) var(--e)`. The
+  longhands work fine. An agent building a token-driven design system will write
+  the shorthand form by default every time, and the result is a screen with no
+  borders and no padding.
+* **Selectors that parse but never match.** `:checked` and `:disabled` do not
+  error. They just never apply, so a checkbox that looks correct in code renders
+  permanently in its unchecked state.
+
+:::caution[The ruleset is a snapshot, not a contract]
+It reflects what feature detection found on the versions it was run against, and
+a few entries are explicitly marked unverified - `url()`, `image-set()` and
+`cross-fade()` among them, because probing them safely was not possible. Re-check
+it against the <Link href="https://docs.coherent-labs.com/cpp-gameface/">Gameface documentation</Link>
+when you upgrade the engine, and treat a rule that contradicts your own observed
+behavior as a bug in the ruleset rather than a mystery in your code.
+:::
+
+## Using them without the MCP server
+
+You do not need the server for the grounding half. Both files are plain Markdown
+in the repository, and every agent has some form of always-loaded project
+instructions:
+
+| Client | Where to put it |
+| --- | --- |
+| Claude Code | `CLAUDE.md` at the project root |
+| GitHub Copilot | `.github/copilot-instructions.md` |
+| Gemini CLI | `GEMINI.md` at the project root |
+| Cursor | `.cursor/rules/` |
+
+The usual approach is to paste the negative ruleset in wholesale - it is written
+to be injected verbatim - and reference the corpus files by path so the agent can
+open the ones it needs. You lose on-demand retrieval, which matters for the corpus
+(it is large) but not for the ruleset (which you want in context permanently
+anyway).
+
+:::note[Keep it near the code]
+Whichever route you take, the ruleset should live with the project, not in a
+personal config. It is a property of the engine your team targets, and a new
+teammate cloning the repository should inherit it without being told it exists.
+:::
+
+## What grounding does not fix
+
+It stops the agent writing code the engine throws away. It does not stop the agent
+writing code that runs perfectly and looks wrong - and in our own testing, that
+turned out to be the larger problem. [Design first](/building-with-ai/design-first/)
+is the other half of this.
