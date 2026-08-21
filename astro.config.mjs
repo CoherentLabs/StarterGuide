@@ -24,7 +24,7 @@ export default defineConfig({
 			],
 			plugins: [
 				...coherentTheme({
-					documentationSearchTag: 'UI Workflow Guide',
+					documentation: 'UI Workflow Guide',
 					showPageProgress: true,
 				}),
 				starlightAutoSidebar()
