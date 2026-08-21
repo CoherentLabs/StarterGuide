@@ -280,6 +280,16 @@ Use global injection only for lightweight design tokens that are truly universal
 such as your core color palette and base typography sizes. Avoid putting large mixins, complex functions, or component-specific styles in the global file.
 :::
 
+:::tip[Tokens are the best input you can give a coding agent]
+
+A global SCSS token file also happens to be the most useful thing you can hand an
+AI assistant. Given named colors, a spacing scale, and a type scale, an agent
+applies them consistently across every component it touches. Given none, it
+invents a new visual language every few screens. See
+[Design First](/building-with-ai/design-first/).
+
+:::
+
 ## Safe Usage: Tightly Scoped CSS Variables
 
 SCSS is perfect for static values, but game UIs still require dynamic theming. For example, imagine a multiplayer scoreboard where each player's card needs to be dynamically accented with their specific "Team Color" assigned by the server. 

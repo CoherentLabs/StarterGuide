@@ -104,3 +104,17 @@ The key to an efficient Gameface project is keeping the UI team completely decou
 :::tip[Live Reloading Pipeline]
 Configure your IDE and Vite dev server so that every file save is immediately reflected in the Player via Hot Module Replacement. This is pre-configured in both Gameface UI starter templates. See [Setting up the Gameface Stack](/planning-and-setup/recommended-tech-stack/setting-up-the-gameface-stack/) for details.
 :::
+
+## 5. AI Coding Assistants
+
+A coding agent needs configuring like any other tool on this page. Out of the box
+it writes CSS for the browser it learned from, and Gameface implements a subset of
+the web platform, so a good share of that CSS reaches the engine and never
+renders.
+
+We maintain three things that close most of that gap: an MCP server that connects
+an agent to a running Player so it can read the engine's warnings and inspect what
+it actually built, a searchable version of this guide, and an explicit list of
+what the engine refuses. [Building with AI](/building-with-ai/overview/) covers
+the setup, and is honest about where you still have to review the result
+yourself.

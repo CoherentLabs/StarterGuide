@@ -190,6 +190,16 @@ Use `engine.enableImmediateLayout` only to confirm that a third-party library is
 
 :::
 
+:::note[Automating the checks you would otherwise do by eye]
+
+Clipped text, overlapping boxes, and panels that escape their container are all
+measurable, and the Gameface MCP server exposes them as assertions you or an agent
+can run against a live Player. They will not tell you a layout looks wrong, but
+they reliably catch the two-pixel clip a screenshot review misses. See
+[Verifying What the Agent Builds](/building-with-ai/verifying-ai-output/).
+
+:::
+
 ### Behavioral Constraints
 
 Four constraints apply whenever an immediate layout runs:

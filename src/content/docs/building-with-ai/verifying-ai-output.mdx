@@ -1,0 +1,181 @@
+---
+title: "Verifying What the Agent Builds"
+description: "Agent-written UI code fails in ways that survive code review and a dev server. Five layers of checking, and the bug class only a production build will show you."
+sidebar:
+    order: 6
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import Link from 'coherent-docs-theme/components/Link.astro';
+
+<Summary>
+    Agent-written code passes casual inspection unusually well. It reads as idiomatic, arrives commented and consistently named, and comes with a confident summary of what it does.
+
+    None of that counts as evidence. What does is five layers of checking, running from cheapest to most expensive, plus one bug class that only a <Highlight>production build in the Player</Highlight> will ever reveal.
+</Summary>
+
+## Why ordinary review misses these
+
+Human-written bugs tend to look like mistakes, while agent-written bugs look like
+decisions. The code reads as though somebody reasoned about it, and somebody did.
+That reasoning simply ran on assumptions you never saw.
+
+Two habits help immediately. Read the agent's summary as a claim rather than a
+result, so that "added gamepad navigation and verified it works" tells you the
+agent believes both halves of that sentence and prompts you to ask what it ran.
+Then ask for the failure rather than the confirmation, because "show me the
+screenshot" gets you further than "does it look right?", and "which assertions ran,
+and what did they return?" gets you further than "did you validate it?".
+
+## Layer 1: lint the source
+
+The cheapest check needs no agent involvement at all.
+<Link href="https://frontend-tools.coherent-labs.com/eslint-plugin-gameface/getting-started/">eslint-plugin-gameface</Link>
+flags unsupported patterns and data-binding mistakes across CSS, SCSS, HTML,
+JSX/TSX, and JavaScript. It ships pre-wired in the Gameface UI boilerplate and in
+every <Link href="/planning-and-setup/alternative-frameworks/overview/">framework template.</Link>.
+
+Run it in CI rather than only in the editor, since an agent that cannot see a red
+squiggle will not fix one.
+
+## Layer 2: read the engine console
+
+This is the cheapest check that needs a running Player, and the one most people
+forget. Gameface warns whenever its stylesheet parser meets something it cannot
+resolve, and it names the property, so you are being told precisely what got
+discarded.
+
+That only helps if something reads it. Builds succeed, dev servers report nothing,
+and an agent working from your editor never sees the Player console at all. With
+the [MCP server](/building-with-ai/gameface-mcp-server/) connected,
+`get_console_logs` puts the output in front of the agent, and asking for it after
+any styling work takes one line:
+
+> Load the view and show me `get_console_logs`. Any unsupported-property warnings?
+
+Treat a warning that names a property you wrote as a confirmed bug. That
+declaration did not survive, whatever the screenshot looks like.
+
+## Layer 3: assert against the running engine
+
+The console reports what the engine rejected. Whether the survivors lay out
+correctly is a separate question, and these three assertions answer most of
+it.
+
+| Assertion | Catches |
+| --- | --- |
+| `assert_text_fits` | Clipped labels, overflowing values, text that fits in English and not in German |
+| `assert_no_overlap` | A tooltip covering the number it explains, a badge sitting on a name |
+| `assert_within_parent` | A panel running off the bottom at 21:9, a dropdown escaping its container |
+
+`perf_lint` sits alongside them as a static check for layout patterns the Gameface
+documentation calls expensive. It involves no timing, so it never flakes.
+
+The [Conductor skill](/building-with-ai/the-conductor-skill/) runs this
+automatically as its validation stage. Without the skill, ask for it explicitly.
+
+:::tip[Assertions beat screenshots for the boring failures]
+
+A two-pixel clip is invisible in a screenshot review and unambiguous in an
+assertion. Save screenshots for what only you can judge, and let assertions handle
+everything measurable.
+
+:::
+
+## Layer 4: look at it yourself
+
+Nothing in the toolchain evaluates whether the UI is any good, which leaves you
+four things to judge.
+
+Start with visual coherence, meaning whether this belongs to the same interface as
+the screen beside it. See [Design First](/building-with-ai/design-first/). Then
+hierarchy: does the most important thing read as the most important thing? Then
+feel, covering transitions, timing, and press feedback, since an agent will put a
+300ms ease on everything and call it polish. Focus order comes last, because
+gamepad navigation can be technically present and still move in a nonsensical
+sequence. See
+[Spatial Navigation and Focus](/logic-and-interactions/interactions/spatial-navigation-and-focus/).
+
+Ask for a screenshot at your real target resolution and at your worst-case aspect
+ratio, then look at it beside an existing screen rather than on its own.
+
+## Layer 5: test the production build
+
+People skip this layer, and it is the one that caught the worst bug we hit.
+
+An overlay element in the Chart component collapsed to 0x0 in the built page, and
+only in the built page. The source wrote `left: 0; top: 0; right: 0; bottom: 0`.
+The CSS minifier folded those four declarations into the `inset` shorthand, which
+Gameface does not support, so the engine computed `auto` on all four sides and the
+element vanished.
+
+Everything upstream stayed green. The source was valid and lint had nothing to
+flag, since `inset` never appeared in it. The dev server serves unminified CSS, so
+the shorthand did not exist there either. Manual testing in the Player looked
+correct, because manual testing ran against the dev server.
+
+One thing is missing from that list: nobody had loaded a production build in the
+Player and read its console. Layer 2 only protects the artifact you actually test,
+and a warning the engine never got the chance to print is no more useful than one
+nobody read.
+
+Finding the real cause cost a full development phase, with scroll handling,
+coordinate timing, and event dispatch all blamed first. The end-to-end suite is
+what found it, because that suite runs against `vite preview` rather than the dev
+server.
+
+Two rules come out of it, and both apply to human-written code as well. An agent
+just hands you far more code per hour to hide one in.
+
+Anything that has to work in a shipped build gets verified against a production
+build, in the Player, never against a dev server. And source linting cannot catch
+what the build introduces, since the rules inspect your code and the minifier
+rewrites it afterwards.
+
+There is a habit to pick up at the source level as well. Never write four zero
+offsets on a stretched element, because a minifier can collapse them. This version
+cannot be folded into anything the engine rejects:
+
+```css title="overlay.css"
+/* Four zero offsets invite the minifier to emit `inset: 0`, which Gameface drops. */
+.hit-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+}
+```
+
+See [UI Testing](/polishing/debugging-profiling--testing/ui-testing/) for the
+end-to-end setup, and
+[Layout Debugging](/polishing/debugging-profiling--testing/layout-debugging/) when
+something has collapsed unexpectedly.
+
+## Performance is its own pass
+
+`perf_lint` and `perf_measure` tell you whether a screen is structurally expensive
+or unusually slow against a recorded baseline. Neither one tells you what your UI
+costs inside your game, under real load, with the rest of the HUD alive.
+
+Treat them as an early warning during development and do the real work with the
+profiler. See
+[Performance and Memory Profiling](/polishing/debugging-profiling--testing/performance-and-memory-profiling/).
+
+## A short checklist
+
+Before accepting a screen an agent built:
+
+* Lint passes in CI.
+* The engine console is clean, with no unsupported-property warnings naming
+  anything you wrote.
+* Layout assertions ran and you have seen what they returned.
+* You have looked at a screenshot at target resolution and at your worst aspect
+  ratio.
+* You have looked at it beside an existing screen.
+* It has been opened from a production build in the Player.
+* Gamepad or keyboard navigation has been driven by hand, not merely declared
+  present.
+* You can name where every color, size, and spacing value came from in your design
+  system.
