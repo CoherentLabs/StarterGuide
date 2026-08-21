@@ -25,6 +25,16 @@ This matters for three specific reasons:
 - **Engine events are simulatable.** `gf.triggerEngineEvent` and `gf.onEngineEvent` let you drive and observe the same event bus your production code uses.
 - **Gamepad input works.** The `GamefaceGamepad` API sends real gamepad events that flow through Gameface's input system, so navigation tests for controller UIs are accurate.
 
+:::caution[Point the suite at a production build]
+
+Run your tests against `vite preview` rather than the dev server. The dev server
+serves unminified CSS, so any shorthand the release build introduces that Gameface
+cannot parse will pass every manual check and only fail in a shipped page. We lost
+most of a delivery phase to exactly this. The write-up is in
+[Verifying What the Agent Builds](/building-with-ai/verifying-ai-output/).
+
+:::
+
 ---
 
 ## Installation

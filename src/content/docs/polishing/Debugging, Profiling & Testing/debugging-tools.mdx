@@ -55,6 +55,17 @@ The Console and Sources panels are not supported on iOS and UWP builds. All othe
 
 :::
 
+:::tip[Getting these warnings in front of a coding agent]
+
+Warnings about unsupported CSS are the fastest diagnosis available for a
+Gameface-specific styling bug, and this console is the only place they appear. An
+AI assistant working from your editor never sees them, which is why it will report
+a screen as finished while half its styling was discarded. See
+[Setting up the MCP Server](/building-with-ai/gameface-mcp-server/) for how to
+pipe them back.
+
+:::
+
 ### Sources
 
 The <Highlight>Sources</Highlight> tab lists all loaded JavaScript and CSS files and supports breakpoints and step-through debugging directly in the browser DevTools.

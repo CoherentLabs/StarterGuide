@@ -1,8 +1,8 @@
 ---
 title: "Design First"
-description: "The single biggest failure mode we hit: an agent given no design system builds something competent and visually incoherent. What to define before you prompt."
+description: "An agent with a design system is a good implementer. An agent without one is a bad designer. What to decide before you write your first UI prompt."
 sidebar:
-    order: 5
+    order: 4
 ---
 
 import Summary from 'coherent-docs-theme/components/Summary.astro';
@@ -10,71 +10,68 @@ import Highlight from 'coherent-docs-theme/components/Highlight.astro';
 import Link from 'coherent-docs-theme/components/Link.astro';
 
 <Summary>
-    This is the article to read before you use any of the rest. Across everything we built with an agent, one pattern held: <Highlight>with a design system it is a good implementer, and without one it is a bad designer</Highlight>.
+    Read this one before you use any of the rest. The same pattern held across everything we built: <Highlight>an agent with a design system implements well, and an agent without one designs badly</Highlight>.
 
-    An agent handed a defined palette, type scale and spacing rhythm applies them consistently across dozens of components. An agent handed a blank canvas invents a new visual language every few screens - each one defensible on its own, none of them the same interface.
+    Give it a defined palette, type scale, and spacing rhythm and it will apply them consistently across dozens of components. Give it a blank canvas and it invents a new visual language every few screens, each one defensible on its own, none of them the same interface.
 </Summary>
 
-## What actually goes wrong
+## The problem is consistency, not quality
 
-The failures are not ugly. That is what makes them easy to miss in a review of any
-single component. They are failures of *consistency*, and they only become obvious
-once you look at the whole screen:
+Individual components come out fine, which is what makes this so hard to catch in
+review. The problems only show up once you look at a whole screen, or at two
+screens side by side.
 
-* **Color drift.** Four shades of "the accent color", none of them the same
-  value, because each was picked in a different conversation.
-* **No hierarchy.** Every panel styled with the same weight, so nothing tells the
-  player what matters. Or the reverse - every element competing, everything
-  glowing.
-* **Arbitrary spacing.** `12px` here, `0.8rem` there, `14px` in the third panel.
-  Individually fine, collectively noisy.
-* **Semantic collisions.** Red used for a damage number in one screen and for a
-  decorative border in another, so the player learns nothing from it.
-* **Type soup.** Five font sizes that differ by two pixels, and body copy set at
-  whatever looked right in that component's context.
+Colors drift, so you end up with four shades of "the accent color" and no two the
+same value, because each was chosen in a different conversation. Hierarchy
+flattens, with every panel carrying the same visual weight, or the opposite,
+where everything glows and competes. Spacing goes arbitrary: `12px` in one panel,
+`0.8rem` in the next, `14px` in the third. Semantics collide when red means a
+damage number on one screen and a decorative border on another, so the player
+learns nothing from it. Type turns to soup, with five sizes two pixels apart and
+body copy set to whatever looked right in that component's context.
 
-None of this is an engine problem, and none of it is caught by an assertion or a
-lint rule. It is what happens when hundreds of small visual decisions get made
-independently, by something with no memory of the previous ones and no opinion
-about the whole.
+None of this is an engine problem, and no assertion or lint rule will catch it.
+Hundreds of small visual decisions get made independently by something that has no
+memory of the earlier ones and no opinion about the whole.
 
 :::note[The agent is doing exactly what you asked]
-When you say "build a settings panel" without a design system, you have asked for
-a settings panel *and* a visual language for it. It will deliver both. The second
-one is the problem.
+
+Asking for "a settings panel" with no design system in place is really asking for
+two things, a settings panel and a visual language to render it in. You will get
+both, and the second one is where the trouble starts.
+
 :::
 
-## Define the system before you prompt
+## Decide the rules, then write them as code
 
-The fix is unglamorous: decide the visual rules first, write them down as code,
-and let the agent spend its judgment on layout and behavior instead of on taste.
-
-Here is what is worth having in place before the first UI prompt.
+Before the first UI prompt, close off the decisions you do not want an agent
+making, so that its judgment goes into layout and behavior rather than taste.
 
 ### Color, with meaning attached
 
-Not just a palette - a palette where each color has a *rule*. This is the part
-agents follow surprisingly well and will never invent on their own.
+A palette on its own is not enough, because each color also needs a rule. Agents
+follow rules like these well and never come up with them unprompted.
 
-The design brief for one of our test builds stated it directly, and the
-implementation held to it across eight screens:
+One of our test builds stated its rules in the design handoff, and the
+implementation held to them across eight screens:
 
 > **Semantic rule (enforce this):** vermilion = danger or irreversible;
 > ultramarine = sacred/arcane; verdigris = alive/complete; gold = earned.
 > Never use gold for mere decoration on interactive elements the player has not
 > unlocked.
 
-A game UI version of the same idea, from a different project's tokens:
+A game UI version of the same idea lives in the token file of a different project.
+Pay attention to the comments, since those are the part the agent reads:
 
 ```scss title="src/assets/scss/_variables.scss"
-// Accent - emphasis, "give this importance"
+// Accent: emphasis, "give this importance"
 $accent: #90E8F1;
 $accent-glow: rgba(#90E8F1, 0.30);
 
-// Interactive - controls the player can operate
+// Interactive: controls the player can operate
 $interactive: #4B9FFF;
 
-// Outline - structural chrome: grid, nav, tooltip
+// Outline: structural chrome, grid, nav, tooltip
 $outline: #8dc1c1;
 
 // States
@@ -89,89 +86,96 @@ $bg-elevated: #0f1e30;
 $bg-overlay: #192C3E;
 ```
 
-The comments are not decoration - they are the part the agent reads. A token named
-`$accent` with "emphasis, give this importance" next to it gets used correctly.
+A token named `$accent` with "give this importance" beside it gets used correctly.
 A token named `$blue2` gets used at random.
 
-### Typography as roles, not sizes
+### Typography as roles
 
-Define what each face and size is *for*, then the scale. An agent given "Cinzel
+Define what each face is for before you define its sizes. An agent told "Cinzel
 for anything carved or titled, EB Garamond for read text, IM Fell for scribal
-labels and metrics" will place them correctly in components you never described.
+labels and metrics" places all three correctly in components you never described.
 
-Pin down the boundaries too - a minimum size, and what body copy may never drop
-below. Left open, this is where an agent quietly ruins legibility on a TV.
-
-See [Importing Fonts and Styling Text](/layout-assets-and-styling/texts--fonts/importing-fonts-and-styling-text/)
+Pin the boundaries too, meaning a minimum size and a floor that body copy may
+never drop below. Leave that open and you will find out later, on a TV, that
+nothing is legible from the couch. See
+[Importing Fonts and Styling Text](/layout-assets-and-styling/texts--fonts/importing-fonts-and-styling-text/)
 and [Auto-scaling Text](/layout-assets-and-styling/texts--fonts/auto-scaling-text/).
 
-### Spacing, radius, borders and shadow
+### Spacing, radius, borders, and shadow
 
-The four that decay fastest without rules. Give each one a closed set:
+These four decay fastest without rules, so give each of them a closed set instead
+of guidance.
 
-* **Spacing** - a scale, not free choice. Panel gaps, list-row padding, page
-  margins.
-* **Radius** - our clearest example specified *"border radius: 0 everywhere except
-  circles"*. Blunt, memorable, and impossible to drift from.
-* **Borders** - a hierarchy. "1px hairline for internal rules, 2px for panels, 3px
-  for outer frames, dashed for empty or locked."
-* **Shadow** - the one to constrain hardest, because it is where AI-generated UI
-  goes to die. The same brief allowed exactly two kinds of shadow and no colored
-  glows except one specific case. That single constraint did more for coherence
-  than any amount of per-component review.
+Spacing needs a scale rather than free choice, covering panel gaps, list-row
+padding, and page margins. Radius does better the blunter you make it, and our
+clearest example simply said *"border radius 0 everywhere except circles"*, which
+leaves nothing to drift toward. Borders need a hierarchy, such as 1px hairlines
+for internal rules, 2px for panels, 3px for outer frames, and dashed for empty or
+locked slots.
+
+Shadow deserves the tightest constraint of the four, because uncontrolled glow is
+where generated game UI usually goes wrong. The same handoff allowed exactly two
+kinds of shadow and no colored glows except in one specific case, and that one
+rule did more for coherence than any amount of per-component review.
 
 ### The unit and resolution model
 
-Decide whether you are working to a fixed design canvas or a fluid layout, and in
-what unit, before anything is built. Retrofitting this across a finished UI is
-a rewrite. See [Building Responsive Game UI](/layout-assets-and-styling/styling--scalability/building-responsive-game-ui/)
+Settle whether you are working to a fixed design canvas or a fluid layout, and in
+what unit, before anything gets built. Retrofitting this across a finished UI is a
+rewrite rather than a refactor. See
+[Building Responsive Game UI](/layout-assets-and-styling/styling--scalability/building-responsive-game-ui/)
 and [Handling Aspect Ratios with Media Queries](/layout-assets-and-styling/styling--scalability/handling-aspect-ratios-with-media-queries/).
 
-## Write it as code, not as prose
+## Put the system in the repository
 
-A design system described in a chat message lasts until the context is trimmed.
-The same system written into `_variables.scss` is read fresh every time the agent
-opens the file, and - more usefully - is something you can point at: *"use the
-existing tokens."*
+A design system described in a chat message survives until the context gets
+trimmed. Written into `_variables.scss`, it gets read fresh every time the agent
+opens the file, and it gives you something to point at when you say "use the
+existing tokens".
 
-Put it where the project already keeps such things, and reference it in your
-project instructions. See [Managing Variables](/layout-assets-and-styling/dynamic-styling--variables/managing-variables/)
+Keep it where the project already keeps such things and reference it in your
+project instructions. See
+[Managing Variables](/layout-assets-and-styling/dynamic-styling--variables/managing-variables/)
 and [Writing Maintainable CSS](/layout-assets-and-styling/styling--scalability/writing-maintainable-css/).
 
-:::caution[The `var()` shorthand trap bites design systems hardest]
+:::danger[Token systems walk straight into the var() shorthand trap]
+
 A token-driven system is exactly the code that wants to write
-`padding: var(--space-md) var(--space-lg)` and `border: 1px solid var(--color-border)`.
-Gameface does not resolve `var()` inside a shorthand - the whole declaration is
-dropped. Use the longhands, or use a preprocessor variable that is
-substituted at build time rather than resolved at runtime. This is in the
-[negative ruleset](/building-with-ai/grounding-the-agent/#the-negative-ruleset)
-for a reason.
+`padding: var(--space-md) var(--space-lg)` and
+`border: 1px solid var(--color-border)`. Gameface does not resolve `var()` inside
+a shorthand, and drops the whole declaration. Use the longhands, or use a
+preprocessor variable substituted at build time instead of resolved at runtime.
+The [negative ruleset](/building-with-ai/grounding-the-agent/#the-negative-ruleset)
+carries this rule for good reason.
+
 :::
 
-## If you do not have a design yet
+## When you have no design yet
 
-You still have options, in rough order of how well they worked for us:
+You still have options, listed here roughly by how well they worked for us.
 
-1. **A real design handed off with tokens.** A designer's file plus a written
-   token list is the best input by a distance. Our full-UI test started from a
-   design created in <Link href="https://claude.com/product/design">Claude Design</Link>
-   accompanied by a handoff document - palette with semantic rules, three type
-   roles with a size scale, exact spacing and geometry, and six named recurring
-   ornaments. The agent's job was then translation, not invention, and the result
-   held together across eight screens.
-2. **An existing screen to match.** If your project already has one good screen,
-   say so explicitly and point at the file. Agents extrapolate an existing system
-   far better than they originate one.
-3. **A reference image.** Better than nothing, and agents read layout and hierarchy
-   from an image well. They read *fine* visual detail from one much less well - see
-   the [Match Tactics case study](/building-with-ai/in-practice/a-screen-in-an-existing-ui/),
-   where the interaction model came out right the first time and the visual pass
-   did not.
-4. **Ask the agent to propose a system first, then freeze it.** As a separate
-   step, before any component work: have it produce a token file, review it
-   yourself, correct it, commit it. The value is not that the proposal is good -
-   it is that afterwards there *is* a system, and everything downstream is
-   consistent with it.
+A real design with a written token list beats everything else by a distance. Our
+full-UI test started from a design created in
+<Link href="https://claude.com/product/design">Claude Design</Link> plus a handoff
+document covering the palette and its semantic rules, three type roles with a size
+scale, exact spacing and geometry, and six named recurring ornaments. That turned
+the agent's job into translation rather than invention, and the result held
+together across eight screens.
 
-The one option that reliably fails is starting from nothing and hoping coherence
-emerges. It does not.
+An existing screen to match works nearly as well, assuming your project already
+has one good screen. Say so explicitly and point at the file, because agents
+extrapolate an existing system far better than they originate one.
+
+A reference image will get you layout and hierarchy, which agents read from images
+well. Fine visual detail is another matter, as the
+[Match Tactics experiment](/building-with-ai/experiments/three-uis-with-an-agent/#behavior-arrived-in-better-shape-than-appearance)
+shows.
+
+Asking the agent to propose a system is the last resort, and it only works as a
+separate step before any component work begins. Have it produce a token file,
+review it yourself, correct it, and commit it. Whether the proposal is any good
+matters less than you might think, because afterwards a system exists and
+everything downstream stays consistent with it.
+
+The one approach that reliably fails is starting from nothing and hoping coherence
+emerges on its own.

@@ -2,7 +2,7 @@
 title: "The Conductor Skill"
 description: "A skill that makes the agent clarify requirements and get a written spec signed off before it writes a single line of UI code."
 sidebar:
-    order: 4
+    order: 5
 ---
 
 import Summary from 'coherent-docs-theme/components/Summary.astro';
@@ -11,28 +11,31 @@ import Link from 'coherent-docs-theme/components/Link.astro';
 import { Steps } from '@astrojs/starlight/components';
 
 <Summary>
-    The most expensive AI mistake is not bad code - it is <Highlight>well-built code for the wrong feature</Highlight>. "Build me an inventory screen" leaves out gamepad navigation, empty states, item counts, and what happens when a name is 40% longer in German, and the agent will happily invent an answer to every one of them.
+    Bad code is cheap to fix, while <Highlight>well-built code for the wrong feature</Highlight> is expensive. "Build me an inventory screen" says nothing about gamepad navigation, empty states, item counts, or what happens when a name runs 40% longer in German, and an agent will invent an answer to every one of them.
 
-    The Game UI Conductor is a skill that refuses to start until those questions have answers, and until you have signed off on a written spec.
+    The Game UI Conductor refuses to start until those questions have answers and you have signed off on a written spec.
 </Summary>
 
 ## The problem it solves
 
-An agent asked for a vague feature does not stop and ask. It fills the gaps with
+An agent handed a vague feature does not stop to ask. It fills the gaps with
 whatever is most typical, writes several hundred lines against those assumptions,
-and presents the result as finished. If the assumptions were wrong, the fix is not
-a tweak - the interaction model is wrong, the state shape is wrong, and the
-cheapest path is often to throw it away.
+and presents the result as finished. When the assumptions turn out wrong you
+rarely get something you can tweak, because the interaction model and the state
+shape are both built on them, and starting over usually costs less than repairing
+it.
 
-The Conductor inverts that. It spends the first part of the conversation
-extracting requirements, produces a spec you can read in two minutes, and does not
-touch a file until you accept it.
+The Conductor spends the opening part of the conversation extracting requirements
+instead, produces a spec you can read in two minutes, and touches no files until
+you accept it.
 
-:::note[When to skip it]
-The skill is for requests that read as a rough idea. It is explicitly *not* for
-bug fixes, copy changes, style tweaks, or a request that already names its
-interactions, states and data shape. Those already read like a spec - running a
-clarification round on them is friction with no payoff.
+:::note[Not every request needs this treatment]
+
+The skill targets requests that arrive as a rough idea. Bug fixes, copy changes,
+style tweaks, and any request that already names its interactions, states, and
+data shape are out of scope, because they read like a spec already. Running a
+clarification round on those is friction with no payoff.
+
 :::
 
 ## The six stages
@@ -41,105 +44,107 @@ clarification round on them is friction with no payoff.
 
 1. #### Reason about the relevant dimensions
 
-    The skill consults a checklist of game-UI design dimensions - **interaction,
-    animation and feedback, data and state, scale, accessibility, localization,
-    sort/filter/search, lifecycle** - and decides which actually apply to your
-    request. Not all of them apply to everything; the point is to notice the ones
-    you did not mention.
+    The skill consults a checklist of game-UI design dimensions covering
+    interaction, animation and feedback, data and state, scale, accessibility,
+    localization, sort and filter, and lifecycle. It then decides which ones
+    actually apply. Not everything applies to everything, and the point is to
+    catch the dimensions you did not mention.
 
-    Deliberately, this checklist holds <Highlight>no engine-specific facts</Highlight>.
-    Layout cost and CSS support belong to implementation time. This stage is about
-    *what the feature does*, not how it gets built.
+    The checklist deliberately holds <Highlight>no engine-specific facts</Highlight>.
+    Layout cost and CSS support belong to implementation time. This stage asks
+    what the feature does, not how it gets built.
 
 2. #### Clarify in rounds
 
-    At most three rounds, stopping earlier if nothing new surfaces.
+    Three rounds at most, stopping earlier when nothing new surfaces.
 
-    Round one asks everything relevant as a **single batch**, not a drip of
+    Round one asks everything relevant as a single batch rather than a drip of
     separate messages, and every question carries a sensible default so you can
-    answer "use your judgment" and move on. Round two asks about what the first
-    round's answers opened up - "yes to drag-and-drop" implies "what is the
-    gamepad equivalent?" and "what happens if you drop it outside the panel?".
-    Round three only happens if a real open question remains.
+    answer "use your judgment" and move on. Round two follows what round one
+    opened up, so a yes to drag-and-drop leads to "what is the gamepad
+    equivalent?" and "what happens if you drop it outside the panel?". Round three
+    happens only when a real open question remains.
 
-    Anything still unresolved after that becomes a stated assumption in the spec,
-    not another question.
+    Anything still unresolved becomes a stated assumption in the spec rather than
+    another question.
 
 3. #### Draft the spec and get sign-off
 
-    A short document under fixed headings - Goals, Interactions, Data and state,
-    Scale, Accessibility, Localization, Assumptions - followed by a direct
-    question: *is this what you want built, or is something off?*
+    A short document under fixed headings: Goals, Interactions, Data and state,
+    Scale, Accessibility, Localization, Assumptions. It ends with a direct
+    question asking whether this is what you want built.
 
-    This is the stage that matters, and it is a <Highlight>hard gate</Highlight>.
-    The skill will not write code until you have accepted the spec in the
-    conversation. Rejecting it loops back with your correction, as many times as
-    it takes.
+    This stage is a <Highlight>hard gate</Highlight>. No code gets written until
+    you accept the spec in the conversation. Rejecting it loops back with your
+    correction, as many times as it takes.
 
 4. #### Implement
 
-    Normal rules apply: follow `gameface://code-instructions`, call
-    `search_gameface_docs` while writing CSS and JS. See
-    [Grounding the agent](/building-with-ai/grounding-the-agent/).
+    Normal rules apply from here. The agent follows
+    `gameface://code-instructions` and calls `search_gameface_docs` while writing
+    CSS and JavaScript, as covered in
+    [Grounding the Agent](/building-with-ai/grounding-the-agent/).
 
 5. #### Validate
 
-    If a Gameface MCP connection is available, the agent runs the layout
-    assertions, `perf_lint`, and - if this is the dominant view - `perf_measure`
-    against what it just built. Failures get fixed and the specific check re-run.
+    Given a Gameface MCP connection, the agent runs the layout assertions,
+    `perf_lint`, and, when this is the dominant view, `perf_measure` against what
+    it just built. Failures get fixed and the specific check re-run.
 
-    If no connection is available it says so plainly rather than skipping quietly.
-    See [Verifying what the agent builds](/building-with-ai/verifying-ai-output/).
+    With no connection available it says so plainly instead of skipping quietly.
+    [Verifying What the Agent Builds](/building-with-ai/verifying-ai-output/)
+    covers what to do with the results.
 
 6. #### Report
 
-    What was asked versus assumed, what was accepted at sign-off, what was built,
-    and which checks passed - or that validation was not possible.
+    What was asked versus assumed, what you accepted at sign-off, what got built,
+    and which checks passed or could not run.
 
 </Steps>
 
 ## Running it
 
-One set of files is shared across clients rather than duplicated, but how the
-skill gets triggered differs:
+One set of files serves every client, but the trigger differs.
 
 | Client | How it runs |
 | --- | --- |
-| **Claude Code** | Automatic - the skill's description is matched against your request. You can also invoke it explicitly with `/gameface-conductor`. |
-| **GitHub Copilot (VS Code)** | Automatic - Copilot's Agent Skills scans `.claude/skills/` in addition to `.github/skills/`, so the file is picked up as-is with no extra setup. |
-| **Gemini CLI** | Explicit only - Gemini CLI has no auto-triggered skill concept. Run `/gameface-conductor <your request>`; the command file injects the same skill content rather than duplicating it. |
+| **Claude Code** | Automatic, matching the skill's description against your request. You can also invoke it directly with `/gameface-conductor`. |
+| **GitHub Copilot (VS Code)** | Automatic. Copilot's Agent Skills scans `.claude/skills/` alongside `.github/skills/`, so the file is picked up as-is. |
+| **Gemini CLI** | Explicit only, since Gemini CLI has no auto-triggered skill concept. Run `/gameface-conductor <your request>`, and the command file injects the same skill content rather than duplicating it. |
 
-To use it, copy `.claude/skills/gameface-conductor/` (and
-`.gemini/commands/gameface-conductor.toml` if you use Gemini CLI) from the
-<Link href="https://github.com/CoherentLabs/Gameface-MCP">Gameface-MCP repository</Link>
-into your own project.
+Copy `.claude/skills/gameface-conductor/` into your own project to use it, plus
+`.gemini/commands/gameface-conductor.toml` if you work in Gemini CLI. Both live in
+the <Link href="https://github.com/CoherentLabs/Gameface-MCP">Gameface-MCP repository</Link>.
 
-:::caution[The Gemini CLI path is unverified]
+:::caution[The Gemini CLI path has not been run against a live session]
+
 The TOML command file is structurally valid and matches Gemini CLI's documented
-custom-command format, but it has not been confirmed against a live session.
-Treat it as untested until you have run it yourself.
+custom-command format, but nobody has confirmed it end to end. Treat it as
+untested until you have run it yourself.
+
 :::
 
-## What it is actually good at
+## What surprised us about it
 
-In our own use, the value showed up in a place we did not expect. The spec is
-useful, but the **questions** are more useful - not because the agent knows game UI
-better than you do, but because it asks all of them, every time, before anyone is
-invested in an implementation.
+We expected the spec to be the useful part. The questions turned out to matter
+more, and not because the agent knows game UI better than you do. It asks all of
+them, every time, before anyone has invested in an implementation.
 
-A round of Conductor questions on a "simple" panel routinely surfaces two or three
-decisions nobody had made yet: what the empty state says, whether the panel pauses
-the game, whether the list can hold 500 rows. Those are decisions you were going
-to make anyway - just later, under more pressure, with code already written
-against the other answer.
+A Conductor round on a screen everybody called simple routinely surfaced two or
+three decisions nobody had actually made, such as what the empty state says,
+whether the panel pauses the game, and whether the list can hold 500 rows. Those
+decisions were coming regardless. Answering them up front beats answering them
+later, under more pressure, with code already written against the other
+answer.
 
 ## Its limits
 
-* **The spec is only as good as your answers.** Choosing the default option on
-  every question produces a spec full of reasonable-sounding assumptions, and the
-  build will follow them precisely.
-* **It does not cover visual design.** The dimensions checklist is about
-  behavior. Nothing in it asks what the panel should *look* like, which is why
-  [Design first](/building-with-ai/design-first/) exists as a separate step.
-* **Sign-off is not review.** Accepting the spec means the plan is right. It says
-  nothing about the code that comes out the other end.
+Answer every question with the default option and you get a spec full of
+reasonable-sounding assumptions, which the build will then follow precisely.
+
+The dimensions checklist covers behavior only, and nothing in it asks what the
+panel should look like, which is why
+[Design First](/building-with-ai/design-first/) is its own step.
+
+Sign-off is also not review. Accepting a spec tells you the plan is right and says
+nothing about the code that comes out the other end.

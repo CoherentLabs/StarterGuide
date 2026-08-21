@@ -12,8 +12,14 @@ export const content = [
     link: '/planning-and-setup/development-environment-and-tools',
     current: false,
   },
-  { 
-    heading: 'Layout, Assets & Styling', 
+  {
+    heading: 'Building with AI',
+    desc: "Set up a coding agent that understands Gameface: the MCP server, the documentation corpus, the negative ruleset and the spec-first skill we maintain. Plus what we learned building three real UIs with them.",
+    link: '/building-with-ai/overview',
+    current: false,
+  },
+  {
+    heading: 'Layout, Assets & Styling',
     desc: "Learn best practices for building clean, fast and scalable game UIs with Gameface. We cover layouts, styling, animations, and asset management to help you translate designs into polished interfaces that scale across different aspect ratios.", 
     link: '/layout-assets-and-styling/laying-out-the-screen',
     current: false,
