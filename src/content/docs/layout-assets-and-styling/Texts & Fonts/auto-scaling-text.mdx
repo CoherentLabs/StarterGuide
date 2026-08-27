@@ -167,38 +167,45 @@ This way we can ensure that the text always comfortably fits within the containe
 
 ![](../../../../assets/phase-3/text-and-fonts/localization-fit-max-size.png)
 
-### Performance Considerations
+### How the Size Is Found
 
-The font fitting process calculates the required text size by adjusting the font size <Highlight>step-by-step</Highlight>, starting from the element's defined `font-size`.
+Gameface finds the fitting size with a <Highlight>binary search</Highlight>. It tries the size in the middle of the allowed range, checks whether the text fits, and discards the half that cannot be right. Each attempt is a full text layout pass, but halving means a range of any realistic width is exhausted in a handful of them.
 
-Because the algorithm is a **linear search**, the performance cost correlates directly with the **pixel gap between the starting `font-size` and the final fitted size**. Starting at the default `16px` when the container needs `72px` means 57 full text layout passes - one per pixel of distance. Starting close to the expected result collapses that to 2–3 passes:
+The range depends on the mode, and the two modes treat `font-size` completely differently:
 
-```css title="optimized-fit.css"
-/* ❌ 57 layout passes from 16px to ~72px */
-.button-text {
-    coh-font-fit-mode: shrink;
-    coh-font-fit-min-size: 14px;
-}
+| Mode | The search runs between |
+|---|---|
+| `fit` | `coh-font-fit-min-size` and `coh-font-fit-max-size` |
+| `shrink` | `coh-font-fit-min-size` and the element's `font-size` |
 
-/* ✅ 2–3 passes - starting point close to expected size */
-.button-text {
-    coh-font-fit-mode: shrink;
-    coh-font-fit-min-size: 14px;
-    font-size: 24px; /* Start near the expected final size */
-}
-```
+In `fit` mode, `font-size` plays no part at all. The declared minimum and maximum are the entire range.
 
-:::caution[font-size Is the Search Starting Point]
-`coh-font-fit-mode` does not ignore `font-size`. It uses it as the starting point for the linear search. A pause menu with ten font-fit labels, each starting from `16px` and fitting near `72px`, generates over 500 layout passes on the frame the menu opens. One CSS declaration per label eliminates most of them.
+In `shrink` mode, `font-size` <Highlight>is the maximum</Highlight>. That follows from what the mode does: shrinking never grows text, so the size you declared is the largest it may ever render.
+
+:::caution[font-size Is a Ceiling, Not a Starting Point]
+Raising `font-size` on a `shrink` element does not help the engine find the answer faster. It raises the top of the search range and allows the text to render larger.
+
+If a label should never exceed 24px, `font-size: 24px` is how you say so. If you want a tighter search, that is what `coh-font-fit-min-size` is for.
 :::
 
-This cost is paid on the first frame the element renders. It is a startup concern, not a sustained frame-rate concern.
+The result is always a whole pixel size. The search works in rounded integers, which is why a fitted label often stops just short of filling its container exactly.
+
+### Performance Considerations
+
+Fitting costs several text layout passes on the first frame an element renders, and because the search halves, the width of the range barely matters: the full 6px to 128px default span is about seven passes, and a tight range is about four. Narrowing the range saves you a pass or two, which is not a reason to restructure anything.
+
+Two things follow from that:
+
+* **This is a startup cost, not a frame-rate cost.** It is paid when the element first renders and again only if the text, the container size, or the relevant CSS changes. A screen full of fitted labels costs something on the frame it opens and nothing afterwards.
+* **Declare `coh-font-fit-max-size` anyway.** Not for speed, but because the engine writes a warning to the console every time it falls back to the 128px default, and because an explicit maximum documents what you actually intended.
 
 ## Text Layout Caching
 
-Beyond font fitting, Gameface caches all text layout results in an internal **TextBoxDisplayer** cache. Before recalculating a text layout, the engine checks three conditions on each frame: has the text string changed, has the container size changed, and have any text CSS properties changed?
+Beyond font fitting, Gameface caches all text layout results in an internal **TextBoxDisplayer** cache. Before recalculating a text layout, the engine checks three conditions on each frame: has the text string changed, has the container width changed, and have any text CSS properties changed?
 
 When all three pass, the engine reuses the cached result at near-zero cost. Any change to any one input invalidates the cache and triggers a full recalculation on that frame.
+
+Elements using a fit mode are checked against the container **height** as well. Fitting depends on both dimensions, so a fitted label re-runs its search when the box gets shorter or taller, where an ordinary label would not have cared.
 
 The practical consequence: avoid writing to a text element's string unless the value actually changed. A health counter that unconditionally sets `textContent` every frame triggers a full layout recalculation every frame, even when the displayed value stays at 100/100:
 

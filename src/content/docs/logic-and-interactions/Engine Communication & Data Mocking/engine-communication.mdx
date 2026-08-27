@@ -14,8 +14,9 @@ import { Steps } from "@astrojs/starlight/components";
 import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Summary>
-    This article explores how the <Highlight>cohtml.js</Highlight> library bridges the connection between the UI and the game engine, how to handle
-    the asynchronous lifecycle of the engine, and how to utilize different communication patterns to synchronize your UI with the game state.
+    This article explores how the <Highlight>cohtml.js</Highlight> library bridges the connection between the UI and the game engine, how it behaves
+    when no engine is attached, how to handle the asynchronous lifecycle of the engine, and how to utilize different communication patterns to
+    synchronize your UI with the game state.
 </Summary>
 
 ## The Layer of Communication
@@ -23,86 +24,57 @@ import { Tabs, TabItem } from "@astrojs/starlight/components";
 In a typical browser environment the data is usually fetched from a server. In Gameface however the case is a bit different. Since the UI is running
 in a game engine environment, that <Highlight>engine is the "server"</Highlight> that the UI needs to communicate with.
 
-To establish a connection with the server you need the `cohtml.js` library. This script must be included in every HTML page that needs to exchange
-data with the game.
+That connection is provided by the `cohtml.js` library, which exposes a global `engine` object. This object is the single point of entry for all native
+communication: from updating a player's health bar to triggering a "Quit Game" sequence passes through it.
 
-Once this script is loaded, it exposes a global `engine` object. This object is the single point of entry for all native communication: from updating
-a player's health bar to triggering a "Quit Game" sequence passes through it.
+### Getting the Library
 
-### Including the cohtml.js Library
+Since <Highlight>Gameface 3.1.2</Highlight>, the SDK loads `cohtml.js` into every page for you. There is no script tag to add and no import to write. Your
+UI can use the `engine` object directly, and the rest of this article assumes it is already there.
 
-The `cohtml.js` library is included in your Gameface package, typically in the `Player/Samples/uiresources/library` folder.
+:::note[On an SDK older than 3.1.2]
 
-<Tabs>
-    <TabItem label="Vanilla JS">
-     To include it in your project you need to reference the library in your HTML file. 
-     You must place it before any other scripts to ensure it is loaded first (either in the head or body tags).
+Before 3.1.2 the library had to be included by hand in every page that talked to the game. Copy `cohtml.js` out of your Gameface package, usually
+`Player/Samples/uiresources/library`, and reference it ahead of any script that uses `engine`:
 
-     ```html ins={7}
-    <!DOCTYPE html>
-    <html>
-        <head></head>
-        <body>
-            <div id="health-bar"></div>
+```html title="index.html" ins={6}
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <div id="health-bar"></div>
+        <script src="js/cohtml.js"></script>
+        <script src="js/ui-logic.js"></script>
+    </body>
+</html>
+```
 
-            <script src="js/cohtml.js"></script>
-            <script src="js/ui-logic.js"></script>
-        </body>
-    </html>
-     ```
+In a framework project without an HTML file of its own, such as a Gameface UI view, import it at the top of the view component instead:
 
-     This will expose the `engine` object globally in your JavaScript code. You can then use it in every script file that communicates with the game engine.
-
-    </TabItem>
-
-    <TabItem label="Framework">
-
-    To include it in your project you need to reference the library before the framework's loading script. You have two options:
-
-    #### Option 1: Add it to the index.html file before the `index.js` file
-
-    ```html ins={6}
-    <!DOCTYPE html>
-    <html lang="en">
-        <head></head>
-        <body>
-            <div id="root"></div>
-            <script src="js/cohtml.js"></script>
-            <script src="./index.tsx" type="module"></script>
-        </body>
-    </html>
-    ```
-
-    #### Option 2: Import it in the `index.jsx/tsx` file before the `render` function
-
-    ```tsx title="index.tsx" ins={4}
-    import { render } from 'solid-js/web';
-    import Menu from './Menu';
-    import './index.css';
-    import 'js/cohtml.js';
-
-    const root = document.getElementById('root');
-
-    render(() => <Menu />, root!);
-    ```
-
-    Both methods will expose the `engine` object globally and allow you to use it in every component of your project.
-
-    </TabItem>
-
-</Tabs>
-
-<Internal>
-
-:::note[Upcoming: cohtml.js auto-embedding]
-
-In a future release of Gameface, `cohtml.js` will be automatically embedded into the page by the engine. Manual inclusion via `<script>` tag or import will no longer be required for production builds running inside Gameface.
-
-The mock/development setup (importing the library manually for local browser preview) will remain unchanged. This note will be updated and the inclusion instructions above revised when the feature ships.
+```tsx title="src/views/menu/Menu.tsx" ins={1}
+import 'js/cohtml.js';
+import styles from './Menu.module.scss';
+```
 
 :::
 
-</Internal>
+### Previewing in a Browser
+
+The SDK is what loads the library, and a plain browser does not have one. If you open your UI in Chrome rather than in the Player, `cohtml.js` is not
+there and the `engine` object does not exist, so anything touching it throws.
+
+Include the library manually for that case and it handles the situation gracefully. On load it checks whether a native engine is attached and, finding
+none, replaces its own communication methods with mock implementations. Calls resolve against whatever mocks you have registered and otherwise do
+nothing, so your UI runs end to end in a browser without errors instead of failing at the first `engine` call.
+
+You can branch on this yourself through <Highlight>engine.isAttached</Highlight>, which is `false` in a browser and `true` when the SDK is present.
+
+:::tip[Working without a backend]
+
+Mock mode is what lets the UI team build screens before the game side exposes anything. [Mocking Data Models](/logic-and-interactions/engine-communication--data-mocking/mocking-data/)
+covers registering mocks so a browser or Player session behaves like a real game session.
+
+:::
 
 ### IDE Autocomplete & TypeScript Support
 
@@ -137,23 +109,29 @@ full IntelliSense for the engine API.
     </TabItem>
 
     <TabItem label="TypeScript">
-    For <Highlight dark="#007ACC" light="#007ACC">TypeScript</Highlight> projects you simply need to reference the `cohtml.d.ts` file in the `cohtml.js` file.
-    ```javascript title="cohtml.js" ins={1}
-    /// <reference path="correct/path/to/cohtml.d.ts" />
+    For <Highlight dark="#007ACC" light="#007ACC">TypeScript</Highlight> projects, copy `cohtml.d.ts` into your project and include it from your `tsconfig.json`:
+
+    ```json title="tsconfig.json" ins={3}
+    {
+        "compilerOptions": { "target": "ES2015" },
+        "include": ["src/**/*", "lib/cohtml.d.ts"]
+    }
     ```
 
-    The TypeScript compiler will automatically pick up the `cohtml.d.ts` file and use it to
-    provide autocomplete and documentation for the `engine` object regardless of the file it is in.
+    The compiler picks the declarations up from there and provides autocomplete and documentation for the `engine` object in every file, without any
+    reference comments.
+
+    [Development Environment & Tools](/planning-and-setup/development-environment-and-tools/#typescript-typings) covers the rest of the Gameface typings,
+    including the DOM definitions that stop your editor suggesting browser APIs the engine does not implement.
     </TabItem>
 
 </Tabs>
 
 ## Initialization & Lifecycle
 
-Once you have included the `cohtml.js` library and the `cohtml.d.ts` declaration file, you can start using the `engine` object to communicate with the
-game engine. However, there is an important timing constraint to be aware of.
+The `engine` object being available is not the same as the game being ready to talk to.
 
-Your JavaScript may execute the moment the script is loaded, but the underlying game engine may still be initializing its own systems. Attempting to
+Your JavaScript may execute the moment the page loads, but the underlying game engine may still be initializing its own systems. Attempting to
 send or receive data before this handshake is complete will result in failed communication.
 
 The engine provides a specific promise-based lifecycle method: <Highlight>engine.whenReady</Highlight>. You should treat this as the "Main" entry

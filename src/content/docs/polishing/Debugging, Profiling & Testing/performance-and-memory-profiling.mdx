@@ -14,6 +14,12 @@ import Link from 'coherent-docs-theme/components/Link.astro';
 Gameface integrates deeply with Chrome's Performance tab, emitting engine-specific trace markers for every stage of the rendering pipeline. This article walks through recording a trace, reading the <Highlight>Advance</Highlight>, <Highlight>Layout</Highlight>, <Highlight>Displaying</Highlight>, and <Highlight>Paint</Highlight> marker groups, using the DOM-highlight feature to connect GPU draw calls to specific elements, and interpreting the <Highlight>Counters</Highlight>, <Highlight>Memory</Highlight>, and <Highlight>Scratch Texture Manager</Highlight> charts to detect texture thrashing.
 </Summary>
 
+:::tip[Have a symptom rather than a trace?]
+
+This article covers how to read what the profiler tells you. If you know what is wrong in plain terms, a screen that opens slowly or a frame that hitches during combat, [The Performance Playbook](/polishing/performance-playbook/) is organised by symptom and will point you at the likely causes before you start recording.
+
+:::
+
 ## Recording a Trace
 
 Open the Performance tab in DevTools and click the **Record** button to start capturing. Interact with the UI in the Player, then click **Stop**. The timeline renders automatically.

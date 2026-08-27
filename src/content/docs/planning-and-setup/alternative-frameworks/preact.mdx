@@ -92,8 +92,14 @@ The steps below only cover the Preact-specific mechanics. [Mocking Data Models](
 
 <Steps>
 
-1. #### Add the cohtml library
-    Data-binding needs the `engine` global, which comes from `cohtml.js`. Copy `cohtml.js` and `cohtml.d.ts` out of your Gameface package (`Player/Samples/uiresources/library`) into `src/data/`, then import the library once in your entry point:
+1. #### Add the cohtml typings
+    Data-binding needs the `engine` global, which comes from `cohtml.js`. Since <Highlight>Gameface 3.1.2</Highlight> the SDK loads that library into the page for you, so there is nothing to import for it to work in the Player.
+
+    What you do still need is the declaration file. Copy `cohtml.d.ts` out of your Gameface package (`Player/Samples/uiresources/library`) into `src/data/` so TypeScript knows the `engine` global exists.
+
+    :::note[Previewing in a browser, or running an older SDK]
+
+    A browser has no SDK to load the library, so `engine` is undefined and any call to it throws. Copy `cohtml.js` across as well and import it once in your entry point:
 
     ```diff lang="tsx" title="src/main.tsx"
     import 'virtual:uno.css';
@@ -101,6 +107,10 @@ The steps below only cover the Preact-specific mechanics. [Mocking Data Models](
     +import './data/cohtml';
     import App from './App';
     ```
+
+    The library notices there is no engine attached and swaps in mock implementations, so the UI runs without errors and your registered mocks drive it. The same import is required throughout on SDKs older than 3.1.2.
+
+    :::
 
 2. #### Describe the model
     Add one JSON file per model under `gameface-models/`. The file name becomes the model name, and only the shape matters, so the values are placeholders:

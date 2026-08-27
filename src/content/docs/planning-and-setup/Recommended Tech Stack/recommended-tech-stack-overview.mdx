@@ -43,7 +43,7 @@ If you are coming from traditional web development, SolidJS has a very similar s
 <Internal>
 :::note[Alternative Frameworks]
 While Gameface does support other frameworks like React, Vue, and Preact, they rely on Virtual DOMs or heavier runtimes that can impact game performance. You can find setup guides for these in the 
-[Alternative Frameworks section](/planning-and-setup/alternative-frameworks/).
+[Alternative Frameworks section](/planning-and-setup/alternative-frameworks/overview/).
 :::
 </Internal>
 ## The Bundler: Vite
@@ -91,3 +91,5 @@ Finally, we highly recommend writing your UI logic in  <Link href="https://www.t
 
 TypeScript definitions and documentation provide strong typing and enhanced tooling for your JavaScript code within the Gameface environment. 
 Because your UI will be communicating heavily with a C++ backend via data-binding, this ensures you catch data-shape errors in your IDE before your UI ever touches the game engine.
+
+The payoff is bigger in Gameface than in the browser, because your Gameface package ships definitions describing the DOM the engine actually implements. Loading those instead of the standard browser typings makes autocomplete refuse to suggest APIs that would not have worked. See [TypeScript Typings](/planning-and-setup/development-environment-and-tools/#typescript-typings) for the setup.

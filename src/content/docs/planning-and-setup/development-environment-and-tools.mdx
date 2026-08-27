@@ -62,6 +62,44 @@ This preset checks HTML, CSS/SCSS, JS, and JSX/TSX files for Gameface-incompatib
 
 For advanced configuration (custom data-bind attributes, model validation, tuning rule severity), see the full <Link href="https://frontend-tools.coherent-labs.com/eslint-plugin-gameface/getting-started/installation/">installation</Link> and <Link href="https://frontend-tools.coherent-labs.com/eslint-plugin-gameface/getting-started/configuration/">configuration</Link> documentation.
 
+### TypeScript Typings
+
+The linter catches unsupported patterns after you write them. Typings stop your editor suggesting them in the first place, which is the same argument one step earlier in the process.
+
+By default TypeScript loads the standard DOM library, so autocomplete happily offers you the entire browser API surface. Gameface implements a subset of it. Swapping that library for the definitions shipped in your Gameface package turns autocomplete into a constraint check: if the editor does not offer it, the engine does not have it.
+
+Two definition files ship in <Highlight>`Samples\uiresources\library\`</Highlight> inside your Gameface package:
+
+* **`cohtml.lib.dom.d.ts`** describes the DOM properties Gameface actually implements.
+* **`cohtml.d.ts`** covers the Cohtml library itself, including the data-binding API.
+
+Point your `tsconfig.json` at them, and list only the language features you need in `lib` so the default DOM definitions never load:
+
+```json title="tsconfig.json"
+{
+    "compilerOptions": {
+        "target": "ES2015",
+        "module": "ES2015",
+        // No "DOM" entry - that is the point. Gameface's own
+        // definitions replace it via the include below.
+        "lib": ["ES5", "ES2015.Iterable", "ES2015.Promise", "ES2015.Core"]
+    },
+    "include": ["lib/**/*.d.ts"]
+}
+```
+
+:::note[Cannot find name 'global']
+
+If this error appears inside `cohtml.js`, install the Node type definitions alongside it:
+
+```bash
+npm install --save-dev @types/node
+```
+
+:::
+
+The Gameface UI template ships with this already configured, so this section is for teams building their own setup or retrofitting typings onto an existing project. Full details are in the <Link href="https://docs.coherent-labs.com/cpp-gameface/content_development/typescript/">TypeScript documentation</Link>.
+
 ## 2. The Local Sandbox: Gameface Player
 
 When building Gameface UI, you preview your work in the **Gameface Player** rather than a standard web browser.

@@ -2,7 +2,7 @@
 title: "Prototyping and Developing (Gameface UI)"
 description: "An introduction to the Gameface UI boilerplate, its structure, and how it accelerates your UI development."
 sidebar:
-    order: 4
+    order: 5
 ---
 
 import Summary from 'coherent-docs-theme/components/Summary.astro';
@@ -23,15 +23,13 @@ import hmrPreview from '../../../assets/phase-2/prototyping-and-developing/HMR-p
 If you followed Option A in the previous ["Setting up the Gameface Stack"](../recommended-tech-stack/setting-up-the-gameface-stack/#option-a-the-gameface-ui-project) article, 
 you likely already have this installed and can skip to the [next section](#understanding-the-project-structure)! 
 
-If you are starting fresh, you can download a clean copy of the boilerplate using `degit`. Open your terminal and run:
+If you are starting fresh, you can scaffold a clean copy with <Link href="https://frontend-tools.coherent-labs.com/create-gameface-app/getting-started/">create-gameface-app</Link>. Open your terminal and run:
 
 ```bash
-npx degit CoherentLabs/gameface-ui-boilerplate my-game-ui
-cd my-game-ui
-npm install
+npm create gameface-app -- --template gameface-ui --default
 ```
 
-This will create a new folder called `my-game-ui` with the boilerplate code, install all dependencies, and get you ready to start developing your game UI.
+The CLI asks for a project name, downloads the template, and installs the dependencies, leaving you with a project that is ready to run. Drop the arguments if you would rather pick the template from the interactive wizard.
 
 ### Previewing the Pre-built Menu
 
@@ -43,7 +41,7 @@ The boilerplate comes with a fully functioning `menu` view right out of the box 
     ```bash
     npm run dev
     ```
-    Your server is now running at `http://localhost:3000/menu/`.
+    Your server is now running at `http://localhost:3000/menu`, and `http://localhost:3000` lists every view in the project.
 
 2. **Run the server in the player:** Locate the `Player.bat` file included in your Gameface package. Open the file in a text editor,
     scroll down until you see a similar command:
@@ -57,7 +55,7 @@ The boilerplate comes with a fully functioning `menu` view right out of the box 
     <Code 
         code={`start "Player" /d "%wd%" "..\Player\Player.exe" --player "--url=http://localhost:3000/menu"`}
         lang="bat"
-        ins={' "--url=http://localhost:3000/menu/"'}
+        ins={' "--url=http://localhost:3000/menu"'}
      />
 
 3. "Launch the Player:" Launch the `Player.bat` file and you should see a fully interactive menu screen rendered perfectly inside the game engine!
@@ -92,7 +90,7 @@ This folder is organized into subfolders based on component types. Each componen
         :::
 
 - **`/src/custom-components`**: This directory is reserved for components created during UI development. We recommend placing <Highlight>all of your custom components</Highlight> in this folder.
-- **`/src/views`**: Gameface UI views are standalone HTML pages paired with their respective CSS & JavaScript files.
+- **`/src/views`**: Each view is a folder holding a component named after it, plus whatever else that view needs. The HTML document and the code that renders the component into it are generated for you, in development and in the production build alike.
 - **`/tests`**: This is the place where you can write your end to end tests for your views.
 - **`package.json`**: Handles project dependencies and defines scripts for running various commands. (You don't need to worry about it yet).
 - **`tsconfig.json`**: Specifies TypeScript rules and settings for the project (You don't need to worry about it yet).
@@ -115,18 +113,14 @@ This folder is organized into subfolders based on component types. Each componen
     - ...
   - custom-components/
   - views
+    - **global.scss** styles applied to every view
     - hud
-      - index.html
-      - index.css
-      - index.tsx
       - Hud.tsx
-      - Hud.module.css
+      - Hud.module.scss
     - menu
-      - index.html
-      - index.css
-      - index.tsx
+      - global.scss
       - Menu.tsx
-      - Menu.module.css
+      - Menu.module.scss
 - tests/
 - package.json
 - tsconfig.json
@@ -143,45 +137,8 @@ Let's put this structure into practice by creating a brand new "Inventory" view 
 1. #### **Create the View Folder**
     Inside `/src/views`, create a new folder called `inventory`. 
     
-2. #### **Create the View Files**
-    Following the Gameface UI standard, you need to create four files inside this new folder:
-    - `index.html`: This is the entry HTML file for the view. It should contain a root div where your UI will be rendered.
-    ```html title="src/views/inventory/index.html"
-    <!DOCTYPE html>
-    <html lang="en">
-        <head>
-        </head>
-        <body>
-            <div id="root"></div>
-            <script src="./index.tsx" type="module"></script>
-        </body>
-    </html>
-
-    ```
-    - `index.css`: This file will contain any global styles for your view. This is a good place to set up any style resets or constant styles that will be used across multiple components in the view.
-     
-    ```css title="src/views/inventory/index.css"
-    body {
-        width: 100vw;
-        height: 100vh;
-        margin: 0;
-    }
-    ```
-    - `index.tsx`: This is the entry Typescript file where you will set up the rendering logic for your view.
-    ```tsx title="src/views/inventory/index.tsx"
-    import { render } from 'solid-js/web';
-    import Inventory from './Inventory';
-    import './index.css';
-
-    const root = document.getElementById('root');
-
-    render(() => <Inventory />, root!);
-    ```
-    :::caution
-    This is a mandatory setup for every SolidJS entry point. Feel free to copy and paste this into any new view you create! Replace the `Inventory` import with the name of your view's main component.
-    :::
-
-    - `Inventory.tsx`: The entry component of your view. This is where you will build the main structure of your view and import any components you want to use.
+2. #### **Create the View Component**
+    Add a single file to that folder, named after it: `Inventory.tsx`. It default exports the component that becomes the page.
     ```tsx title="src/views/inventory/Inventory.tsx"
     const Inventory = () => {
         return <div style={{width: '10rem', height: '10rem', 'background-color': 'orangered'}}>Inventory</div>;
@@ -190,8 +147,18 @@ Let's put this structure into practice by creating a brand new "Inventory" view 
     export default Inventory;
     ```
 
+    That is the whole requirement. There is no HTML file to write and no `render` call to copy, because the boilerplate generates both for you from the folder and the component it finds inside it.
+
+    :::note[Naming the component after its folder]
+    The match is loose: case and separators are ignored, so `chart-playground/ChartPlayground.tsx` works just as well as `inventory/Inventory.tsx`.
+
+    What matters is that the names correspond. A folder with no matching component file is not a view, so it will not be served and will not be built.
+    :::
+
+    Everything else this view needs, additional components, helpers, assets, lives in the same folder alongside the component.
+
 3. #### **Test the View**
-    Make sure your dev server is running (`npm run dev`), then open your Gameface Player and change the URL to your new view:
+    Make sure your dev server is running (`npm run dev`), then open your Gameface Player and point it at your new view:
     <Code 
         code={`start "Player" /d "%wd%" "..\Player\Player.exe" --player "--url=http://localhost:3000/inventory"`}
         lang="bat"
@@ -199,6 +166,10 @@ Let's put this structure into practice by creating a brand new "Inventory" view 
      />
 
     You should see a bright orange square with the word "Inventory" rendered in the Player!
+
+    :::tip[Skip the restart next time]
+    Pointing the Player at `http://localhost:3000` instead loads a page listing every view in your project, with a link to each one. It renders inside the Player, not just the browser, so you can launch once and click between views while you work instead of editing the launch command each time.
+    :::
 
     ![Inventory view image](../../../assets/phase-2/prototyping-and-developing/inventory-view.png)
 
@@ -231,6 +202,32 @@ Let's put this structure into practice by creating a brand new "Inventory" view 
 
     Save the file and check the Player again. You should see the components preview in the Player!
 
+5. #### Style it
+    Most of a view's styling belongs in `Inventory.module.scss`, next to the component. The `.module` part is what scopes those rules to this component through CSS modules, so a class named `.panel` here cannot collide with a `.panel` in another view.
+
+    ```scss title="src/views/inventory/Inventory.module.scss"
+    .inventory {
+        padding: 2rem;
+    }
+    ```
+
+    ```tsx title="src/views/inventory/Inventory.tsx" ins={1, 4}
+    import styles from './Inventory.module.scss';
+
+    const Inventory = () => {
+        return <div class={styles.inventory}>...</div>;
+    };
+
+    export default Inventory;
+    ```
+
+    Rules that cannot be scoped, `html` and `body`, `@font-face`, bare element selectors, go in a `global.scss` instead. There are two of them, both optional:
+
+    - **`src/views/global.scss`** applies to every view. The boilerplate uses it for the root font size and to make the body fill the viewport, so those rules do not need repeating per view.
+    - **`src/views/inventory/global.scss`** applies to this view only, and loads after the shared one so it can override it.
+
+    Both load before the view's module styles.
+
 </Steps>
 
 ## Gameface UI features
@@ -256,6 +253,7 @@ You can import components, assets, and custom components using simple aliases in
 | `/src/assets/`             | `@assets`         |
 | `/src/components/`         | `@components`     |
 | `/src/custom-components/`  | `@custom-components` |
+| `/src/recipes/`            | `@recipes`        |
 
 Consider the following folder structure:
 

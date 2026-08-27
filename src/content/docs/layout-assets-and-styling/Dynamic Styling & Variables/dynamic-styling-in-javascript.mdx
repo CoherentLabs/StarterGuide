@@ -37,6 +37,40 @@ Here is the hidden pipeline that executes every single frame when you concatenat
 This unnecessary round-trip wastes critical CPU cycles. To keep your UI rendering lightning-fast, <Highlight>you must eliminate string concatenation</Highlight>. 
 :::
 
+## Allocations Hiding in Per-Frame Code
+
+Strings are the obvious allocation. The one that gets missed is the <Highlight>function</Highlight>, because an arrow function written inline is a new object every time the surrounding code runs.
+
+```javascript
+// ❌ A new closure is allocated on every call
+const onWeaponFired = () => {
+    setTimeout(() => setRecoilActive(false), 500);
+};
+```
+
+The callback is identical on every call, but nothing reuses it. Called on every shot during sustained fire, this quietly produces garbage at the rate the player pulls the trigger. Hoisting it costs nothing and allocates once:
+
+```javascript
+// ✅ Allocated once, reused forever
+const clearRecoil = () => setRecoilActive(false);
+
+const onWeaponFired = () => {
+    setTimeout(clearRecoil, 500);
+};
+```
+
+The same reasoning covers object and array literals. A vector built fresh inside a per-frame update, an options object passed to the same call every frame, an array assembled to be immediately iterated: each is garbage the collector eventually stops your game to reclaim.
+
+:::caution[This is about hot paths, not about closures]
+
+Closures are a normal part of writing JavaScript and there is nothing wrong with them in code that runs when a menu opens or a button is clicked. Hoisting every callback in your codebase would make it worse to read for no measurable gain.
+
+Apply this where the frequency justifies it: `requestAnimationFrame` callbacks, engine event handlers that fire continuously, `data-bind` handlers, and anything reached from a per-frame update. The test is not "is this a closure" but <Highlight>"how many times per second does this line run"</Highlight>.
+
+:::
+
+Garbage collection is also the one cost that hides from an average. It arrives as an occasional stall rather than a steady tax, so a profile that reports healthy median frame times can still be stuttering during combat. When you look for it, look at the worst frames.
+
 ## State Changes: The Classes-First Method
 
 For discrete UI state changes (such as opening a menu, hiding a tooltip, or marking an inventory slot as active), 

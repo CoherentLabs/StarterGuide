@@ -1,0 +1,155 @@
+---
+title: "Performance Defaults"
+description: "Ten architectural decisions to make before you write UI code, so that the expensive problems never get built in. Each one links to the article that argues for it in full."
+sidebar:
+    order: 2
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+
+<Summary>
+    A lot of Gameface performance work is spent undoing architectural decisions rather than fixing bugs. The decisions get made in the first week, when nothing is slow yet, and surface a year later as "the inventory takes half a second to open".
+
+    This page is the short list of defaults that keep that from happening. It gives you the decision and the reason in a sentence or two, then points at the article that argues it properly. Read it before you write UI code, and come back to it when you are about to do something it tells you not to.
+</Summary>
+
+## How to use this page
+
+These are defaults, not laws. Game UI is context-dependent and every one of them has a situation where the opposite is correct. What they buy you is a starting position that is right often enough that deviating becomes a deliberate act with a reason attached.
+
+If you are already deep into a project and something is slow, this is the wrong page. Go to [The Performance Playbook](/polishing/performance-playbook/), which is organised by symptom.
+
+---
+
+## 1. One view per lifetime, not per screen
+
+A <Highlight>view</Highlight> is an HTML document the engine loads, and creating one is expensive. Giving every screen its own view is the instinct to resist, because it is also the hardest decision to walk back once screens have been built against it.
+
+The question that separates a view from a route is not "is this a different screen?" but <Highlight>"do these two things live and die together?"</Highlight>. A main menu and its settings panel appear and disappear as a unit, so they are one view with routing between them. A HUD lives while the player is in the world and has nothing to do with the menu's lifetime, so it is its own view.
+
+Most games need a handful of views. If you are approaching a dozen, the split is probably by screen rather than by lifetime.
+
+Read: [Core Concepts and Information Flow](/getting-started/core-concepts-and-information-flow/#best-practices-minimizing-views).
+
+## 2. Build the DOM once and keep it
+
+Tearing a screen's DOM down and rebuilding it pays for element construction, style resolution, layout and fresh GPU work, all in the same frame. Few other routine operations cost as much at once.
+
+When a list changes, update the rows that changed. Rebuilding the list because one number moved is the single largest avoidable cost we have measured, and it gets worse with every row.
+
+Read: [Observable Models and Virtual Lists](/logic-and-interactions/data-binding--ui-state/observable-models-and-virtual-lists/).
+
+## 3. Toggle visibility for seconds, unmount for minutes
+
+Hiding an element and removing it are different trades. Hiding costs you a little every frame it stays hidden. Removing costs you nothing while it is gone and a lot when it comes back.
+
+Pick by how often the player brings it back. An inventory opened forty times a match stays mounted and toggles. A credits screen or a one-off tutorial overlay gets removed.
+
+Read: [DOM Management](/layout-assets-and-styling/styling--scalability/dom-management/).
+
+## 4. Do not ship offscreen nodes mounted
+
+Nodes that are mounted but scrolled out of view, or positioned off screen, are not free. The engine still walks them every frame. That cost grows with the size of the tree, not with how much of it is visible.
+
+Defer heavy branches until the player first needs them, then keep them for the rest of the session. That gets you a fast startup and a fast second open.
+
+Read: [DOM Management](/layout-assets-and-styling/styling--scalability/dom-management/).
+
+## 5. Keep the tree shallow
+
+In Gameface, depth costs more than breadth. A wrapper `div` added for styling convenience is not free, and five of them stacked around every list item is a real per-frame cost in a list of any size.
+
+Before adding a wrapper, check whether the layout can be expressed on the element you already have.
+
+Read: [Laying Out the Screen](/layout-assets-and-styling/laying-out-the-screen/).
+
+## 6. Animate transform and opacity, nothing else
+
+Animating `left`, `top`, `width` or `height` makes the engine redo layout work on every frame of the animation. Animating `transform` does not, because it happens after layout has been decided.
+
+This applies to `background-position` too. If something needs to move, move it with `transform`.
+
+Read: [UI Animations](/layout-assets-and-styling/animations/ui-animations/).
+
+:::tip[The corollary nobody expects]
+
+How much of the screen a moving element covers matters as much as how it moves. A small element sliding across the screen is cheap. A full-width banner doing the same motion is dramatically more expensive, because the engine has to repaint everything underneath the area it passes over.
+
+If a transition feels expensive and you cannot see why, look at the size of the thing that is moving.
+
+:::
+
+## 7. Never write to the DOM without checking the value first
+
+If there is one habit on this page to take away, it is this one. Writing a value that has not changed still invalidates caches, still triggers style resolution and still costs layout.
+
+```js title="hud.js"
+// ❌ The engine re-lays-out the label every frame, even at a steady 100/100
+function onHealthChanged(current, max) {
+    label.textContent = `${current} / ${max}`;
+}
+
+// ✅ Costs nothing on the frames where nothing happened
+let lastText = null;
+function onHealthChanged(current, max) {
+    const text = `${current} / ${max}`;
+    if (text === lastText) return;
+    label.textContent = text;
+    lastText = text;
+}
+```
+
+Engine data arrives on a schedule, not on change. Assume every value you receive is probably the same one you received last frame.
+
+## 8. Never read layout inside a loop
+
+`getBoundingClientRect()` and `getComputedStyle()` are the expensive reads. Calling either once per element across a list, every frame, is the pattern that turns healthy script time into a problem.
+
+Cache what you can in JavaScript. If you wrote the value, you already know it, and reading it back from the engine to find out is the wrong direction.
+
+Read: [Dynamic Styling in JavaScript](/layout-assets-and-styling/dynamic-styling--variables/dynamic-styling-in-javascript/).
+
+## 9. Write styles through CSSOM
+
+For high-frequency style updates, use the CSS Typed Object Model (`attributeStyleMap`) rather than building style strings. It avoids the per-frame string garbage that makes the collector run during combat.
+
+Read: [Dynamic Styling in JavaScript](/layout-assets-and-styling/dynamic-styling--variables/dynamic-styling-in-javascript/).
+
+## 10. Pool anything that churns, and chunk anything long
+
+Both of these avoid the same failure: work that arrives all at once instead of spread out.
+
+<Highlight>Pool</Highlight> elements that appear and disappear constantly: damage numbers, kill feed rows, waypoint markers, hit markers. Creating and destroying them on every occurrence hands the garbage collector a job it will do at the worst possible moment.
+
+<Highlight>Chunk</Highlight> work that takes more than a frame. Loading two hundred inventory items in one pass produces a visible hitch even when the total time is modest. Spreading the same work across several frames costs the same overall and is invisible.
+
+Read: [DOM Management](/layout-assets-and-styling/styling--scalability/dom-management/).
+
+---
+
+## The effects that cost real GPU time
+
+Separate from the list above, a small set of CSS features are expensive enough that they are worth deciding on rather than discovering. In rough order of how much they cost:
+
+* `backdrop-filter`
+* `mix-blend-mode`
+* `box-shadow` with a blur radius
+* `filter`, and anything using it whose value changes per frame
+* Animated `clip-path`
+
+None of these are banned. A blurred backdrop behind a pause menu that is open half a second at a time is a reasonable use of frame budget. The same effect on a HUD element that is on screen permanently is not.
+
+Decide by how long the effect is on screen. On a screen the player opens occasionally, it costs you a fraction of a second and you can spend it. On something that never leaves the screen, you are paying it every frame for the whole session, and that is a budget question rather than an art one.
+
+:::caution[Changing an effect every frame is a separate cost]
+
+There is a difference between an element that <Highlight>has</Highlight> a blur and one whose blur radius <Highlight>changes</Highlight> every frame. The second forces the engine to re-resolve styles continuously, and that cost is much larger than the effect itself.
+
+If you want a filter or a clip path to animate, check first whether a `transform` or an `opacity` change gets you a similar look.
+
+:::
+
+## Next Steps
+
+With the architecture decided, the next thing to settle is the stack you build it on. [Recommended Tech Stack](/planning-and-setup/recommended-tech-stack/recommended-tech-stack-overview/) covers the tools we suggest and why each one suits game UI work.
