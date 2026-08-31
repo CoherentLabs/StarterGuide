@@ -9,195 +9,187 @@ import Summary from 'coherent-docs-theme/components/Summary.astro';
 import Highlight from 'coherent-docs-theme/components/Highlight.astro';
 
 <Summary>
-    Performance problems do not arrive as "excessive scene graph traversal". They arrive as "the inventory takes half a second to open" and "the frame hitches when the kill feed updates".
+    This article maps common UI performance symptoms to their usual causes in Gameface, in the order those causes are normally responsible.
 
-    This page is organised the way the problem reaches you. Find your symptom, work down the causes in the order they are usually responsible, and confirm the fix with a trace. The last two sections list what we measured and what it cost, including the browser performance habits that made no difference in Gameface at all.
+    It covers loading cost, asset and resource cost, DOM update cost, screen toggling, garbage collection stalls and animation cost. The final sections list the measured results behind these recommendations, including the browser optimizations that produce no measurable difference in Gameface, and a checklist for reviewing UI code.
 </Summary>
 
-## Before you change anything
+## Measurement Prerequisites
 
-**Measure first, in the Player.** Chrome's numbers are not Gameface's numbers, and intuition transferred from web work is unreliable in an engine with a different renderer and a different layout implementation. [Performance & Memory Profiling](/polishing/debugging-profiling--testing/performance-and-memory-profiling/) covers recording and reading a trace.
+Two conditions apply to every investigation on this page.
 
-**Look at frame spikes, not just averages.** A median frame time hides a hitch completely. A stall that happens once per encounter will not move the average and is exactly the thing players notice. When you record, look at the worst frames rather than the typical ones.
+Profile in the Player, not in Chrome. Gameface uses a different renderer and a different layout implementation, so browser timings do not transfer. [Performance & Memory Profiling](/polishing/debugging-profiling--testing/performance-and-memory-profiling/) covers recording and reading a trace.
 
----
-
-## Symptom: the UI takes too long to load
-
-Startup cost is dominated by how much DOM exists, not by how much of it the player can see.
-
-1. **Too many views.** Every view is a document the engine has to create. If you have one per screen, this is your problem before anything else on this list. See [Performance Defaults](/planning-and-setup/performance-defaults/#1-one-view-per-lifetime-not-per-screen).
-2. **The whole screen built up front.** A settings panel with six tabs does not need all six in the DOM at load. Build the tab the player opens.
-3. **Offscreen nodes shipped mounted.** A hundred inventory slots below the fold cost the same per-frame walk as the ones on screen.
-4. **Deep wrapper chains.** Depth is more expensive than breadth here, and it compounds across every item in a list.
-5. **Assets not preloaded.** See [Asset Preloading](/planning-and-setup/asset-preloading/) for pulling fonts and textures in ahead of first paint rather than during it.
-
-## Symptom: assets and resources feel heavy
-
-Texture count and texture size are usually <Highlight>not</Highlight> the problem. We tested both, comparing a packed atlas against individual images and an oversized texture against a natively sized one, and neither produced a difference worth acting on. If your art pipeline is about to spend a sprint on atlasing for performance reasons, measure first.
-
-What does cost real time:
-
-* **Stacked translucent full-screen layers.** Each one is a full-screen area the GPU composites. Two is fine. Ten is not, and a scrim plus a vignette plus a blur plus a tint reaches ten faster than you would think.
-* **Live effects instead of baked art.** A gradient with a clip path, recalculated by the engine, is far more expensive than the same thing exported once as a texture. If a decorative effect never changes, it is art, not CSS.
-* **Effects on permanently visible elements.** Covered in [Performance Defaults](/planning-and-setup/performance-defaults/#the-effects-that-cost-real-gpu-time).
-
-## Symptom: DOM updates are slow
-
-Nearly all of this reduces to two habits.
-
-**Writing when nothing changed.** Engine data arrives on a schedule, not on change, so a handler that writes whatever it receives writes constantly. Comparing against the last value you wrote and returning early costs three lines and removes most of the work.
-
-**Reading layout in a loop.** `getBoundingClientRect()` and `getComputedStyle()` per element per frame is the pattern that turns script time into a bottleneck. Keep what you wrote in JavaScript instead of asking the engine to tell you what you already know.
-
-Two more are catastrophic rather than merely slow:
-
-* **`innerHTML +=` in a loop.** This re-parses everything already in the element on every iteration. The cost grows with the square of the item count. Build the nodes, or build one string and assign it once.
-* **Rebuilding a list to change one row.** Update the row.
-
-Read: [DOM Management](/layout-assets-and-styling/styling--scalability/dom-management/) and [Dynamic Styling in JavaScript](/layout-assets-and-styling/dynamic-styling--variables/dynamic-styling-in-javascript/).
-
-## Symptom: opening and closing screens is sluggish
-
-You are paying one of two costs, and which one tells you what to change.
-
-If the delay is on **open**, the screen is being constructed when it is opened. Either it is being built from scratch each time, or it is being unmounted on close and remounted on open. Keep it mounted and toggle its visibility instead.
-
-If the UI degrades **the longer the session runs**, the opposite is happening: screens are being kept mounted that should not be, and the accumulated tree is costing you every frame.
-
-The dividing line is how often the player comes back. Seconds means keep it; minutes means remove it. [DOM Management](/layout-assets-and-styling/styling--scalability/dom-management/) covers the hiding techniques and what each one actually costs while hidden.
-
-## Symptom: showing the inventory or minimap in-game costs a frame
-
-This is the previous symptom plus the offscreen cost.
-
-<Highlight>Defer, then keep.</Highlight> Do not build the inventory when the HUD loads. Build it the first time the player opens it, accept that one frame as a cost, and then keep it mounted and toggle it for the rest of the session. Startup stays fast, and every open after the first is instant.
-
-The trap is doing half of it: deferring the build but also unmounting on close, so every open pays the construction cost again.
-
-## Symptom: the frame hitches irregularly
-
-Irregular hitches are usually garbage collection or a burst of work, and they share a cause.
-
-* **Element churn.** Damage numbers, kill feed rows, hit markers and waypoint pins that get created and destroyed constantly hand the collector a growing job. Pool them: keep a fixed set and reuse them.
-* **Per-frame allocation.** Building objects, arrays or strings inside a per-frame handler produces garbage at frame rate. Allocate once outside the loop and mutate.
-* **Long work in one lump.** Populating a large list in a single pass produces a visible stall even when the total time is small. Spread it across frames.
-
-All three are invisible in the average and obvious in the worst-frame numbers, which is how you tell them apart from a steady cost.
-
-## Symptom: moving things looks or feels expensive
-
-Four causes, roughly in order of how often they are responsible.
-
-1. **Animating a layout property.** `left`, `top`, `width`, `height` and `background-position` all make the engine redo layout every frame. `transform` does not.
-2. **The moving element is large.** The engine repaints the region a moving element passes over, so cost scales with the area covered, not the distance travelled. A full-width element sliding in is much more expensive than a small one making the same journey.
-3. **Moving nodes instead of transforming them.** Reordering a list by removing and re-inserting elements does structural work. Reordering it by transforming rows in place does not.
-4. **Animating a filter or clip path.** Changing the value each frame forces continuous style re-resolution, which costs considerably more than the effect itself does when static.
-
-Read: [UI Animations](/layout-assets-and-styling/animations/ui-animations/).
+Read frame spikes rather than averages. A median frame time does not show a stall that occurs once per encounter, and that stall is what players perceive. Inspect the worst frames in a recording, not the typical ones.
 
 ---
 
-## What we measured that turned out not to matter
+## Slow Loading
 
-We ran a set of controlled A/B comparisons in the Player, changing exactly one variable at a time, to check which received performance wisdom actually holds in Gameface. A good deal of it does not.
+Startup cost scales with the amount of DOM that exists, not with the amount the player can see. The causes, in the order they are usually responsible:
 
-None of the following produced a difference worth acting on:
+1. **View count.** Each view is a document Gameface constructs. One view per screen is the most expensive form of this problem. See [Performance Defaults](/planning-and-setup/performance-defaults/#splitting-the-ui-into-views).
+2. **Whole screens built at load.** A settings panel with six tabs does not require all six tabs in the DOM at startup. Build the tab the player opens.
+3. **Offscreen nodes left mounted.** A hundred inventory slots below the fold cost the same per-frame traversal as the slots on screen.
+4. **Deep wrapper chains.** Depth costs more than breadth in Gameface, and the cost compounds across every item in a list.
+5. **Assets loaded during first paint.** [Asset Preloading](/planning-and-setup/asset-preloading/) covers pulling fonts and textures in beforehand.
 
-| The habit | What we compared |
+## Asset and Resource Cost
+
+Texture count and texture dimensions produce no measurable difference in Gameface. A packed atlas measures the same as individual textures, and a 352x256 texture scaled down to 88x64 measures the same as a native 88x64 texture. Optimization effort spent here returns nothing.
+
+Three things do carry measurable cost:
+
+* **Stacked translucent full-screen layers.** The GPU composites each one across the full screen. A scrim, a vignette, a blur and a tint are four such layers, and they accumulate faster than the markup suggests.
+* **Live effects in place of baked textures.** A gradient combined with a clip path is recalculated by Gameface every frame it is dirty. The same result exported once as a texture costs a single draw.
+* **Expensive effects on permanently visible elements.** See [Performance Defaults](/planning-and-setup/performance-defaults/#gpu-expensive-css-features).
+
+## Slow DOM Updates
+
+Two habits account for most DOM update cost.
+
+**Unconditional writes.** Engine data arrives on a synchronization schedule rather than on change, so a handler that writes every value it receives writes on every synchronization. Comparing against the last written value and returning early removes that work in three lines.
+
+**Layout reads inside loops.** `getBoundingClientRect()` and `getComputedStyle()` called once per element per frame is the dominant script-time cost. Cache values in JavaScript rather than reading them back from Gameface.
+
+Two further patterns carry disproportionate cost:
+
+* **`innerHTML +=` in a loop.** Each iteration re-parses the element's existing content, so cost grows with the square of the item count. Create the nodes directly, or build one string and assign it once.
+* **Full list rebuilds.** Rebuilding a list to change one row costs across every phase at once. Update the row.
+
+See [DOM Management](/layout-assets-and-styling/styling--scalability/dom-management/) and [Dynamic Styling in JavaScript](/layout-assets-and-styling/dynamic-styling--variables/dynamic-styling-in-javascript/).
+
+## Slow Screen Toggling
+
+The delay appears in one of two places, and its position identifies the cause.
+
+A delay **on open** means the screen is constructed at open time, either built from scratch on each open or unmounted on close and remounted on open. Keep it mounted and toggle visibility instead.
+
+Degradation **over the length of a session** means the opposite: screens are staying mounted that should not, and the accumulated tree costs per-frame traversal.
+
+Frequency of reuse decides which applies. A screen the player reopens within seconds stays mounted. One reopened after minutes is removed. [DOM Management](/layout-assets-and-styling/styling--scalability/dom-management/) covers each hiding technique and its resting cost.
+
+## In-Game Overlays
+
+An inventory or minimap opened during play combines the toggling cost above with the cost of offscreen nodes. The pattern that resolves both is <Highlight>deferred construction with persistent reuse</Highlight>.
+
+Do not build the inventory when the HUD loads. Build it when the player first opens it, then keep it mounted and toggle visibility for the remainder of the session. Startup cost stays low and every subsequent open is immediate.
+
+Deferring construction while still unmounting on close produces the worst result of the three, because every open pays full construction cost.
+
+## Irregular Frame Hitches
+
+Irregular hitches come from garbage collection or from work arriving in a single burst.
+
+* **Element churn.** Damage numbers, kill feed rows, hit markers and waypoint pins created and destroyed continuously accumulate collector work. Pool them: allocate a fixed set and reuse it.
+* **Per-frame allocation.** Objects, arrays and strings built inside a per-frame handler allocate at frame rate. Allocate once outside the loop and mutate in place.
+* **Unchunked work.** Populating a large list in a single pass stalls the frame it runs on, independent of total duration. Spread the work across frames.
+
+All three are absent from median frame times and visible in worst-frame times, which distinguishes them from a steady per-frame cost.
+
+## Expensive Animation
+
+Four causes, in the order they are usually responsible.
+
+1. **Animated layout properties.** `left`, `top`, `width` and `height` each force a layout pass per frame. `transform` does not. Animated `background-position` performs no layout work but re-resolves styles every frame, and is cheaper as a `transform` on an inner element holding the image.
+2. **Large animated elements.** Gameface repaints the region a moving element covers, so cost scales with area rather than distance. A full-width element travelling a short distance costs more than a small element travelling the same distance.
+3. **Node movement in place of transforms.** Reordering a list by removing and re-inserting elements performs structural work. Reordering by transforming rows in place does not.
+4. **Animated filters and clip paths.** Changing the value each frame forces continuous style re-resolution, which costs more than the static effect.
+
+See [UI Animations](/layout-assets-and-styling/animations/ui-animations/).
+
+---
+
+## Measured Results: No Difference
+
+The following comparisons were run in the Player as controlled A/B cases, changing one variable at a time. None produced a difference outside measurement noise.
+
+| Optimization | Comparison |
 |---|---|
 | Batching inserts with `DocumentFragment` | Fragment batch insert against per-node `appendChild` |
-| Preferring `classList` over `className` | `classList` mutation against rewriting the class string |
-| Avoiding inline styles for performance | Identical inline declarations against a shared class |
-| Keeping stylesheets small | 200 rules against 5000, same DOM |
-| Packing sprites into an atlas | One atlas texture against one texture per sprite |
-| Downsizing oversized textures | A 352x256 texture scaled down against a native 88x64 one |
-| Naming the transitioned property | `transition: all` against naming the one property that changes |
-| Avoiding `:nth-child` on changing lists | `:nth-child` selectors against per-element classes |
-| Preferring `requestAnimationFrame` to timers | `setInterval(16ms)` against rAF as the update driver |
-| Avoiding percentage sizing | Percentage against fixed `px` down a five-level chain |
-| Keeping `position: relative` off high-level wrappers | A full-size wrapper near the root, static against relative |
-| Batching reads to avoid layout thrashing | Interleaved style-write/layout-read against fully batched |
+| `classList` over `className` | `classList` mutation against class string rewrite |
+| Avoiding inline styles | Identical inline declarations against a shared class |
+| Small stylesheets | 200 rules against 5000, identical DOM |
+| Sprite atlasing | One atlas texture against one texture per sprite |
+| Downsized textures | 352x256 scaled to 88x64 against a native 88x64 texture |
+| Naming the transitioned property | `transition: all` against naming the changed property |
+| Avoiding `:nth-child` on reordering lists | `:nth-child` selectors against per-element classes |
+| `requestAnimationFrame` over timers | `setInterval(16ms)` against rAF as update driver |
+| Fixed sizing over percentages | Percentage against fixed `px` down a five-level chain |
+| Avoiding `position: relative` on high-level wrappers | A full-size wrapper near the root, static against relative |
+| Batching reads to avoid layout thrashing | Interleaved style-write and layout-read against fully batched |
 
-<Highlight>Layout thrashing, as web developers know it, did not reproduce.</Highlight> Gameface's layout runs on its own thread rather than synchronously in front of your next read, so the read/write interleaving ritual buys nothing here. Reading layout is still expensive, per the DOM section above, but *when* you read it is not the thing that matters.
+Two rows need explanation.
 
-Marking a wrapper `position: relative` costs nothing. Animating a wrapper that happens to be full-width costs a great deal, and is one of the largest effects we have measured. <Highlight>The cost belongs to the area of the element that moves, not to its position value</Highlight>, which is what makes the two easy to confuse. If a transition feels expensive, measure how much of the screen the moving element actually covers.
+<Highlight>Layout thrashing does not occur in Gameface.</Highlight> Layout runs on its own thread rather than synchronously ahead of the next read, so interleaving reads and writes carries no penalty. Layout reads remain expensive, as covered above, but their ordering relative to writes does not affect cost.
 
-:::caution[Read this as "do not spend a sprint on it"]
+`position: relative` on a wrapper carries no cost and does not widen the repainted region. Animating a wrapper that is full-width does carry cost, and is one of the largest effects measured, but that cost belongs to the area of the moving element rather than to its `position` value. The two are frequently conflated.
 
-None of the entries above are bad practice. Several are good code for reasons that have nothing to do with speed, and `DocumentFragment` and `classList` are both perfectly reasonable things to write.
+:::caution[Applying These Results]
 
-The point is narrower: if you are choosing what to optimise, none of these is where your frame time went. A team that spends a sprint atlasing sprites while an unconditional `textContent` write runs every frame has optimised the wrong thing.
+None of the entries above are bad practice, and several are worth writing for reasons unrelated to speed. `DocumentFragment` and `classList` are both reasonable code.
+
+The results establish priority rather than prohibition. None of these optimizations recovers meaningful frame time in Gameface, so effort spent on them displaces effort on the causes listed in the next section.
 
 :::
 
-## What we measured that did matter
+## Measured Results: Confirmed Cost
 
-The same exercise, on the other side. Each of these produced a clear and repeatable cost:
+The same method produced a clear and repeatable cost for each of the following:
 
 * Writing to the DOM without checking whether the value changed
 * `innerHTML +=` in a loop
-* Rebuilding a list instead of updating the row that changed
+* Rebuilding a list instead of updating the changed row
 * Creating and destroying elements instead of pooling them
 * Leaving offscreen nodes mounted
 * Deep wrapper chains
 * Reading layout inside a per-element loop
-* `backdrop-filter`, `mix-blend-mode`, and blurred `box-shadow`
+* `backdrop-filter`, `mix-blend-mode` and blurred `box-shadow`
 * Filters and clip paths whose values change every frame
 * Animating layout properties instead of `transform`
-* How much screen area a moving element covers
-* Doing a frame's worth of work in a single burst
+* The screen area covered by a moving element
+* Executing a frame's work in a single burst
 
-:::note[Why there are no numbers here]
+:::note[Ratios Rather Than Absolute Timings]
 
-These findings come from A/B comparisons on one machine and one engine build. The ratios between two variants transfer reasonably well; absolute milliseconds do not transfer at all, and quoting them would invite budgeting against a number that means nothing on your hardware.
+These results come from A/B comparisons on one machine and one Gameface build. Ratios between two variants transfer between hardware. Absolute milliseconds do not.
 
-Treat the two lists as a priority order rather than a measurement. Your own trace is the number that matters.
+Treat both lists as a priority order rather than a budget. Your own trace supplies the timings that apply to your project.
 
 :::
 
 ---
 
-## The code review checklist
+## Code Review Checklist
 
-Everything above is for work already written. This list is for the pull request in front of you: specific, mechanical things worth catching before they ship, each one linking to the article that explains why.
+The preceding sections diagnose UI that already runs. This section covers reviewing a change before it ships. Each item is visible by reading a diff and requires no profiler.
 
-None of these need a profiler. They are visible by reading the diff.
+### Closures and Objects in Hot Paths
 
-### Is a closure or object being allocated in a hot path?
+An arrow function written inline allocates a new object every time the surrounding code runs. Inside a per-frame update or a continuously firing handler, that allocates at frame rate. Hoisting the callback so it is created once removes the allocation. Object and array literals built inside per-frame code carry the same cost.
 
-An arrow function written inline is a new object every time the surrounding code runs. In a per-frame update or a continuously firing handler, that is garbage at frame rate. Hoisting the callback so it is created once costs nothing.
+See [Allocations in Per-Frame Code](/layout-assets-and-styling/dynamic-styling--variables/dynamic-styling-in-javascript/#allocations-in-per-frame-code).
 
-Same for object and array literals built inside per-frame code.
+### String Construction in Binding Expressions
 
-→ [Allocations Hiding in Per-Frame Code](/layout-assets-and-styling/dynamic-styling--variables/dynamic-styling-in-javascript/#allocations-hiding-in-per-frame-code)
+Concatenation inside a `data-bind` expression runs on every synchronization, not only when the value changes. Helper functions hide this cost behind a call. Values that are fixed per item, such as icon paths, belong in the model and should be constructed once on the game side.
 
-### Is a string being built inside a binding expression?
+See [Expressions and the Fast Path](/logic-and-interactions/data-binding--ui-state/data-binding-basics/#expressions-and-the-fast-path).
 
-Concatenation inside a `data-bind` expression runs on every synchronization, not only when the value changes. Watch for helper functions especially, since the allocation hides behind the call.
+### Logic in Binding Expressions
 
-Values like icon paths are fixed per item and belong in the model, built once on the game side.
+Composed booleans and nested conditions in the view re-evaluate on every synchronization and fall off Gameface's native evaluation path. A single model property resolves as one native read and places the rule where it can be tested.
 
-→ [Strings built inside expressions allocate](/logic-and-interactions/data-binding--ui-state/data-binding-basics/#expressions-and-the-fast-path)
+See [Composed Conditions and Single Model Fields](/logic-and-interactions/data-binding--ui-state/data-binding-basics/#composed-conditions-and-single-model-fields).
 
-### Is a binding expression doing logic the game could send as one field?
+### Tree-Walking Selectors
 
-Composed booleans and nested conditions in the view re-evaluate on every synchronization and drop off the engine's native fast path. A single model property is one native read, and it puts the rule somewhere testable.
+Any combinator (`.a .b`, `.a > .b`, `.a + .b`) or tree-dependent pseudo-class (`:first-child`, `:nth-child()`) requires Gameface to walk the DOM to resolve a match. One such selector anywhere in a view keeps complex selector matching enabled for that entire view.
 
-→ [Prefer one fact over a composed condition](/logic-and-interactions/data-binding--ui-state/data-binding-basics/#prefer-one-fact-over-a-composed-condition)
+See [Enforcing Flat Selectors Per View](/layout-assets-and-styling/styling--scalability/writing-maintainable-css/#enforcing-flat-selectors-per-view).
 
-### Does this selector need to walk the DOM tree?
+### CSS in Shared SASS Files
 
-Any combinator (`.a .b`, `.a > .b`, `.a + .b`) or tree-dependent pseudo-class (`:first-child`, `:nth-child()`) counts. One of them anywhere in a view keeps complex selector matching switched on for that whole view, so this is a rule worth holding rather than trading away case by case.
+Variables, mixins and functions emit nothing on their own. Style blocks, `@keyframes` and `@font-face` in a shared partial are duplicated into every component that imports it. Split files by what they emit and import the emitting file once, from the view's global stylesheet.
 
-→ [Turning Complex Matching Off](/layout-assets-and-styling/styling--scalability/writing-maintainable-css/#turning-complex-matching-off)
-
-### Does a shared SASS file emit CSS?
-
-Variables, mixins and functions are free. Style blocks, `@keyframes` and `@font-face` in a shared partial get duplicated into every component that imports it. Split files by what they emit, and import the emitting one once from the view's global stylesheet.
-
-→ [Keep Real CSS Out of Shared SASS Files](/layout-assets-and-styling/styling--scalability/writing-maintainable-css/#keep-real-css-out-of-shared-sass-files)
-
-## Next Steps
-
-Everything here assumes you can see what your UI is doing. [Performance & Memory Profiling](/polishing/debugging-profiling--testing/performance-and-memory-profiling/) covers recording a trace, reading the engine's timeline markers, and connecting GPU draw calls back to the elements that caused them.
+See [CSS in Shared SASS Files](/layout-assets-and-styling/styling--scalability/writing-maintainable-css/#css-in-shared-sass-files).

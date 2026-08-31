@@ -25,30 +25,30 @@ The Player ships with your Gameface package. Run it with the provided launcher f
 
 ## The Player GUI
 
-The Player is a browser-shaped application, and most of what you need day to day is in the window itself rather than in an external tool.
+The Player provides its own window controls, live statistics and a console, so most day-to-day work does not require an external tool.
 
 ![The Gameface Player window, showing the stats strip in the title bar, the toolbar with its address bar, and the console panel docked at the bottom](../../../assets/phase-1/the-gameface-player/player-gui.png)
 
-### The stats strip
+### Statistics Strip
 
-The title bar continuously reports frame time, FPS, memory used, allocation count, allocations and time in the last frame, and GPU memory. It costs you nothing to glance at, which makes it the fastest smell test available: if frame time climbs while you are editing a screen, you know before you open a profiler.
+The title bar reports frame time, FPS, memory used, allocation count, allocations and time in the last frame, and GPU memory. These update continuously, which makes rising frame time visible during editing without opening a profiler.
 
-### The toolbar
+### Toolbar
 
-Back and forward, reload, and then the controls specific to the Player:
+The toolbar provides navigation and reload, plus four Player-specific controls:
 
-- **Address bar** - type a local file path or an `http://` address to load it. `Ctrl+L` focuses it.
-- **Bookmarks** - the star bookmarks the current page, and the bookmark bar keeps frequently used views one click away. Bookmarks are stored in `CohtmlBookmarks.html` next to the Player executable in the standard HTML bookmarks format, so you can import a file exported from any browser.
-- **Aspect ratio** - defaults to <Highlight>Fill</Highlight>, which uses the whole window. Pinning a fixed ratio letterboxes the view instead, which is how you check a 21:9 or 4:3 layout without resizing the window or changing your monitor.
-- **Console toggle** - shows and hides the console panel described below.
+- **Address bar** - loads a local file path or an `http://` address. `Ctrl+L` focuses it.
+- **Bookmarks** - the star bookmarks the current page, and the bookmark bar holds frequently used views. Bookmarks are stored in `CohtmlBookmarks.html` next to the Player executable, in the standard HTML bookmarks format, so a file exported from any browser can be imported.
+- **Aspect ratio** - defaults to <Highlight>Fill</Highlight>, which uses the whole window. Selecting a fixed ratio letterboxes the view, which tests a 21:9 or 4:3 layout without resizing the window or changing display resolution.
+- **Console toggle** - shows and hides the console panel.
 
-`Ctrl+F11` hides the entire GUI when you want the view on its own, which is worth doing before taking a screenshot or judging a layout, since the toolbar occupies space the game will not.
+`Ctrl+F11` hides the entire GUI. The toolbar occupies space the game will not, so hide it before evaluating a layout or capturing a screenshot.
 
-### The console
+### Console Panel
 
-The console docks to the bottom of the window and carries timestamped engine and JavaScript output together, with **Clear**, **Copy All**, **Auto-scroll** and **Hide Console**.
+The console docks to the bottom of the window and carries timestamped Gameface and JavaScript output, with **Clear**, **Copy All**, **Auto-scroll** and **Hide Console** controls.
 
-This is the first place to look when something silently does not work. Gameface warns here about CSS properties it does not implement, so a rule that appears correct but has no visible effect usually has an explanation waiting in the console. Reach for it before Chrome DevTools; it is already open.
+Gameface reports unsupported CSS properties here, which makes this the first place to check when a rule parses but produces no visible effect. These warnings are not forwarded to Chrome DevTools, so the Player's console is the only place they appear.
 
 ## Loading UI
 
@@ -134,7 +134,7 @@ The Player previously used a `Config.json` file with a limited set of options (`
 
 ## DevTools and Debugging
 
-The Player's own console answers a good share of everyday questions, and it is already in front of you. Go to DevTools when you need something the console cannot give you: the live DOM tree, computed styles, registered data-binding models, a performance trace, or the GPU debugging overlays.
+Check the Player's console first, since it carries Gameface's own warnings alongside JavaScript output and some of those warnings never reach Chrome. DevTools then covers what the console cannot: the live DOM tree, computed styles, registered data-binding models, performance traces and the GPU debugging overlays.
 
 Press **F12** while the Player is running to open DevTools. The Player starts an HTTP server on port **9444** by default, and Chrome connects to it as a remote debugging target.
 
@@ -150,7 +150,7 @@ Press **F12** while the Player is running to open DevTools. The Player starts an
 From there, DevTools gives you:
 
 - **Elements panel** - inspect and modify the DOM tree, view computed styles, and use the **Data Binding tab** to inspect `data-bind-*` attributes and their evaluated values.
-- **Console** - the same output as the Player's own console panel, with the addition of an interactive prompt for evaluating expressions against the running view.
+- **Console** - JavaScript logs and errors, plus an interactive prompt for evaluating expressions against the running view. It does not receive everything the Player's own console shows. Warnings raised by Gameface itself, such as reports of unsupported CSS properties, appear only in the Player.
 - **Sources** - debug JavaScript and set breakpoints.
 - **Performance** - profile rendering: style recalculations, layout, script execution, GPU time, and paint.
 - **Network** - inspect resource requests and WebSocket messages.

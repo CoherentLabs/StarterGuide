@@ -37,9 +37,11 @@ Here is the hidden pipeline that executes every single frame when you concatenat
 This unnecessary round-trip wastes critical CPU cycles. To keep your UI rendering lightning-fast, <Highlight>you must eliminate string concatenation</Highlight>. 
 :::
 
-## Allocations Hiding in Per-Frame Code
+## Allocations in Per-Frame Code
 
-Strings are the obvious allocation. The one that gets missed is the <Highlight>function</Highlight>, because an arrow function written inline is a new object every time the surrounding code runs.
+Strings are not the only allocation in a per-frame path. An arrow function written inline allocates a new <Highlight>function object</Highlight> every time the surrounding code runs.
+
+The handler below creates its callback on each call, and nothing reuses it:
 
 ```javascript
 // ❌ A new closure is allocated on every call
@@ -48,10 +50,10 @@ const onWeaponFired = () => {
 };
 ```
 
-The callback is identical on every call, but nothing reuses it. Called on every shot during sustained fire, this quietly produces garbage at the rate the player pulls the trigger. Hoisting it costs nothing and allocates once:
+Hoisting the callback out of the handler allocates it once:
 
 ```javascript
-// ✅ Allocated once, reused forever
+// ✅ Allocated once, reused on every call
 const clearRecoil = () => setRecoilActive(false);
 
 const onWeaponFired = () => {
@@ -59,17 +61,17 @@ const onWeaponFired = () => {
 };
 ```
 
-The same reasoning covers object and array literals. A vector built fresh inside a per-frame update, an options object passed to the same call every frame, an array assembled to be immediately iterated: each is garbage the collector eventually stops your game to reclaim.
+Object and array literals behave the same way. A vector constructed inside a per-frame update, an options object passed to the same call each frame, and an array assembled to be iterated once all allocate at frame rate.
 
-:::caution[This is about hot paths, not about closures]
+:::caution[Scope: Per-Frame Code Only]
 
-Closures are a normal part of writing JavaScript and there is nothing wrong with them in code that runs when a menu opens or a button is clicked. Hoisting every callback in your codebase would make it worse to read for no measurable gain.
+This applies to code whose execution frequency justifies it: `requestAnimationFrame` callbacks, continuously firing Gameface event handlers, `data-bind` handlers, and anything reached from a per-frame update.
 
-Apply this where the frequency justifies it: `requestAnimationFrame` callbacks, engine event handlers that fire continuously, `data-bind` handlers, and anything reached from a per-frame update. The test is not "is this a closure" but <Highlight>"how many times per second does this line run"</Highlight>.
+Closures in code that runs on a menu opening or a button click carry no measurable cost. Hoisting every callback in a codebase reduces readability without a performance return. The relevant question is how many times per second the line executes.
 
 :::
 
-Garbage collection is also the one cost that hides from an average. It arrives as an occasional stall rather than a steady tax, so a profile that reports healthy median frame times can still be stuttering during combat. When you look for it, look at the worst frames.
+Garbage collection cost does not appear in average frame times. It arrives as an occasional stall, so a profile reporting healthy median frame times can still contain collector pauses. Inspect worst-frame numbers to find it.
 
 ## State Changes: The Classes-First Method
 

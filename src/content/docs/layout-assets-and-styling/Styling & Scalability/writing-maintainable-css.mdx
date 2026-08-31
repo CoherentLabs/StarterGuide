@@ -38,34 +38,40 @@ In a game engine environment, style recalculations happen frequently.
 Forcing the engine to constantly parse deep, complex selector chains for hundreds of UI elements will artificially inflate the "Style Solve" phase of your frame. 
 To maximize performance and keep your CPU footprint minimal, <Highlight>CSS selectors should be as flat as possible.</Highlight>
 
-### Turning Complex Matching Off
+### Enforcing Flat Selectors Per View
 
-Beyond being cheaper to match individually, flat selectors unlock an engine-level optimization that a single complex selector anywhere in your view takes away.
+A selector counts as complex when Gameface must walk the DOM tree to resolve a match. The definition covers more than deep nesting:
 
-Gameface has a per-view setting that controls whether complex selector matching runs at all. It ships enabled, because it has to work with any CSS you throw at it. A view whose stylesheets never need it can have your engineering team switch it off, and style matching for that entire view gets significantly faster.
+* **Any combinator.** Descendant (`.a .b`), child (`.a > .b`), adjacent sibling (`.a + .b`), general sibling (`.a ~ .b`).
+* **Tree-dependent pseudo-classes**, such as `:first-child`, `:last-child` and `:nth-child()`.
 
-"Complex" here has a precise meaning, and it is broader than most people assume. A selector is complex if it needs to walk the DOM tree to decide whether it matches:
+Consider a slot inside an inventory grid, where the icon needs styling and the first slot needs a modifier:
 
-* **Anything containing a combinator.** Descendant (`.a .b`), child (`.a > .b`), adjacent sibling (`.a + .b`), general sibling (`.a ~ .b`).
-* **Pseudo-classes that depend on position in the tree**, such as `:first-child`, `:last-child` and `:nth-child()`.
+```html title="inventory.html"
+<div class="inventory">
+    <div class="slot slot--first">
+        <img class="inventory__item-icon" src="sword.png" />
+    </div>
+</div>
+```
+
+The first pair of selectors below requires ancestor and sibling lookups. The second pair resolves against a single element:
 
 ```css title="selectors.css"
-/* ❌ Complex: combinators and a tree-dependent pseudo-class */
+/* ❌ Complex: two combinators and a tree-dependent pseudo-class */
 .inventory > .slot .item-icon { }
 .slot:first-child { }
 
-/* ✅ Simple: the element carries what it needs to be matched on */
+/* ✅ Simple: each element carries the class it is matched on */
 .inventory__item-icon { }
 .slot--first { }
 ```
 
-The second form asks the engine a question it can answer by looking at one element. The first requires it to look at that element's ancestors or siblings.
+:::tip[Guarding a Flat Stylesheet]
 
-:::tip[Make it a whole-view goal, not a per-rule preference]
+Gameface exposes a per-view setting, `EnableComplexCSSSelectorsStyling`, controlling whether complex selectors are evaluated at all. It is enabled by default, since most web CSS relies on them.
 
-This optimization is all or nothing per view. Ninety-nine flat rules and one `:nth-child` means the tree walking stays on, and you get none of the benefit.
-
-That makes it worth treating as a property of the view rather than a style preference: agree that a view avoids combinators, keep it that way in review, and then ask your engineering team to disable complex selector matching for it. Doing this after the fact means auditing every stylesheet the view touches, which is a much larger job than never introducing them.
+A UI that does not require complex selectors can have your engineering team disable it. That does not speed up a stylesheet which is already flat, since the cost belongs to the selectors themselves. What it does is prevent a complex selector from being introduced later without anyone noticing.
 
 :::
 
@@ -258,13 +264,13 @@ While this slightly increases the final `.css` file size, it guarantees that the
 In game UI, trading a tiny bit of memory for faster CPU style-matching is exactly what we want!
 :::
 
-### Keep Real CSS Out of Shared SASS Files
+### CSS in Shared SASS Files
 
-That duplication is a deliberate trade for mixins. It becomes an accident when a shared file contains real CSS.
+Mixin duplication is a deliberate trade. The same duplication becomes unintentional when a shared file contains CSS rather than SASS constructs.
 
-SASS compiles each entry point in isolation. When two components both `@use` the same partial, that partial is compiled once <Highlight>per component</Highlight>, so anything in it that emits actual CSS is emitted into both outputs. Variables, mixins and functions produce nothing on their own and cost you nothing. Style blocks, `@keyframes`, and `@font-face` are duplicated for every file that reaches them.
+SASS compiles each entry point in isolation. Two components that `@use` the same partial compile that partial once <Highlight>per component</Highlight>, so anything in it emitting CSS is written into both outputs. Variables, mixins and functions emit nothing on their own. Style blocks, `@keyframes` and `@font-face` are duplicated into every file that reaches them.
 
-Given a shared partial holding both a mixin and the keyframes it references:
+The partial below holds a mixin and the keyframes that mixin references:
 
 ```scss title="shared.scss"
 // Emits nothing by itself
@@ -278,9 +284,9 @@ Given a shared partial holding both a mixin and the keyframes it references:
 }
 ```
 
-Two components that `@use` this file each get their own copy of `@keyframes fade-in` in the compiled output. Ten components mean ten copies of every rule in the file, which the engine parses and holds in memory.
+Each component that `@use`s this file receives its own copy of `@keyframes fade-in` in the compiled output. Ten importing components produce ten copies of every rule in the file, all of which Gameface parses and holds in memory.
 
-The fix is to split by what a file emits, not by what it is about:
+Split the file by what it emits rather than by subject:
 
 ```scss title="shared.scss (SASS items only)"
 @mixin fade-in() {
@@ -294,7 +300,7 @@ The fix is to split by what a file emits, not by what it is about:
 }
 ```
 
-Components pull in the mixins as before, while the file that emits CSS is imported exactly once, from the view's global stylesheet:
+Components import the mixins as before. The file emitting CSS is imported once, from the view's global stylesheet:
 
 ```scss title="src/views/menu/global.scss"
 @use "path/to/shared-styles";
@@ -308,11 +314,11 @@ Components pull in the mixins as before, while the file that emits CSS is import
 }
 ```
 
-:::caution[This gets worse as the project grows]
+:::caution[Cost Scales With Importer Count]
 
-The symptom is easy to miss, because nothing breaks. The UI looks right, the animation plays, and the only evidence is a stylesheet several times larger than the source suggests.
+Nothing breaks when this happens. The UI renders correctly and the animation plays. The only evidence is a compiled stylesheet several times larger than its source.
 
-It also scales the wrong way: the cost is the number of components importing the file, so a well-factored shared file used everywhere is the one that hurts most. If a compiled stylesheet is surprisingly large, search it for a repeated `@keyframes` block first.
+Cost scales with the number of components importing the file, so a widely reused shared file produces the most duplication. Search a compiled stylesheet for a repeated `@keyframes` block when its size is unexpected.
 
 :::
 

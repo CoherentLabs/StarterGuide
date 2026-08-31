@@ -9,7 +9,7 @@ import Summary from 'coherent-docs-theme/components/Summary.astro';
 import Highlight from 'coherent-docs-theme/components/Highlight.astro';
 
 <Summary>
-    Getting your custom fonts into Gameface is straightforward, but the engine scopes and falls back differently than a standard web browser. 
+    Getting your custom fonts into Gameface is straightforward, but Gameface scopes and falls back differently than a standard web browser. 
 
     This guide explains how fonts are shared between views and when they are released, how to architect reliable font fallbacks, 
     and how to build high-contrast text effects that keep a HUD readable against complex 3D environments.
@@ -100,15 +100,15 @@ Exactly as you would in a standard browser, you must explicitly define separate 
 
 In a standard web browser, fonts are scoped to the page you are currently viewing. Navigate to a new HTML page and the browser unloads the old fonts and parses the new ones, even when both pages asked for the same file.
 
-Gameface does not repeat that work. A loaded font is <Highlight>shared by every view that uses it</Highlight>, and the engine tracks which views those are. It stays in memory for as long as at least one of them is alive, and is released once the last one goes away.
+Gameface does not repeat that work. A loaded font is <Highlight>shared by every view that uses it</Highlight>, and Gameface tracks which views those are. The font stays in memory while at least one of those views exists, and is released when the last one is destroyed.
 
-That makes the common case free. If your Main Menu and your in-game HUD both use `SciFi-Header` and both are alive, the second view uses the already-parsed font rather than loading it again. It is common in games to share fonts across screens, and Gameface is built around that.
+Sharing between coexisting views therefore costs nothing. A Main Menu and an in-game HUD that both use `SciFi-Header` while both are alive share one parsed copy.
 
-Fonts do not outlive the views that use them, though. If the only view using `SciFi-Header` is destroyed, the font goes with it, and a view created later pays the full load and parse cost again. Views that are torn down and rebuilt repeatedly reload their fonts every time.
+Fonts do not outlive the views referencing them. Destroying the only view that uses `SciFi-Header` releases the font, and a view created afterwards pays the full load and parse cost again. Views that are repeatedly torn down and rebuilt reload their fonts on each cycle.
 
-:::tip[Keeping a font resident]
+:::tip[Keeping a Typeface Resident Across Screen Changes]
 
-If a font is expensive to parse and a screen using it gets created and destroyed often, the reliable fix is to have a long-lived view declare it too. A persistent HUD that never gets torn down keeps every face it references loaded, so screens that come and go find those faces already in memory.
+Declare an expensive typeface in a long-lived view when screens using it are created and destroyed frequently. A persistent HUD holds every typeface it references in memory, so transient screens find them already loaded.
 
 :::
 

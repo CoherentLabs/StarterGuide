@@ -15,7 +15,7 @@ import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Summary>
     This article explores how the <Highlight>cohtml.js</Highlight> library bridges the connection between the UI and the game engine, how it behaves
-    when no engine is attached, how to handle the asynchronous lifecycle of the engine, and how to utilize different communication patterns to
+    when Gameface is not attached, how to handle the asynchronous lifecycle of the engine, and how to utilize different communication patterns to
     synchronize your UI with the game state.
 </Summary>
 
@@ -24,17 +24,17 @@ import { Tabs, TabItem } from "@astrojs/starlight/components";
 In a typical browser environment the data is usually fetched from a server. In Gameface however the case is a bit different. Since the UI is running
 in a game engine environment, that <Highlight>engine is the "server"</Highlight> that the UI needs to communicate with.
 
-That connection is provided by the `cohtml.js` library, which exposes a global `engine` object. This object is the single point of entry for all native
-communication: from updating a player's health bar to triggering a "Quit Game" sequence passes through it.
+The `cohtml.js` library provides that connection and exposes a global `engine` object. Every native communication passes through it, from updating a
+player's health bar to triggering a "Quit Game" sequence.
 
-### Getting the Library
+### Getting cohtml.js
 
-Since <Highlight>Gameface 3.1.2</Highlight>, the SDK loads `cohtml.js` into every page for you. There is no script tag to add and no import to write. Your
-UI can use the `engine` object directly, and the rest of this article assumes it is already there.
+Since <Highlight>Gameface 3.1.2</Highlight>, the SDK loads `cohtml.js` into every page. No script tag or import is required, and the `engine` object is
+available directly. The rest of this article assumes it is present.
 
-:::note[On an SDK older than 3.1.2]
+:::note[SDK Versions Before 3.1.2]
 
-Before 3.1.2 the library had to be included by hand in every page that talked to the game. Copy `cohtml.js` out of your Gameface package, usually
+Earlier versions required including `cohtml.js` by hand in every page communicating with the game. Copy `cohtml.js` out of your Gameface package, usually from
 `Player/Samples/uiresources/library`, and reference it ahead of any script that uses `engine`:
 
 ```html title="index.html" ins={6}
@@ -49,7 +49,7 @@ Before 3.1.2 the library had to be included by hand in every page that talked to
 </html>
 ```
 
-In a framework project without an HTML file of its own, such as a Gameface UI view, import it at the top of the view component instead:
+A framework project without an HTML file of its own, such as a Gameface UI view, imports it at the top of the view component instead:
 
 ```tsx title="src/views/menu/Menu.tsx" ins={1}
 import 'js/cohtml.js';
@@ -60,19 +60,22 @@ import styles from './Menu.module.scss';
 
 ### Previewing in a Browser
 
-The SDK is what loads the library, and a plain browser does not have one. If you open your UI in Chrome rather than in the Player, `cohtml.js` is not
-there and the `engine` object does not exist, so anything touching it throws.
+The SDK loads `cohtml.js`, and a browser has no SDK. Opening your UI in Chrome rather than in the Player leaves `cohtml.js` absent and the `engine`
+object undefined, so any call against it throws.
 
-Include the library manually for that case and it handles the situation gracefully. On load it checks whether a native engine is attached and, finding
-none, replaces its own communication methods with mock implementations. Calls resolve against whatever mocks you have registered and otherwise do
-nothing, so your UI runs end to end in a browser without errors instead of failing at the first `engine` call.
+Including `cohtml.js` manually covers that case. On load it checks whether Gameface is attached. Finding nothing, it replaces its own communication
+methods with mock implementations, which resolve against registered mocks and otherwise do nothing.
 
-You can branch on this yourself through <Highlight>engine.isAttached</Highlight>, which is `false` in a browser and `true` when the SDK is present.
+<Highlight>Data-binding does not function in a browser.</Highlight> No Gameface instance exists to push models or receive calls, and nothing makes a browser
+understand them. What the mock implementations provide is a page that loads and runs instead of failing at the first `engine` call, which is enough to
+check whether a layout problem belongs to your markup or to Gameface.
 
-:::tip[Working without a backend]
+`engine.isAttached` reports this state directly. It is `false` in a browser and `true` when the SDK is present, so UI code can branch on it.
 
-Mock mode is what lets the UI team build screens before the game side exposes anything. [Mocking Data Models](/logic-and-interactions/engine-communication--data-mocking/mocking-data/)
-covers registering mocks so a browser or Player session behaves like a real game session.
+:::tip[Building Against Mocks]
+
+Mock mode allows the UI team to build screens before the game exposes any data. [Mocking Data Models](/logic-and-interactions/engine-communication--data-mocking/mocking-data/)
+covers registering mocks so that a browser or Player session behaves like a game session.
 
 :::
 
@@ -122,14 +125,14 @@ full IntelliSense for the engine API.
     reference comments.
 
     [Development Environment & Tools](/planning-and-setup/development-environment-and-tools/#typescript-typings) covers the rest of the Gameface typings,
-    including the DOM definitions that stop your editor suggesting browser APIs the engine does not implement.
+    including the DOM definitions that stop your editor suggesting browser APIs Gameface does not implement.
     </TabItem>
 
 </Tabs>
 
 ## Initialization & Lifecycle
 
-The `engine` object being available is not the same as the game being ready to talk to.
+Availability of the `engine` object does not mean the game is ready to receive calls.
 
 Your JavaScript may execute the moment the page loads, but the underlying game engine may still be initializing its own systems. Attempting to
 send or receive data before this handshake is complete will result in failed communication.

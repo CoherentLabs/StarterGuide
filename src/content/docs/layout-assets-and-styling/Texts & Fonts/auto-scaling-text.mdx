@@ -169,39 +169,41 @@ This way we can ensure that the text always comfortably fits within the containe
 
 ### How the Size Is Found
 
-Gameface finds the fitting size with a <Highlight>binary search</Highlight>. It tries the size in the middle of the allowed range, checks whether the text fits, and discards the half that cannot be right. Each attempt is a full text layout pass, but halving means a range of any realistic width is exhausted in a handful of them.
+Gameface resolves the fitting size with a <Highlight>binary search</Highlight>. It tests the size at the middle of the allowed range, checks whether the text fits, and discards the half that cannot contain the answer. Each test is a full text layout pass, and halving exhausts a range of any realistic width in a small number of them.
 
-The range depends on the mode, and the two modes treat `font-size` completely differently:
+The range depends on the mode, and the two modes treat `font-size` differently:
 
 | Mode | The search runs between |
 |---|---|
 | `fit` | `coh-font-fit-min-size` and `coh-font-fit-max-size` |
 | `shrink` | `coh-font-fit-min-size` and the element's `font-size` |
 
-In `fit` mode, `font-size` plays no part at all. The declared minimum and maximum are the entire range.
+`fit` mode does not read `font-size`. The declared minimum and maximum define the entire range.
 
-In `shrink` mode, `font-size` <Highlight>is the maximum</Highlight>. That follows from what the mode does: shrinking never grows text, so the size you declared is the largest it may ever render.
+`shrink` mode uses `font-size` as <Highlight>the maximum</Highlight>. Shrinking never enlarges text, so the declared size is the largest the element can render.
 
-:::caution[font-size Is a Ceiling, Not a Starting Point]
-Raising `font-size` on a `shrink` element does not help the engine find the answer faster. It raises the top of the search range and allows the text to render larger.
+:::caution[font-size as a Ceiling in Shrink Mode]
 
-If a label should never exceed 24px, `font-size: 24px` is how you say so. If you want a tighter search, that is what `coh-font-fit-min-size` is for.
+Raising `font-size` on a `shrink` element does not accelerate the search. It raises the top of the range and permits larger rendered text.
+
+Set `font-size: 24px` to cap a label at 24px. Use `coh-font-fit-min-size` to narrow the search from the other end.
+
 :::
 
-The result is always a whole pixel size. The search works in rounded integers, which is why a fitted label often stops just short of filling its container exactly.
+The search operates on rounded integers, so the result is always a whole pixel size. This is why a fitted label often stops slightly short of filling its container.
 
 ### Performance Considerations
 
-Fitting costs several text layout passes on the first frame an element renders, and because the search halves, the width of the range barely matters: the full 6px to 128px default span is about seven passes, and a tight range is about four. Narrowing the range saves you a pass or two, which is not a reason to restructure anything.
+Fitting costs several text layout passes on the first frame an element renders. The search halves, so range width has little effect: the default 6px to 128px span resolves in about seven passes and a tight range in about four. Narrowing the range saves one or two passes.
 
-Two things follow from that:
+Two consequences follow:
 
-* **This is a startup cost, not a frame-rate cost.** It is paid when the element first renders and again only if the text, the container size, or the relevant CSS changes. A screen full of fitted labels costs something on the frame it opens and nothing afterwards.
-* **Declare `coh-font-fit-max-size` anyway.** Not for speed, but because the engine writes a warning to the console every time it falls back to the 128px default, and because an explicit maximum documents what you actually intended.
+* **The cost is paid at startup rather than per frame.** It occurs when the element first renders, and again only when the text, the container size or the relevant CSS changes. A screen of fitted labels costs on the frame it opens and nothing afterwards.
+* **Declare `coh-font-fit-max-size` regardless.** Gameface writes a console warning each time it falls back to the 128px default, and an explicit maximum records the intended limit.
 
 ## Text Layout Caching
 
-Beyond font fitting, Gameface caches all text layout results in an internal **TextBoxDisplayer** cache. Before recalculating a text layout, the engine checks three conditions on each frame: has the text string changed, has the container width changed, and have any text CSS properties changed?
+Beyond font fitting, Gameface caches all text layout results in an internal **TextBoxDisplayer** cache. Before recalculating a text layout, Gameface checks three conditions on each frame: has the text string changed, has the container width changed, and have any text CSS properties changed?
 
 When all three pass, the engine reuses the cached result at near-zero cost. Any change to any one input invalidates the cache and triggers a full recalculation on that frame.
 

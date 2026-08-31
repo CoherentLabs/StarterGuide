@@ -138,23 +138,23 @@ keeps the data clean while handling formatting exactly where it belongs in the v
 
 :::
 
-:::caution[Match the Handler to the Update Rate]
+:::caution[Handler Cost Scales With Synchronization Rate]
 
-`update` runs on every `synchronizeModels()` call, not only when the bound value changes. The handler above therefore repeats its `Number()` conversion,
-`toString()`, regex replace and `textContent` write on every synchronization, whether gold moved or not.
+`update` runs on every `synchronizeModels()` call, not only when the bound value changes. The handler above repeats its `Number()` conversion,
+`toString()`, regex replace and `textContent` write on every synchronization regardless of whether gold changed.
 
-Gold is a good fit for this pattern because it changes when the player loots something. The same handler on a value the engine pushes continuously,
-ammo during sustained fire, or a health bar synchronized every frame, does all of that string work every frame forever. The cost scales with how often
-you synchronize, not with how many elements use the attribute.
+Gold suits this pattern because it changes through player action. The same handler applied to a continuously pushed value, such as ammo during
+sustained fire or a health value synchronized every frame, performs that string work on every frame. Cost scales with synchronization frequency
+rather than with the number of elements using the attribute.
 
-Compare against the last value you wrote and return early when nothing changed:
+Comparing against the last written value and returning early removes the work on unchanged frames:
 
 ```js title="formatted-number.js" ins={2,6,7,8,15}
 class FormattedNumber {
     #lastValue = null;
 
     update(element, value) {
-        // Nothing to do if the engine pushed the same number again
+        // Nothing to do if Gameface pushed the same number again
         if (value === this.#lastValue) return;
         this.#lastValue = value;
 
@@ -164,9 +164,8 @@ class FormattedNumber {
 }
 ```
 
-This is reasoning from the handler contract rather than a measurement of a shipped title, so treat it as a shape to prefer rather than a number to budget
-around. It matches what we have measured elsewhere though: writing to the DOM unconditionally instead of checking first is one of the more expensive
-habits in Gameface.
+This follows from the handler contract rather than from a measurement of a shipped title, so treat it as a pattern to prefer rather than a figure to
+budget against. It is consistent with a measured result: unconditional DOM writes are among the more expensive habits in Gameface.
 
 :::
 

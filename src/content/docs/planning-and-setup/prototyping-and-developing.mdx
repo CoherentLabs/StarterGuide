@@ -147,15 +147,17 @@ Let's put this structure into practice by creating a brand new "Inventory" view 
     export default Inventory;
     ```
 
-    That is the whole requirement. There is no HTML file to write and no `render` call to copy, because the boilerplate generates both for you from the folder and the component it finds inside it.
+    No HTML file and no `render` call are required. The boilerplate generates both from the folder and the component it finds inside it.
 
-    :::note[Naming the component after its folder]
-    The match is loose: case and separators are ignored, so `chart-playground/ChartPlayground.tsx` works just as well as `inventory/Inventory.tsx`.
+    :::note[Folder and Component Name Matching]
 
-    What matters is that the names correspond. A folder with no matching component file is not a view, so it will not be served and will not be built.
+    The match ignores case and separators, so `chart-playground/ChartPlayground.tsx` resolves the same way as `inventory/Inventory.tsx`.
+
+    A folder with no matching component file is not a view. It will not be served and will not be built.
+
     :::
 
-    Everything else this view needs, additional components, helpers, assets, lives in the same folder alongside the component.
+    Anything else the view needs, such as additional components, helpers and assets, lives in the same folder alongside the component.
 
 3. #### **Test the View**
     Make sure your dev server is running (`npm run dev`), then open your Gameface Player and point it at your new view:
@@ -167,8 +169,10 @@ Let's put this structure into practice by creating a brand new "Inventory" view 
 
     You should see a bright orange square with the word "Inventory" rendered in the Player!
 
-    :::tip[Skip the restart next time]
-    Pointing the Player at `http://localhost:3000` instead loads a page listing every view in your project, with a link to each one. It renders inside the Player, not just the browser, so you can launch once and click between views while you work instead of editing the launch command each time.
+    :::tip[Switching Views Without Relaunching]
+
+    Pointing the Player at `http://localhost:3000` loads a page listing every view in the project, with a link to each. The page renders inside the Player as well as in a browser, so a single launch covers switching between views without editing the launch command.
+
     :::
 
     ![Inventory view image](../../../assets/phase-2/prototyping-and-developing/inventory-view.png)

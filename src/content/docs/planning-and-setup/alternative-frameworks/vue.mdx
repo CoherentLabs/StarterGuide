@@ -93,13 +93,13 @@ The steps below only cover the Vue-specific mechanics. [Mocking Data Models](/lo
 <Steps>
 
 1. #### Add the cohtml typings
-    Data-binding needs the `engine` global, which comes from `cohtml.js`. Since <Highlight>Gameface 3.1.2</Highlight> the SDK loads that library into the page for you, so there is nothing to import for it to work in the Player.
+    Data-binding requires the `engine` global, which `cohtml.js` provides. Since <Highlight>Gameface 3.1.2</Highlight> the SDK loads that library into the page, so no import is required for it to work in the Player.
 
-    What you do still need is the declaration file. Copy `cohtml.d.ts` out of your Gameface package (`Player/Samples/uiresources/library`) into `src/data/` so TypeScript knows the `engine` global exists.
+    The declaration file is still required. Copy `cohtml.d.ts` out of your Gameface package (`Player/Samples/uiresources/library`) into `src/data/` so TypeScript recognises the `engine` global.
 
-    :::note[Previewing in a browser, or running an older SDK]
+    :::note[Browser Preview and Pre-3.1.2 SDKs]
 
-    A browser has no SDK to load the library, so `engine` is undefined and any call to it throws. Copy `cohtml.js` across as well and import it once in your entry point:
+    A browser has no SDK to load the library, so `engine` is undefined and any call against it throws. Copy `cohtml.js` across as well and import it once in your entry point:
 
     ```diff lang="ts" title="src/main.ts"
     import 'virtual:uno.css';
@@ -108,7 +108,7 @@ The steps below only cover the Vue-specific mechanics. [Mocking Data Models](/lo
     import App from './App.vue';
     ```
 
-    The library notices there is no engine attached and swaps in mock implementations, so the UI runs without errors and your registered mocks drive it. The same import is required throughout on SDKs older than 3.1.2.
+    The library detects that no engine is attached and substitutes mock implementations, so the UI runs without errors and registered mocks supply the data. SDKs older than 3.1.2 require this import in all cases.
 
     :::
 

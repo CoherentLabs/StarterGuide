@@ -64,9 +64,9 @@ For advanced configuration (custom data-bind attributes, model validation, tunin
 
 ### TypeScript Typings
 
-The linter catches unsupported patterns after you write them. Typings stop your editor suggesting them in the first place, which is the same argument one step earlier in the process.
+The linter reports unsupported patterns after you write them. Typings prevent your editor from suggesting them at all.
 
-By default TypeScript loads the standard DOM library, so autocomplete happily offers you the entire browser API surface. Gameface implements a subset of it. Swapping that library for the definitions shipped in your Gameface package turns autocomplete into a constraint check: if the editor does not offer it, the engine does not have it.
+TypeScript loads the standard DOM library by default, so autocomplete offers the entire browser API surface. Gameface implements a subset of it. Replacing that library with the definitions shipped in your Gameface package converts autocomplete into a constraint check: an API the editor does not offer is one the engine does not implement.
 
 Two definition files ship in <Highlight>`Samples\uiresources\library\`</Highlight> inside your Gameface package:
 
@@ -80,11 +80,13 @@ Point your `tsconfig.json` at them, and list only the language features you need
     "compilerOptions": {
         "target": "ES2015",
         "module": "ES2015",
-        // No "DOM" entry - that is the point. Gameface's own
-        // definitions replace it via the include below.
+        // No "DOM" entry. Gameface's own definitions replace it
+        // through the declaration files included below.
         "lib": ["ES5", "ES2015.Iterable", "ES2015.Promise", "ES2015.Core"]
     },
-    "include": ["lib/**/*.d.ts"]
+    // Your own sources must stay listed here, alongside the
+    // declaration files, or they are excluded from type-checking.
+    "include": ["src/**/*", "lib/**/*.d.ts"]
 }
 ```
 
@@ -98,7 +100,7 @@ npm install --save-dev @types/node
 
 :::
 
-The Gameface UI template ships with this already configured, so this section is for teams building their own setup or retrofitting typings onto an existing project. Full details are in the <Link href="https://docs.coherent-labs.com/cpp-gameface/content_development/typescript/">TypeScript documentation</Link>.
+The Gameface UI template ships with this configuration in place. This section applies to teams building their own setup or adding typings to an existing project. Full details are in the <Link href="https://docs.coherent-labs.com/cpp-gameface/content_development/typescript/">TypeScript documentation</Link>.
 
 ## 2. The Local Sandbox: Gameface Player
 
