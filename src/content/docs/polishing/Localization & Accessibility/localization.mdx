@@ -221,9 +221,11 @@ Use `fit` when visual consistency across languages matters more than text size v
 }
 ```
 
-:::caution[Set font-size Close to the Target]
+:::caution[Declare Your Bounds, Not a Starting Size]
 
-`coh-font-fit-mode` uses a linear search starting from the element's declared `font-size`. If an element starts at `16px` but the container requires a `52px` fit, the algorithm runs 36 iterations to reach the result. **Always set `font-size` to a value close to the expected final rendered size** to minimize the number of layout passes. The [Auto-Scaling Text](/layout-assets-and-styling/texts--fonts/auto-scaling-text/) article covers the full performance profile of this property.
+`coh-font-fit-mode` finds the size with a binary search, so the range it searches matters more than any single declaration. In `fit` mode that range is `coh-font-fit-min-size` to `coh-font-fit-max-size`, and `font-size` is not consulted at all. In `shrink` mode, `font-size` is the **upper bound**, the largest the text may render.
+
+**Always declare `coh-font-fit-max-size` explicitly**, both to silence the engine warning about the 128px default and to state the ceiling you actually intended for a translated string. The [Auto-Scaling Text](/layout-assets-and-styling/texts--fonts/auto-scaling-text/) article covers the mechanic in full.
 
 :::
 

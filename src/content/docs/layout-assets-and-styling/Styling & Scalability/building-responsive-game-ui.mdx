@@ -129,9 +129,9 @@ If you want to avoid the JavaScript bottleneck entirely, you can manually calcul
 Assuming our reference wireframe was designed at 1920x1080, and we want our base `1rem` to equal `16px` at that resolution, we calculate the viewport height percentage: 
 `(16px / 1080px) * 100 = 1.4814vh`.
 
-Add this rule to the top of your `index.css`:
+Root font size applies to the whole project, so this rule belongs in a global stylesheet rather than a scoped one. In the Gameface UI boilerplate that is `src/views/global.scss`, which loads ahead of every view:
 
-```css title="index.css"
+```scss title="src/views/global.scss"
 html {
   font-size: 1.4814vh;
 }

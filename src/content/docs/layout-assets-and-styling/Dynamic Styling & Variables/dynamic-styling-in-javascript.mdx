@@ -37,6 +37,42 @@ Here is the hidden pipeline that executes every single frame when you concatenat
 This unnecessary round-trip wastes critical CPU cycles. To keep your UI rendering lightning-fast, <Highlight>you must eliminate string concatenation</Highlight>. 
 :::
 
+## Allocations in Per-Frame Code
+
+Strings are not the only allocation in a per-frame path. An arrow function written inline allocates a new <Highlight>function object</Highlight> every time the surrounding code runs.
+
+The handler below creates its callback on each call, and nothing reuses it:
+
+```javascript
+// ❌ A new closure is allocated on every call
+const onWeaponFired = () => {
+    setTimeout(() => setRecoilActive(false), 500);
+};
+```
+
+Hoisting the callback out of the handler allocates it once:
+
+```javascript
+// ✅ Allocated once, reused on every call
+const clearRecoil = () => setRecoilActive(false);
+
+const onWeaponFired = () => {
+    setTimeout(clearRecoil, 500);
+};
+```
+
+Object and array literals behave the same way. A vector constructed inside a per-frame update, an options object passed to the same call each frame, and an array assembled to be iterated once all allocate at frame rate.
+
+:::caution[Scope: Per-Frame Code Only]
+
+This applies to code whose execution frequency justifies it: `requestAnimationFrame` callbacks, continuously firing Gameface event handlers, `data-bind` handlers, and anything reached from a per-frame update.
+
+Closures in code that runs on a menu opening or a button click carry no measurable cost. Hoisting every callback in a codebase reduces readability without a performance return. The relevant question is how many times per second the line executes.
+
+:::
+
+Garbage collection cost does not appear in average frame times. It arrives as an occasional stall, so a profile reporting healthy median frame times can still contain collector pauses. Inspect worst-frame numbers to find it.
+
 ## State Changes: The Classes-First Method
 
 For discrete UI state changes (such as opening a menu, hiding a tooltip, or marking an inventory slot as active), 

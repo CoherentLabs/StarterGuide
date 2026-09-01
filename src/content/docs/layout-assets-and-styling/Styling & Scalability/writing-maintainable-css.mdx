@@ -38,6 +38,43 @@ In a game engine environment, style recalculations happen frequently.
 Forcing the engine to constantly parse deep, complex selector chains for hundreds of UI elements will artificially inflate the "Style Solve" phase of your frame. 
 To maximize performance and keep your CPU footprint minimal, <Highlight>CSS selectors should be as flat as possible.</Highlight>
 
+### Enforcing Flat Selectors Per View
+
+A selector counts as complex when Gameface must walk the DOM tree to resolve a match. The definition covers more than deep nesting:
+
+* **Any combinator.** Descendant (`.a .b`), child (`.a > .b`), adjacent sibling (`.a + .b`), general sibling (`.a ~ .b`).
+* **Tree-dependent pseudo-classes**, such as `:first-child`, `:last-child` and `:nth-child()`.
+
+Consider a slot inside an inventory grid, where the icon needs styling and the first slot needs a modifier:
+
+```html title="inventory.html"
+<div class="inventory">
+    <div class="slot slot--first">
+        <img class="inventory__item-icon" src="sword.png" />
+    </div>
+</div>
+```
+
+The first pair of selectors below requires ancestor and sibling lookups. The second pair resolves against a single element:
+
+```css title="selectors.css"
+/* ❌ Complex: two combinators and a tree-dependent pseudo-class */
+.inventory > .slot .item-icon { }
+.slot:first-child { }
+
+/* ✅ Simple: each element carries the class it is matched on */
+.inventory__item-icon { }
+.slot--first { }
+```
+
+:::tip[Guarding a Flat Stylesheet]
+
+Gameface exposes a per-view setting, `EnableComplexCSSSelectorsStyling`, controlling whether complex selectors are evaluated at all. It is enabled by default, since most web CSS relies on them.
+
+A UI that does not require complex selectors can have your engineering team disable it. That does not speed up a stylesheet which is already flat, since the cost belongs to the selectors themselves. What it does is prevent a complex selector from being introduced later without anyone noticing.
+
+:::
+
 ## The BEM Methodology
 
 To solve the problem of complex selectors while maintaining a clean, readable codebase, 
@@ -51,7 +88,7 @@ BEM is a naming convention that keeps your selectors <Highlight> incredibly flat
 
 ### Before vs. After BEM
 
-Let's look at a common game UI component-a player card in a social menu. First, here is the HTML structure we want to style:
+Let's look at a common game UI component - a player card in a social menu. First, here is the HTML structure we want to style:
 
 <Tabs>
     <TabItem label="SolidJS">
@@ -225,6 +262,64 @@ With SASS mixins, you can keep your HTML clean and your BEM selectors completely
 When this SASS compiles, the properties inside the mixin are physically duplicated into every CSS class that includes it. 
 While this slightly increases the final `.css` file size, it guarantees that the Gameface engine only has to evaluate a single, flat selector. 
 In game UI, trading a tiny bit of memory for faster CPU style-matching is exactly what we want!
+:::
+
+### CSS in Shared SASS Files
+
+Mixin duplication is a deliberate trade. The same duplication becomes unintentional when a shared file contains CSS rather than SASS constructs.
+
+SASS compiles each entry point in isolation. Two components that `@use` the same partial compile that partial once <Highlight>per component</Highlight>, so anything in it emitting CSS is written into both outputs. Variables, mixins and functions emit nothing on their own. Style blocks, `@keyframes` and `@font-face` are duplicated into every file that reaches them.
+
+The partial below holds a mixin and the keyframes that mixin references:
+
+```scss title="shared.scss"
+// Emits nothing by itself
+@mixin fade-in() {
+    animation: fade-in 200ms;
+}
+
+// Emits CSS, and will do so once per importing component
+@keyframes fade-in {
+    from { opacity: 0; }
+}
+```
+
+Each component that `@use`s this file receives its own copy of `@keyframes fade-in` in the compiled output. Ten importing components produce ten copies of every rule in the file, all of which Gameface parses and holds in memory.
+
+Split the file by what it emits rather than by subject:
+
+```scss title="shared.scss (SASS items only)"
+@mixin fade-in() {
+    animation: fade-in 200ms;
+}
+```
+
+```scss title="shared-styles.scss (CSS items only)"
+@keyframes fade-in {
+    from { opacity: 0; }
+}
+```
+
+Components import the mixins as before. The file emitting CSS is imported once, from the view's global stylesheet:
+
+```scss title="src/views/menu/global.scss"
+@use "path/to/shared-styles";
+```
+
+```scss title="MainMenu.module.scss"
+@use "path/to/shared";
+
+.main-menu {
+    @include shared.fade-in;
+}
+```
+
+:::caution[Cost Scales With Importer Count]
+
+Nothing breaks when this happens. The UI renders correctly and the animation plays. The only evidence is a compiled stylesheet several times larger than its source.
+
+Cost scales with the number of components importing the file, so a widely reused shared file produces the most duplication. Search a compiled stylesheet for a repeated `@keyframes` block when its size is unexpected.
+
 :::
 
 ## Alternative Approaches

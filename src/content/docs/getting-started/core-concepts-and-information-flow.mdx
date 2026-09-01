@@ -65,6 +65,8 @@ Here is a common, optimized approach to structuring a game:
 * **The Main Menu SPA:** Build your main menu as a Single Page Application. When the player clicks from "Play" to "Settings", use routing to swap the content dynamically within the same view.
 * **The HUD Static Page:** Keep your HUD as a highly optimized, single HTML file without any complex routing. Hide and show widgets strictly through data-binding triggers.
 
-:::warning
+:::caution
 Avoid using complex routing or heavy state-management libraries for simple Spatial or HUD views. Keep your active DOM tree small, and rely on `data-bind-if` to add or remove elements only when they are explicitly needed by the player.
 :::
+
+Splitting the UI into views is one of several architectural decisions that are cheap to make early and expensive to reverse later. [Performance Defaults](/planning-and-setup/performance-defaults/) covers the rest of them.

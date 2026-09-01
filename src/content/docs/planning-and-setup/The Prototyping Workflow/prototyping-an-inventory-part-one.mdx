@@ -32,11 +32,11 @@ Before building the layout, we need to set up the global styles for our view. Th
 Just like in the browser, Gameface keeps some default styles on elements like `body`, and `h1` or other heading tags. 
 To ensure a consistent starting point, we apply a global CSS reset that removes default margins, paddings, and sets some rules for our project.
 
-The best place to do such resets is in the `index.css` file which is the style root for our `inventory` view.
+These rules target bare element selectors, so they cannot live in a scoped module stylesheet. They belong in a `global.scss` file, which is the style root for our `inventory` view.
 
-Put the following code in `src/views/inventory/index.css`:
+Put the following code in `src/views/inventory/global.scss`:
 
-```css title='index.css'
+```scss title='global.scss'
 h1,h2,h3,h4,h5,h6 {
   margin: 0;
 }
@@ -53,14 +53,16 @@ body {
 Adding the `width: 100vw` and `height: 100vh` rules to the body ensures that our view will take up the entire screen space in the Player, regardless of the resolution.
 
 :::tip
-Doing the resets in the `index.css` files allows for easy overrides for specific elements if needed, avoiding specificity issues down the line.
+Doing the resets in `global.scss` allows for easy overrides for specific elements if needed, avoiding specificity issues down the line.
+
+If a rule should apply to every view in the project rather than just this one, put it in `src/views/global.scss` instead. That file loads before each view's own `global.scss`, so a view can still override it.
 :::
 
 #### Adding border for visual debugging (optional)
 
 To help us visualize the layout as we build it, we can add a class that will add a temporary border to all elements.
 
-```css title='index.css'
+```scss title='global.scss'
 .test-border {
   border: 1px solid white;
 }
@@ -72,7 +74,7 @@ This is especially useful for debugging spacing and alignment issues.
 ### Responsive UI Scaling
 
 When building game UI, hardcoding static pixel values (like `font-size: 16px` or `width: 300px`) creates scaling issues. 
-A UI designed at 1080p will appear incorrectly proportioned-massive on a 720p display and tiny on a 4K display.
+A UI designed at 1080p will appear incorrectly proportioned - massive on a 720p display and tiny on a 4K display.
 
 To resolve this for our prototype, we will tie the root font-size of the document to the <Highlight>Viewport Height (vh)</Highlight>. 
 By doing this, any element sized using <Highlight>rem</Highlight> units will scale proportionally to the screen's resolution.
@@ -80,13 +82,15 @@ By doing this, any element sized using <Highlight>rem</Highlight> units will sca
 Assuming our reference wireframe was designed at a standard 1920x1080 resolution, and we want our base `1rem` to equal `16px` at that resolution, we calculate the viewport height percentage:
 `(16px / 1080px) * 100 = 1.4814vh`.
 
-Add this rule to the top of your index.css:
+Root font size is a project-wide decision rather than a per-view one, so this rule belongs in the shared `src/views/global.scss` that applies to every view:
 
-```css title='index.css'
+```scss title='src/views/global.scss'
 html {
   font-size: 1.4814vh;
 }
 ```
+
+The boilerplate already sets a root font size there, so you are adjusting the existing rule rather than adding a second one.
 
 With this rule applied, using `rem` for `margins`, `paddings`, and dimensions ensures the layout scales predictably. 
 
@@ -126,9 +130,9 @@ For a better file structure, we recommend creating a `fonts` subfolder inside `s
 
 </FileTree>
 
-Once you have added the assets, add the following snippet to the top of your `src/views/inventory/index.css`:
+Once you have added the assets, add the following snippet to the top of your `src/views/inventory/global.scss`:
 
-```css title='index.css'
+```scss title='global.scss'
 @font-face {
     font-family: 'Cinzel';
     /* Use a relative path so Vite processes the asset during the build */
@@ -194,7 +198,7 @@ We will build this up step-by-step, starting from the outermost containers down 
 
 ### Declaring modular stylesheet and SCSS variables
 
-Before writing the JSX, we should set up the styles for the inventory view. Apart from the global styles in `index.css`, we will also create a modular stylesheet for the inventory layout.
+Before writing the JSX, we should set up the styles for the inventory view. Apart from the global styles in `global.scss`, we will also create a modular stylesheet for the inventory layout.
 This will ensure that our styles are scoped to this view and do not interfere with other parts of the project.
 
 Create a new file named `Inventory.module.scss` in your view folder. Then, open your main component file (`Inventory.tsx`) and import the styles so they are ready to use:

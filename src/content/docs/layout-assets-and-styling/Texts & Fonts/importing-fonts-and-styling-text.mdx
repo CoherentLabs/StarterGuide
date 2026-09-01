@@ -9,10 +9,10 @@ import Summary from 'coherent-docs-theme/components/Summary.astro';
 import Highlight from 'coherent-docs-theme/components/Highlight.astro';
 
 <Summary>
-    Getting your custom fonts into Gameface is straightforward, but the engine handles global scopes and fallbacks differently than a standard web browser. 
+    Getting your custom fonts into Gameface is straightforward, but Gameface scopes and falls back differently than a standard web browser. 
 
-    This guide explores the global persistence of fonts across different views, explains how to architect reliable font fallbacks, 
-    and demonstrates how to build high-contrast text effects to ensure HUD readability against complex 3D environments.
+    This guide explains how fonts are shared between views and when they are released, how to architect reliable font fallbacks, 
+    and how to build high-contrast text effects that keep a HUD readable against complex 3D environments.
 </Summary>
 
 ## How Gameface Renders Text: SDF, Raster, and Path Tessellation
@@ -96,18 +96,25 @@ Exactly as you would in a standard browser, you must explicitly define separate 
 }
 ```
 
-### The Gameface Difference: Global Persistence
+### The Gameface Difference: Fonts Are Shared Between Views
 
-In a standard web browser, fonts are scoped to the specific page you are currently viewing. If you navigate to a new HTML page, the browser unloads the old fonts and parses the new ones. 
+In a standard web browser, fonts are scoped to the page you are currently viewing. Navigate to a new HTML page and the browser unloads the old fonts and parses the new ones, even when both pages asked for the same file.
 
-Gameface behaves entirely differently. A major difference from the HTML Standard is that <Highlight>fonts are global</Highlight> to the whole system and not unloaded after changing views. 
+Gameface does not repeat that work. A loaded font is <Highlight>shared by every view that uses it</Highlight>, and Gameface tracks which views those are. The font stays in memory while at least one of those views exists, and is released when the last one is destroyed.
 
-If you load `SciFi-Header` in your Main Menu view, it stays in memory and can be used immediately in your in-game HUD view without being re-downloaded or re-parsed. 
-Gameface keeps the fonts  <Highlight>alive</Highlight> because it is common behavior in games to use the same fonts across multiple pages, avoiding the performance hit of reloading the same asset.
+Sharing between coexisting views therefore costs nothing. A Main Menu and an in-game HUD that both use `SciFi-Header` while both are alive share one parsed copy.
+
+Fonts do not outlive the views referencing them. Destroying the only view that uses `SciFi-Header` releases the font, and a view created afterwards pays the full load and parse cost again. Views that are repeatedly torn down and rebuilt reload their fonts on each cycle.
+
+:::tip[Keeping a Typeface Resident Across Screen Changes]
+
+Declare an expensive typeface in a long-lived view when screens using it are created and destroyed frequently. A persistent HUD holds every typeface it references in memory, so transient screens find them already loaded.
+
+:::
 
 :::caution[Overwriting Fonts]
-Because fonts are globally persistent, registered fonts are kept loaded and cannot be overwritten. 
-Subsequent `@font-face` declarations that match the exact same font description of a previously registered font will <Highlight>simply be ignored</Highlight>. 
+While a font is registered it is kept loaded and cannot be overwritten. 
+Subsequent `@font-face` declarations that match the exact same font description of an already registered font will <Highlight>simply be ignored</Highlight>. 
 
 :::note[Font Description]
 Note that the "font description" includes the weight and style. If you load `Roboto` (`font-weight: normal`) in View 1, and `Roboto` (`font-weight: bold`) in View 2, 

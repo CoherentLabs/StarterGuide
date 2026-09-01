@@ -129,6 +129,45 @@ rate.
 
 :::
 
+#### Composed Conditions and Single Model Fields
+
+Composed booleans are the expression form furthest from the native path. A button's disabled state assembled in the view from four model properties
+re-evaluates the entire condition on every synchronization:
+
+```html
+<!-- ❌ Several model reads and a nested condition, re-run on every sync -->
+<button data-bind-class-toggle="disabled:{{shop.locked}} || ({{cart.total}} === 0) || ({{player.busy}} && {{player.inCombat}})">
+```
+
+The game resolves each of these inputs before the UI receives them. Sending a single `shop.purchaseDisabled` boolean reduces the binding to a native
+property read and places the rule where it can be tested:
+
+```html
+<!-- ✅ One property, native path -->
+<button data-bind-class-toggle="disabled:{{shop.purchaseDisabled}}">
+```
+
+Requesting one field from the model is usually cheaper than optimizing the expression, and it prevents the UI's copy of a rule from diverging from
+the game's.
+
+:::caution[String Allocation During Evaluation]
+
+String concatenation inside a binding produces a new string on every evaluation, not only when the value changes. A binding that synchronizes every
+frame therefore allocates every frame, and the [allocation guidance](/layout-assets-and-styling/dynamic-styling--variables/dynamic-styling-in-javascript/#allocations-in-per-frame-code)
+for JavaScript applies to it.
+
+The cost is negligible on a value that changes through player action and significant on a continuously synchronized one. Helper functions hide the
+work behind a call:
+
+```js
+// Executes on every evaluation, allocating a string each time
+export const getIcon = (item) => `coui://base/uiresources/symbols/${item}`;
+```
+
+An icon path is fixed for a given item, so the game can send the resolved path with the item and reduce the binding to a property read.
+
+:::
+
 ### Array Access
 
 Array indexing inside `{{ }}` requires a <Highlight>numeric literal</Highlight> index:
@@ -280,6 +319,24 @@ If you need a different unit (like percentages), you must produce a string that 
 <!-- Concatenate the '%' sign to produce a string like "65%" -->
 <div data-bind-style-width="{{EnemyModel.healthPercent}} + '%'"></div>
 ```
+
+:::note[Concatenation on Continuously Synchronized Values]
+
+The `+ '%'` above builds a new string on every evaluation. That cost is negligible on a value changing through player action and significant on a
+health bar the game synchronizes continuously.
+
+Two alternatives avoid it:
+
+* **Send the string from the model.** A `healthPercentCss` field carrying `"65%"` reduces the binding to a single property read on the native path,
+  with the concatenation performed once on the game side rather than once per synchronization.
+* **Bind a raw pixel number.** A bar inside a track of known width can bind `data-bind-style-width` to a plain number, which resolves under the
+  default-unit rule above and produces no string.
+
+Changing `width` also forces a layout pass on every frame, which `transform` does not. Driving a continuously updating bar through a transform in
+CSS and JavaScript avoids both costs, and [Dynamic Styling in JavaScript](/layout-assets-and-styling/dynamic-styling--variables/dynamic-styling-in-javascript/)
+covers that approach.
+
+:::
 
 ### Practical usages
 

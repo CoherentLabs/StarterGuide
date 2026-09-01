@@ -23,13 +23,40 @@ The Player ships with your Gameface package. Run it with the provided launcher f
 - **Windows:** `Player.bat`
 - **macOS:** `Player.sh`
 
+## The Player GUI
+
+The Player provides its own window controls, live statistics and a console, so most day-to-day work does not require an external tool.
+
+![The Gameface Player window, showing the stats strip in the title bar, the toolbar with its address bar, and the console panel docked at the bottom](../../../assets/phase-1/the-gameface-player/player-gui.png)
+
+### Statistics Strip
+
+The title bar reports frame time, FPS, memory used, allocation count, allocations and time in the last frame, and GPU memory. These update continuously, which makes rising frame time visible during editing without opening a profiler.
+
+### Toolbar
+
+The toolbar provides navigation and reload, plus four Player-specific controls:
+
+- **Address bar** - loads a local file path or an `http://` address. `Ctrl+L` focuses it.
+- **Bookmarks** - the star bookmarks the current page, and the bookmark bar holds frequently used views. Bookmarks are stored in `CohtmlBookmarks.html` next to the Player executable, in the standard HTML bookmarks format, so a file exported from any browser can be imported.
+- **Aspect ratio** - defaults to <Highlight>Fill</Highlight>, which uses the whole window. Selecting a fixed ratio letterboxes the view, which tests a 21:9 or 4:3 layout without resizing the window or changing display resolution.
+- **Console toggle** - shows and hides the console panel.
+
+`Ctrl+F11` hides the entire GUI. The toolbar occupies space the game will not, so hide it before evaluating a layout or capturing a screenshot.
+
+### Console Panel
+
+The console docks to the bottom of the window and carries timestamped Gameface and JavaScript output, with **Clear**, **Copy All**, **Auto-scroll** and **Hide Console** controls.
+
+Gameface reports unsupported CSS properties here, which makes this the first place to check when a rule parses but produces no visible effect. These warnings are not forwarded to Chrome DevTools, so the Player's console is the only place they appear.
+
 ## Loading UI
 
 The Player supports several ways to load your HTML pages:
 
 - **Drag and drop** - drag an HTML file from your file system directly onto the Player window.
-- **Address bar** - type a URL (local file path or `http://` address) directly into the address bar.
-- **Bookmarks** - use the bookmark bar and manager for quick access to frequently used pages. Bookmarks are stored in `CohtmlBookmarks.html` next to the Player executable, using the standard HTML bookmarks format, so you can import bookmarks exported from any browser.
+- **Address bar** - type a URL (local file path or `http://` address) directly into the toolbar.
+- **Bookmarks** - saved pages from the bookmark bar and manager.
 - **HTTP and WebSockets** - the Player supports loading from a local HTTP server, which enables <Highlight>Hot Module Replacement (HMR)</Highlight> with tools like Vite and Webpack. See [Setting up the Gameface Stack](/planning-and-setup/recommended-tech-stack/setting-up-the-gameface-stack/) for the full HMR setup.
 
 ## Input Handling
@@ -107,6 +134,8 @@ The Player previously used a `Config.json` file with a limited set of options (`
 
 ## DevTools and Debugging
 
+Check the Player's console first, since it carries Gameface's own warnings alongside JavaScript output and some of those warnings never reach Chrome. DevTools then covers what the console cannot: the live DOM tree, computed styles, registered data-binding models, performance traces and the GPU debugging overlays.
+
 Press **F12** while the Player is running to open DevTools. The Player starts an HTTP server on port **9444** by default, and Chrome connects to it as a remote debugging target.
 
 **To connect:**
@@ -121,7 +150,7 @@ Press **F12** while the Player is running to open DevTools. The Player starts an
 From there, DevTools gives you:
 
 - **Elements panel** - inspect and modify the DOM tree, view computed styles, and use the **Data Binding tab** to inspect `data-bind-*` attributes and their evaluated values.
-- **Console** - view JavaScript logs and errors.
+- **Console** - JavaScript logs and errors, plus an interactive prompt for evaluating expressions against the running view. It does not receive everything the Player's own console shows. Warnings raised by Gameface itself, such as reports of unsupported CSS properties, appear only in the Player.
 - **Sources** - debug JavaScript and set breakpoints.
 - **Performance** - profile rendering: style recalculations, layout, script execution, GPU time, and paint.
 - **Network** - inspect resource requests and WebSocket messages.

@@ -138,6 +138,37 @@ keeps the data clean while handling formatting exactly where it belongs in the v
 
 :::
 
+:::caution[Handler Cost Scales With Synchronization Rate]
+
+`update` runs on every `synchronizeModels()` call, not only when the bound value changes. The handler above repeats its `Number()` conversion,
+`toString()`, regex replace and `textContent` write on every synchronization regardless of whether gold changed.
+
+Gold suits this pattern because it changes through player action. The same handler applied to a continuously pushed value, such as ammo during
+sustained fire or a health value synchronized every frame, performs that string work on every frame. Cost scales with synchronization frequency
+rather than with the number of elements using the attribute.
+
+Comparing against the last written value and returning early removes the work on unchanged frames:
+
+```js title="formatted-number.js" ins={2,6,7,8,15}
+class FormattedNumber {
+    #lastValue = null;
+
+    update(element, value) {
+        // Nothing to do if Gameface pushed the same number again
+        if (value === this.#lastValue) return;
+        this.#lastValue = value;
+
+        const num = Number(value);
+        // ... formatting as above
+    }
+}
+```
+
+This follows from the handler contract rather than from a measurement of a shipped title, so treat it as a pattern to prefer rather than a figure to
+budget against. It is consistent with a measured result: unconditional DOM writes are among the more expensive habits in Gameface.
+
+:::
+
 ## Stateful Handlers: Typewriter Effect
 
 Some attributes must manage internal state over time independent of the model synchronization loop. A typewriter effect requires an independent

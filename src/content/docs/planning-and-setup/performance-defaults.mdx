@@ -1,0 +1,149 @@
+---
+title: "Performance Defaults"
+description: "Ten architectural decisions to make before you write UI code, so that the expensive problems never get built in. Each one links to the article that argues for it in full."
+sidebar:
+    order: 2
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+
+<Summary>
+    Most Gameface performance work goes into reversing architectural decisions rather than fixing defects. Those decisions are made early, before any part of the UI is slow, and their cost appears much later.
+
+    This article lists the ten defaults that avoid them. Each gives the decision, the mechanical reason behind it, and a link to the article covering it in full.
+</Summary>
+
+## Scope of These Defaults
+
+Each default has a context where the opposite choice is correct. Game UI varies too much for a fixed rule set. What they provide is a starting position that holds often enough that departing from one becomes a deliberate decision.
+
+For a UI that is already built and already slow, [The Performance Playbook](/polishing/performance-playbook/) covers diagnosis by symptom instead.
+
+---
+
+## Splitting the UI into Views
+
+A <Highlight>view</Highlight> is an HTML document Gameface loads, and constructing one is expensive. One view per screen is the most expensive version of this decision and the hardest to reverse, because screens get built against the split.
+
+The test is not whether two things are different screens. It is <Highlight>whether they are created and destroyed together</Highlight>. A main menu and its settings panel appear and disappear as a unit, so they belong in one view with routing between them. A HUD exists while the player is in the world, independent of the menu, so it is a separate view.
+
+Most projects need a handful of views. A count approaching a dozen indicates a split by screen rather than by lifetime.
+
+See [Core Concepts and Information Flow](/getting-started/core-concepts-and-information-flow/#best-practices-minimizing-views).
+
+## DOM Construction and Reuse
+
+Tearing down a screen's DOM and rebuilding it pays element construction, style resolution, layout and GPU work in the same frame.
+
+Update the rows that changed when a list changes. Rebuilding a list because one value moved is the largest avoidable cost measured in Gameface, and it scales with row count.
+
+See [Observable Models and Virtual Lists](/logic-and-interactions/data-binding--ui-state/observable-models-and-virtual-lists/).
+
+## Hiding Against Unmounting
+
+Hiding an element and removing it carry opposite cost profiles. Hiding costs a small amount on every frame the element stays hidden. Removing costs nothing while the element is absent and a large amount when it returns.
+
+Reuse frequency decides which applies. An inventory the player opens forty times per match stays mounted and toggles visibility. A credits screen or a single-use tutorial overlay is removed.
+
+See [DOM Management](/layout-assets-and-styling/styling--scalability/dom-management/).
+
+## Offscreen Nodes
+
+Nodes that are mounted but scrolled out of view or positioned off screen still cost per-frame traversal. That cost scales with the size of the tree rather than with the visible portion of it.
+
+Defer heavy branches until first use, then retain them for the rest of the session. This produces both a fast startup and a fast second open.
+
+See [DOM Management](/layout-assets-and-styling/styling--scalability/dom-management/).
+
+## Tree Depth
+
+Depth costs more than breadth in Gameface. A wrapper `div` added for styling convenience carries a per-frame cost, and five of them around every list item multiply across the list.
+
+Check whether the layout can be expressed on an existing element before adding a wrapper.
+
+See [Laying Out the Screen](/layout-assets-and-styling/laying-out-the-screen/).
+
+## Animated Properties
+
+Animating `left`, `top`, `width` or `height` forces a layout pass on every frame of the animation. Animating `transform` does not, because transforms resolve after layout. Move elements with `transform`.
+
+`background-position` is a separate case. Animating it performs no layout work, but it does re-resolve styles on every frame. Moving a background is cheaper as a `transform` on an inner element carrying the image than as a per-frame `background-position` change on its parent.
+
+See [UI Animations](/layout-assets-and-styling/animations/ui-animations/).
+
+:::tip[Damage Area Scales With Element Size]
+
+Repaint cost tracks the screen area a moving element covers, not the distance it travels. A small element crossing the screen is cheap. A full-width banner performing the same motion costs considerably more, because Gameface repaints everything beneath the area it passes over.
+
+Check the dimensions of the moving element when a transition costs more than its motion suggests.
+
+:::
+
+## Conditional DOM Writes
+
+Writing a value that has not changed still invalidates caches, triggers style resolution and costs layout.
+
+Engine data arrives on a synchronization schedule rather than on change, so every value a handler receives is likely to be the value it received on the previous frame. Compare before writing:
+
+```js title="hud.js"
+// ❌ Re-lays out the label on every frame, including a steady 100/100
+function onHealthChanged(current, max) {
+    label.textContent = `${current} / ${max}`;
+}
+
+// ✅ Costs nothing on frames where the value did not change
+let lastText = null;
+function onHealthChanged(current, max) {
+    const text = `${current} / ${max}`;
+    if (text === lastText) return;
+    label.textContent = text;
+    lastText = text;
+}
+```
+
+## Layout Reads
+
+`getBoundingClientRect()` and `getComputedStyle()` are the expensive reads. Calling either once per element across a list, every frame, is the dominant script-time cost in most slow UIs.
+
+Cache values in JavaScript. A value your own code wrote does not need reading back from Gameface.
+
+See [Dynamic Styling in JavaScript](/layout-assets-and-styling/dynamic-styling--variables/dynamic-styling-in-javascript/).
+
+## Style Writes Through CSSOM
+
+Use the CSS Typed Object Model (`attributeStyleMap`) for high-frequency style updates rather than building style strings. String construction allocates on every write, and per-frame allocation produces collector stalls.
+
+See [Dynamic Styling in JavaScript](/layout-assets-and-styling/dynamic-styling--variables/dynamic-styling-in-javascript/).
+
+## Pooling and Chunking
+
+Both defaults address work that arrives in a single burst rather than spread across frames.
+
+<Highlight>Pool</Highlight> elements that appear and disappear continuously: damage numbers, kill feed rows, waypoint markers, hit markers. Creating and destroying them per occurrence accumulates collector work that is reclaimed at an arbitrary point.
+
+<Highlight>Chunk</Highlight> work that exceeds a frame. Loading two hundred inventory items in one pass stalls that frame regardless of total duration. The same work spread across several frames costs the same in total and produces no stall.
+
+See [DOM Management](/layout-assets-and-styling/styling--scalability/dom-management/).
+
+---
+
+## GPU-Expensive CSS Features
+
+A small set of CSS features carries enough GPU cost to be worth deciding on in advance, in approximate order of expense:
+
+* `backdrop-filter`
+* `mix-blend-mode`
+* `box-shadow` with a blur radius
+* `filter`, particularly with a per-frame value change
+* Animated `clip-path`
+
+None of these are prohibited. Duration on screen determines the cost. A blurred backdrop behind a pause menu is paid for a fraction of a second per use. The same effect on a permanently visible HUD element is paid on every frame of the session.
+
+:::caution[Static Effects Against Animated Values]
+
+An element that has a blur and an element whose blur radius changes every frame carry different costs. The second forces continuous style re-resolution, which exceeds the cost of the effect itself.
+
+Check whether a `transform` or an `opacity` change produces a similar result before animating a filter or a clip path.
+
+:::
