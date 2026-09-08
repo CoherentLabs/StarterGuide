@@ -1,6 +1,6 @@
 ---
 title: "Overview"
-description: "Why coding agents produce CSS that Gameface refuses to render, what tooling we maintain to fix that, and how to read this chapter."
+description: "Why coding agents produce CSS that Gameface refuses to render, what tooling closes that gap, and how the articles in this chapter fit together."
 sidebar:
     order: 1
 ---
@@ -10,89 +10,54 @@ import Highlight from 'coherent-docs-theme/components/Highlight.astro';
 import Link from 'coherent-docs-theme/components/Link.astro';
 
 <Summary>
-    Coding agents write CSS for the browser they learned from. Gameface implements a <Highlight>subset of the web platform</Highlight>, so a good share of that CSS reaches the engine, gets flagged in the console, and never renders.
+    Coding agents write CSS for the browser they were trained on. Gameface implements a <Highlight>subset of the web platform</Highlight>, so a substantial share of that CSS reaches the engine, gets flagged in the console, and never renders.
 
-    This chapter covers four things we maintain to close that gap: an MCP server, a documentation corpus, a negative ruleset, and a skill that forces a spec before any code. It ends with three UIs we built using them, including the parts that went badly.
+    This chapter documents four tools that close the gap: an MCP server, a documentation corpus, a negative ruleset, and a skill that produces a signed-off specification before any code is written. The final article reports three interfaces built with them.
 </Summary>
 
-## What goes wrong with no setup
+## The Problem
 
-Ask an untrained agent for a settings panel and it will reach for `display: grid`,
-`oklch()` colors, `clamp()` sizing, and `padding: var(--space-md)`. All four are
-ordinary modern CSS, and none of them survive contact with Gameface.
+Agents write CSS for the browser they were trained on. Gameface implements only a subset of the web platform, so many modern CSS features are not supported. When an agent writes unsupported CSS, the engine silently drops it—no build errors, no linter warnings, just silent failures that appear only when code runs.
 
-The engine does tell you. Its stylesheet parser writes a warning naming the
-property, then carries on without resolving the declaration. The catch is where
-that warning goes, which is the Player console, somewhere your agent cannot see
-while it works from your editor. Your build succeeds, your linter stays quiet, the
-agent reports the panel as finished, and then you open the Player and find a
-column of unstyled boxes.
+The knowledge of what works exists, but it's not accessible to the agent while writing. Constraints are discovered in review comments, not prevented during generation.
 
-Those four also happen to be the first things a modern agent reaches for, so an
-unprepared one gets a decent share of every screen wrong before you have read a
-line of it.
+## The Toolchain
 
-| The agent writes | What the engine does | What it should have written |
+Each tool works independently, and they compose.
+
+| Tool | Function | Article |
 | --- | --- | --- |
-| `display: grid` with `grid-template-columns` | Gameface has no grid layout, so the properties never apply and children stack | Nested flex containers |
-| `oklch(0.52 0.16 35)` | The color function is not parsed and the declaration is dropped | `rgb()`, `rgba()`, or `color(srgb ...)` |
-| `padding: var(--space-md)` | `var()` is not resolved inside a shorthand, so the whole declaration goes | The longhands, `padding-top` and friends |
-| `width: clamp(20rem, 40vw, 60rem)` | `clamp`, `min`, and `max` are not implemented | `calc()`, or compute the value in JavaScript |
-
-All of that is documented elsewhere in this guide, so the knowledge is not what
-you are missing. What you need is a way to put it in front of the agent while it
-writes the line, rather than in a review comment two hours later.
-
-## The four pieces
-
-Each one works on its own, and they are more useful together.
-
-| Piece | What it does | Article |
-| --- | --- | --- |
-| **Gameface MCP server** | Drives a live Player over the Chrome DevTools Protocol so the agent can read the console, inspect the DOM, screenshot, assert on layout, and measure frame timing | [Setting up the MCP Server](/building-with-ai/gameface-mcp-server/) |
-| **Documentation corpus** | This guide, restructured so an agent can search it while writing | [Grounding the Agent](/building-with-ai/grounding-the-agent/) |
+| **Gameface MCP server** | Drives a live Player over the Chrome DevTools Protocol, so the agent can read the console, inspect the DOM, capture screenshots, assert on layout, and measure frame timing | [Setting up the MCP Server](/building-with-ai/gameface-mcp-server/) |
+| **Documentation corpus** | This guide, restructured for an agent to search while writing | [Grounding the Agent](/building-with-ai/grounding-the-agent/) |
 | **Negative ruleset** | An explicit "never emit this" list generated from engine feature detection | [Grounding the Agent](/building-with-ai/grounding-the-agent/) |
-| **Game UI Conductor skill** | Extracts requirements and gets a written spec signed off before any code | [The Conductor Skill](/building-with-ai/the-conductor-skill/) |
+| **Game UI Conductor skill** | Extracts requirements and produces a written specification, signed off before any code | [The Conductor Skill](/building-with-ai/the-conductor-skill/) |
 
 All four live in one repository,
 <Link href="https://github.com/CoherentLabs/Gameface-MCP">github.com/CoherentLabs/Gameface-MCP</Link>.
 The skill files are shared across Claude Code, GitHub Copilot, and Gemini CLI
 rather than duplicated per client.
 
-## What the tooling will not do for you
+## Limitations
 
-Setting this up changes how the work fails rather than stopping it from failing.
+This toolchain catches runtime errors but doesn't prevent design issues. An agent without a defined palette and type scale produces competent but incoherent work. See [Design First](/building-with-ai/design-first/) to settle design before prompting.
 
-None of it judges design, which turned out to be our biggest problem by a wide
-margin. Give an agent a defined palette and type scale and it will apply them
-consistently across dozens of components. Give it a blank canvas and you get
-something competently built that does not hold together visually, and no assertion
-or lint rule will mention it. [Design First](/building-with-ai/design-first/)
-covers what to settle before you prompt.
+The toolchain also checks in isolation—an agent can complete a screen correctly while breaking the dashboard hosting it. And assertions report what the agent believes it ran, not what actually ran.
 
-None of it looks outward either, since every check is scoped to the thing being
-built. We watched an agent finish a screen correctly, break the dashboard hosting
-it, and report all of its own checks as green.
+## Reading Order
 
-A confident report is also still only a report. "Added gamepad navigation and
-verified it works" tells you the agent believes both halves of that sentence, so
-ask what it actually ran.
+The second and third articles set up the toolchain. The fourth covers the work that
+precedes any UI request. The last two cover the loop of specifying, building, and
+checking the result. Read them in order on a first pass.
 
-## How to read this chapter
-
-Articles two and three set up the toolchain. Article four is the work you do
-before asking for any UI at all, and the last two cover the loop of specifying,
-building, and checking the result. Read them in order the first time through.
-
-**Experiments** is where we write up what we try internally. The first entry covers
-[three UIs we built with this toolchain](/building-with-ai/experiments/three-uis-with-an-agent/),
-namely a screen added to an existing dashboard, a reusable component family, and a
+**Experiments** collects internal write-ups. The first entry documents
+[three UIs built with this toolchain](/building-with-ai/experiments/three-uis-with-an-agent/):
+a screen added to an existing dashboard, a reusable component family, and a
 complete eight-screen interface.
 
-:::caution[Nothing in Experiments is a product]
+:::caution[Nothing in Experiments is a Product]
 
-Those write-ups exist for the specifics, and because their failures teach more
-than their successes do. Expect your own results to vary with the model, the
-prompt, and most of all the design you hand it.
+Those write-ups exist for their specifics, and because the failures are more
+instructive than the successes. Results vary with the model, the prompt, and above
+all the design handed to the agent.
 
 :::
