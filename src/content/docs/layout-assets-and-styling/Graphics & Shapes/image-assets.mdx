@@ -160,19 +160,20 @@ Use when the SVG is purely decorative and part of the component's styles. For ex
     <TabItem label="SolidJS">
 
     ```tsx title="QuestPanel.tsx"
-    import BackgroundImage from '@components/Media/BackgroundImage/BackgroundImage';
+    import Image from '@components/Media/Image/Image';
     import TextBlock from '@components/Basic/TextBlock/TextBlock';
 
     const QuestPanel = () => {
         return (
-            <BackgroundImage
+            <Image
                 src="/assets/ui/panel-frame.svg"
+                options={{ size: '100% 100%' }}
                 class="quest-panel"
                 style={{ width: '520px', padding: '32px' }}
             >
                 <div class="quest-panel__title">Active Quest</div>
                 <TextBlock>Reach the old watchtower before nightfall.</TextBlock>
-            </BackgroundImage>
+            </Image>
         );
     };
     ```

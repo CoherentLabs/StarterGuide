@@ -1,0 +1,201 @@
+---
+title: "Texture Atlases"
+description: "When packing images into texture atlases pays off in Gameface, and how to build, preload and tune them in Gameface UI projects."
+sidebar:
+    order: 4
+tableOfContents:
+    minHeadingLevel: 2
+    maxHeadingLevel: 4
+---
+
+import Summary from 'coherent-docs-theme/components/Summary.astro';
+import Highlight from 'coherent-docs-theme/components/Highlight.astro';
+import Link from 'coherent-docs-theme/components/Link.astro';
+
+<Summary>
+    A texture atlas packs many images into one sheet, so the engine creates one texture instead of one per image. Its value in Gameface is in <Highlight>preloading</Highlight>: a few sheets can be loaded before a view opens, so the view shows its images without creating any textures.
+
+    The first half of this article covers when an atlas is worth it. The second half covers the tooling for Gameface UI projects, which builds the sheets for you.
+</Summary>
+
+## What an Atlas Changes
+
+An atlas combines images into a sheet that Gameface loads as one GPU texture. It is most useful when a view has many images that can be loaded before the view opens.
+
+Atlases make resource loading straightforward and predictable: preload a few sheets, and the view's images are ready together instead of creating many textures as they appear. Sprites cost about the same to draw, and a sheet can use somewhat more GPU memory because it includes transparent space. That modest cost is often worthwhile for simpler preloading and predictable performance. See [Asset and Resource Cost](/polishing/performance-playbook/#asset-and-resource-cost) for broader performance guidance.
+
+## When an Atlas Pays Off
+
+For an inventory with many icons across tabs, preload their atlas before opening the inventory. Loading the whole sheet on first use can cause a larger hitch than loading individual icons as needed, but preloading moves that work out of the interaction. The atlas then keeps the icons ready together for the inventory's lifetime; individual textures can be released when no longer needed.
+
+| Situation | Atlas? |
+|---|---|
+| Many images used by a view, with time to preload before it opens | **Yes.** Preload the atlas so loading does not interrupt the view. |
+| The atlas is first loaded when the view opens | **Preload it earlier.** Loading the whole sheet on demand can cause a larger hitch. |
+| A few images used briefly from a much larger sheet | **No.** Use individual files to avoid keeping unused atlas content loaded. |
+
+:::caution[Profile before and after]
+Compare texture memory and the frames when images appear, both with and without the atlas. See [Performance & Memory Profiling](/polishing/debugging-profiling--testing/performance-and-memory-profiling/) for recording a trace.
+:::
+
+## Atlases in Gameface UI
+
+Everything above applies to any stack: pack the images with a sprite-sheet tool, draw each sprite with `background-position` and `background-size`, and preload the sheets.
+
+<Highlight>Gameface UI projects</Highlight> automate this. The boilerplate includes an images plugin that works together with the <Link href="https://gameface-ui.coherent-labs.com/components/media/image/">`Image`</Link> component. At build time, the plugin finds which images each view uses, packs them into sheets, and tells `Image` where each sprite sits. Your code does not change: `<Image.items.sword />` renders the sprite in a build and the plain file in development.
+
+The rest of this article covers that tooling. The full option reference is in the <Link href="https://gameface-ui.coherent-labs.com/docs/concepts/images-and-atlases/">Images and texture atlases</Link> documentation.
+
+### Setup
+
+The plugin packs `.png`, `.jpg`, `.jpeg` and `.webp` files in `src/assets` referenced as dot paths, such as `<Image.items.sword />`. Images passed through `src`, rendered with `options` props, SVGs and CSS `url()` references remain as plain files. Packed originals are removed from the build unless the group sets `keepOriginals`.
+
+Atlasing is off by default. Each group creates one sheet per view; unmatched images stay as files:
+
+```ts title="vite.config.mts" ins={4-15}
+gamefaceImages({
+    assets: resolve(__dirname, 'src/assets'),
+    types: resolve(__dirname, 'src/components/Media/Image/ImageTypes.ts'),
+    atlasDefaults: { padding: 4 },
+    atlas: [
+        { include: 'icons/gamepad/xbox', name: 'glyphs-xbox', squareCells: true },
+        { include: 'icons/gamepad/ps5', name: 'glyphs-ps5', squareCells: true },
+        {
+            include: 'items',
+            exclude: 'items/portraits',
+            maxSpriteSize: 512,
+            maxWidth: 4096,
+            maxHeight: 4096,
+        },
+    ],
+}),
+```
+
+:::note[Building the sheets]
+Running `npm run build` generates the sheets and prints a build report. Only the images each view actually uses are atlassed, not every image in the folders a group matches. The dev server does not build sheets.
+:::
+
+### Choosing Groups
+
+A group defines a sheet, which will be both preloaded and kept in memory as a unit. Group images that are needed together; leave unrelated images out. The config follows these rules:
+
+| Config | Why |
+|---|---|
+| `atlasDefaults: { padding: 4 }` | Padding prevents neighboring sprites bleeding through at fractional UI scales. The default applies to every group. |
+| One glyph group per platform | Players use one controller, so separate sheets let you preload only that platform's glyphs. |
+| `squareCells` on glyphs | Square element slots would squash non-square glyphs in the atlas without this setting. |
+| `items` as one group | Preload the inventory icons together before the inventory opens. |
+| `maxWidth` / `maxHeight: 4096` | Keeps `items` on one sheet rather than splitting it across multiple sheets. Check `% used` to see how much of the sheet is occupied. |
+| `exclude: 'items/portraits'` | The inspector shows one portrait at a time. Excluding portraits avoids keeping the whole set in memory; `maxSpriteSize` would not exclude them by usage. |
+| `maxSpriteSize: 512` | Keeps larger artwork added to `items` as separate files. |
+| No `icons/hud` group | HUD icons stay visible all the time so adding them to an atlas would only add transparent space. |
+
+:::caution[Group order]
+Images go to the first matching group. Put specific patterns before broad ones:
+
+```ts
+atlas: ['icons/hud', 'icons']   // HUD icons on their own sheet, the rest on 'icons'
+atlas: ['icons', 'icons/hud']   // 'icons' takes everything, 'icons/hud' warns: matched no image
+```
+:::
+
+:::note[Sheets and views]
+Each view gets its own sheets. An image used by two views is packed into both views' sheets, so if both views are open at the same time, that image is loaded twice.
+:::
+
+### Preloading the Sheets
+
+Sheets are written to `dist/assets` as `atlas-{view}-{group}.png`; use the build report's paths when registering them with the engine.
+
+Register those paths with your engine integration, as described in [Asset Preloading & Bundler Config](/planning-and-setup/asset-preloading/).
+
+Preloading registers files by path, so sheet names carry no content hash. Adding or removing a sprite keeps the path. These changes rename a sheet:
+
+| Change | Before | After |
+|---|---|---|
+| Group outgrows one sheet | `atlas-menu-items.png` | `atlas-menu-items-0.png`, `atlas-menu-items-1.png` |
+| Group renamed | `atlas-menu-items.png` | `atlas-menu-loot.png` |
+| View folder renamed | `atlas-menu-items.png` | `atlas-pause-items.png` |
+
+### Reading the Build Report
+
+Each build reports the sheets generated for each view, their sizes, and any images left out. Use the report to decide whether a group needs adjustment.
+
+```txt title="Build output"
+2 sheet(s), 86 sprite(s)  ·  86 files 1790.9 KB -> 2 files 1935.2 KB  ·  GPU 9.5 MB -> 17.0 MB
+
+Menu
+  glyphs-xbox      512x512          95.2 KB (1.0 MB)    22 sprites    81% used   was 88.6 KB (0.8 MB)
+    dist/assets/atlas-menu-glyphs-xbox.png
+  items            2048x2048     1840.0 KB (16.0 MB)    64 sprites    52% used   was 1702.3 KB (8.7 MB)
+    dist/assets/atlas-menu-items.png
+  skipped  legendary-sword.png                1024x1024 > maxSpriteSize 512 ("items")
+  spread   sword.png                          packed ("items"), but rendered with {...props} - ...
+```
+
+#### Sheets
+
+Each sheet entry shows its group, dimensions, disk and GPU memory sizes, sprite count, space used, and the separate-file size. The line below gives its output path.
+
+GPU memory (in brackets) is calculated as width x height x 4. In this example, the `items` sheet is 52% used: its 16 MB texture holds 8.7 MB of sprites.
+
+#### Skipped Images
+
+`skipped` lists images left as files and why: no matching group, `options`, a `src` prop, or exceeding `maxSpriteSize`.
+
+#### Spread
+
+`spread` flags a packed image used with spread props, which the plugin cannot inspect. If the spread carries `options`, the image needs its original file, which the build removed:
+
+```tsx
+const ItemSlot = (props) => <Image.items.sword {...props} />;
+
+<ItemSlot />                               // fine
+<ItemSlot options={{ size: 'cover' }} />   // blank in the build
+```
+
+```ts
+{ include: 'items', keepOriginals: true }  // ships the original next to the sheet
+```
+
+:::caution
+`keepOriginals` fixes the blank image, but `sword.png` stays on the sheet as well. If it does not belong there, exclude it instead: `exclude: 'items/sword.png'`.
+:::
+
+#### Warnings
+
+The plugin prints a Vite warning when the build gives a different result from what the config asks for.
+
+- **`atlas "items" matched no image in any view`**: no sheet is built for the group. Usually a path mistake, since patterns are relative to `src/assets`: `'icons/hud'`, not `'hud'`.
+- **`pot is on and maxWidth is 3000, which is not a power of two`**: sheets are capped at 2048, not 3000. `pot` rounds a sheet up first, then rejects it if it passes the limit.
+- **`... is atlassed in "Menu" but used outside Image in "Hud" - shipping both`**: Hud still needs the plain file, so the original cannot be removed and the image ships twice, as a sprite and as a file.
+
+The build still succeeds in all three cases.
+
+### Tuning
+
+The intended usage of the plugin includes adjusting the configuration settings based on the exported sheet and the build report.
+Therefore, for the best results, review the symptoms in the report and apply the recommended changes accordingly.
+
+| Symptom | Change |
+|---|---|
+| Low `% used` | `pot: false`, or split the group. `pot` is on by default because GPUs handle power-of-two textures best; turning it off saves texture memory but may cost rendering performance. Profile before and after. |
+| A group creates several numbered sheets | Raise `maxWidth` / `maxHeight`, or split the group. |
+| Large artwork packed into a sheet | Lower `maxSpriteSize` or exclude the image from the atlas. |
+| Non-square images appear stretched | Set `squareCells: true`. |
+| Neighboring sprites bleed when scaled | Increase `padding`. |
+| An image is also referenced from CSS | Set `keepOriginals: true`. |
+
+:::tip[Defaults for every group]
+`atlasDefaults` sets these for every group; a group's own settings override it.
+:::
+
+:::caution[Stretched sprites]
+Without `squareCells`, a non-square image looks right in dev and squashed in the build, because a sprite stretches to fill its element while a plain `Image` fits and centres.
+
+```ts
+{ include: 'icons/gamepad/xbox', squareCells: true }
+```
+:::
+
+For cases the plugin cannot detect, such as `options` passed through spread props or images also used from CSS, see the <Link href="https://gameface-ui.coherent-labs.com/docs/concepts/images-and-atlases/">Images and texture atlases</Link> documentation.

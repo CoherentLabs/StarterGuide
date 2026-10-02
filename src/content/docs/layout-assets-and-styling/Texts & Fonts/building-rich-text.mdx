@@ -153,12 +153,11 @@ Gameface does not do this. It calculates the height of the line based **only on 
 
     ```tsx title="InstructionBar.tsx"
     import InlineTextBlock from '@components/Basic/InlineTextBlock/InlineTextBlock';
-    import Image from '@components/Media/Image/Image';
 
     const InstructionBar = () => {
         return (
             <InlineTextBlock class="instruction">
-                Press <Image src="./assets/icons/xbox-a.png" class="btn-icon" /> to jump
+                Press <img src="./assets/icons/xbox-a.png" class="btn-icon" /> to jump
             </InlineTextBlock>
         );
     };
