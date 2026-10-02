@@ -36,7 +36,7 @@ Startup cost scales with the amount of DOM that exists, not with the amount the 
 
 ## Asset and Resource Cost
 
-Texture count and texture dimensions produce no measurable difference in Gameface. A packed atlas measures the same as individual textures, and a 352x256 texture scaled down to 88x64 measures the same as a native 88x64 texture. Optimization effort spent here returns nothing.
+Texture count and texture dimensions produce no measurable difference to draw cost in Gameface. A packed atlas draws the same as individual textures, and a 352x256 texture scaled down to 88x64 measures the same as a native 88x64 texture. Where an atlas does help is creating textures: a preloaded sheet removes that work from the moment a screen opens. See [Texture Atlases](/layout-assets-and-styling/graphics--shapes/texture-atlases/).
 
 Three things do carry measurable cost:
 
