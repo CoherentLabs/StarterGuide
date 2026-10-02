@@ -138,13 +138,14 @@ A CSS `background-image` works equally well. This approach is cleaner when overl
 
     ```tsx title="Minimap.tsx"
     import Relative from '@components/Layout/Relative/Relative';
-    import BackgroundImage from '@components/Media/BackgroundImage/BackgroundImage';
+    import Image from '@components/Media/Image/Image';
     import Absolute from '@components/Layout/Absolute/Absolute';
 
     const Minimap = () => (
         <Relative class="minimap-container">
-            <BackgroundImage
+            <Image
                 src="coui://live/minimap"
+                options={{ size: 'cover', position: 'center' }}
                 fill
                 class="minimap-render"
                 style={{ position: 'absolute', inset: '0' }}
