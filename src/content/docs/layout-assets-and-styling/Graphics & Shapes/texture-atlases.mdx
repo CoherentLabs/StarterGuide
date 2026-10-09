@@ -50,7 +50,7 @@ The rest of this article covers that tooling. The full option reference is in th
 
 The plugin packs `.png`, `.jpg`, `.jpeg` and `.webp` files in `src/assets` referenced as dot paths, such as `<Image.items.sword />`. Images passed through `src`, rendered with `options` props, SVGs and CSS `url()` references remain as plain files. Packed originals are removed from the build unless the group sets `keepOriginals`.
 
-Atlasing is off by default. Each group creates one sheet per view; unmatched images stay as files:
+Atlasing is off by default. Each group creates one or more sheets per view; unmatched images stay as files:
 
 ```ts title="vite.config.mts" ins={4-15}
 gamefaceImages({
