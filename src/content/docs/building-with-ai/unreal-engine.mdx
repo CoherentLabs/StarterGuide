@@ -3,7 +3,6 @@ title: "Working in Unreal Engine"
 description: "Use the Unreal MCP server together with the Gameface MCP server, so one coding agent can edit your Unreal project and check the Gameface UI it builds."
 sidebar:
     order: 7
-draft: true
 ---
 
 import Summary from 'coherent-docs-theme/components/Summary.astro';
@@ -11,10 +10,14 @@ import Highlight from 'coherent-docs-theme/components/Highlight.astro';
 import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 
 <Summary>
-  Unreal Engine 5.8 includes an MCP server that lets a coding agent inspect and edit a project in the Unreal Editor. Pair it with the [Gameface MCP server](/building-with-ai/gameface-mcp-server/) and the agent can work on <Highlight>both sides of a Gameface UI task</Highlight>: changing the Unreal project and checking the page Gameface renders.
+  Unreal Engine 5.8 includes an MCP server that lets a coding agent inspect and edit a project in the Unreal Editor. Pair it with the [Gameface MCP server](/building-with-ai/gameface-mcp-server/) and the agent can work on <Highlight>both the UI and implementation tasks in a Gameface project</Highlight>: changing the Unreal project and checking the page Gameface renders.
 
   This guide walks through connecting the servers, the kinds of UI work they support, and how to check the result in the game.
 </Summary>
+
+:::note
+The built-in Unreal MCP server is available in **Unreal Engine 5.8**. If your studio uses an earlier version, you can still use Gameface MCP to inspect the rendered UI, but you'll need another integration to let your agent inspect and edit the Unreal project. Check whether your Unreal version or studio tooling provides an MCP server before following the Unreal setup below.
+:::
 
 ## What Each Server Does
 
@@ -107,17 +110,9 @@ The Unreal MCP server runs inside the editor and is available only while the edi
 
 With both servers connected, an agent can help with several parts of a Gameface UI workflow. These examples show what to ask for and what to check afterward.
 
-### Build UMG widgets
+### Convert a UMG screen to Gameface
 
 ![Example HUD created by the agent in UMG](../../../assets/building-with-ai/unreal/umg-widget.png)
-
-The agent can create and arrange UMG widgets, set their properties, then compile and save the Widget Blueprint.
-
-For example, ask:
-
-> Create a HUD for ExampleMap in UMG with a minimap, a crosshair, health and armor bars, and four weapon slots. Put the logic in C++ base classes and the layout in Widget Blueprints.
-
-### Convert a UMG screen to Gameface
 
 ![The in-game HUD built this way: minimap, objective, nameplate, crosshair, health and armor, weapon slots and ammo, all bound to C++ data](../../../assets/building-with-ai/unreal/ingame-hud.png)
 
@@ -164,6 +159,5 @@ For example, ask:
 ## Tips
 
 - **Ask for evidence.** Request a screenshot, console output, or relevant log lines rather than relying on a claim that the change works.
-- **Close the editor before compiling C++.** Unreal builds require the editor to be closed, which also stops the Unreal MCP server. Reopen the editor before asking the agent to continue.
 - **Avoid desktop capture and simulated key presses.** They act on whichever window has focus and may affect the wrong application.
 - **Test the controls yourself.** The agent can check that a menu appears and its data is present, but it cannot judge whether the controls feel right during play.
