@@ -38,64 +38,85 @@ The server connects to any engine running the Gameface SDK through the Chrome De
 
 <Steps>
 
-1. #### Clone and build
+1. #### Install the server
+
+    <Link href="https://www.npmjs.com/package/add-mcp">add-mcp</Link> detects the
+    installed agents and writes the server into each one's config.
+
+    <Tabs>
+    <TabItem label="Global (recommended)">
+
+    Available in every project on the machine:
 
     ```bash
-    git clone https://github.com/CoherentLabs/Gameface-MCP.git
-    cd Gameface-MCP
-    npm install
-    npm run build
+    npx add-mcp "npx -y gameface-mcp@latest" --name gameface -g
     ```
 
-    The build compiles `src/` into `build/`, producing `build/index.js`. Every
-    client configuration points at that path.
+    </TabItem>
+    <TabItem label="Project only">
 
-2. #### Point it at the Player
+    Run from the project folder:
 
-    Create `~/.gameface-mcp/config.json`. This file belongs to the machine rather
-    than to a project, because the server is reused across every game repository:
-
-    ```json title="~/.gameface-mcp/config.json"
-    {
-      "browserExecutable": "D:/path/to/your/sdk/Player/Player.exe",
-      "browserArgs": ["--enable-gui=false"],
-      "port": 9444,
-      "cdpHost": "localhost"
-    }
+    ```bash
+    npx add-mcp "npx -y gameface-mcp@latest" --name gameface
     ```
 
-    Every field is optional, and `browserArgs` are merged into every launch.
+    </TabItem>
+    </Tabs>
 
-    :::tip[Disable Player Chrome Before Measuring]
+    :::caution[Install Once, Not Both]
 
-    The Player's toolbar and bookmark bar consume an inconsistent portion of the
-    requested height, so the real viewport never matches the requested resolution.
-    Every screenshot and layout assertion is then measured against the wrong
-    canvas. `--enable-gui=false` removes them.
+    Clients identify servers by name. A project `gameface` entry and a global
+    `gameface` entry compete instead of merging, and only one runs.
 
     :::
 
-3. #### Wire it into the agent
+2. #### Set up the Player
 
-    Select the client below. With the config file from step two in place, the
-    `args` array needs nothing beyond the path to `build/index.js`, since the
-    Player path and port are picked up automatically.
+    Start the agent and ask it to launch the Gameface Player. On first launch it
+    asks for the Player path (`Player.exe`, its folder, or the SDK folder) or
+    offers to search the machine. The path is saved to
+    `~/.gameface-mcp/config.json` and reused by every project.
+
+    :::tip[Disable Player Chrome Before Measuring]
+
+    The Player's toolbar and bookmark bar take an inconsistent part of the
+    requested height, so screenshots and layout assertions measure the wrong
+    canvas. Add `"browserArgs": ["--enable-gui=false"]` to
+    `~/.gameface-mcp/config.json` to remove them.
+
+    If you let the agent launch the player and write the config, it will automatically add the `"browserArgs": ["--enable-gui=false"]` entry for you.
+
+    :::
+
+3. #### Install the Conductor skill (optional)
+
+    The Gameface UI Conductor skill clarifies requirements, gets sign-off on a
+    spec, then implements and validates with the MCP tools:
+
+    ```bash
+    npx skills add CoherentLabs/Gameface-MCP -g
+    ```
+
+    Drop `-g` to install into the current project only. Start a new session afterwards.
 
 </Steps>
 
 ## Client Configuration
 
+add-mcp writes the following entry for each detected client. No manual editing is needed.
+
 <Tabs>
 <TabItem label="Claude Code">
 
-Create `.mcp.json` at the project root:
+Global: `~/.claude.json`. Project: `.mcp.json`.
 
 ```json title=".mcp.json"
 {
   "mcpServers": {
     "gameface": {
-      "command": "node",
-      "args": ["/absolute/path/to/Gameface-MCP/build/index.js"]
+      "command": "npx",
+      "args": ["-y", "gameface-mcp@latest"]
     }
   }
 }
@@ -104,57 +125,56 @@ Create `.mcp.json` at the project root:
 </TabItem>
 <TabItem label="VS Code / Copilot">
 
-Create `.vscode/mcp.json` at the project root. The repository ships one that can be
-copied directly:
+Global: user `mcp.json`. Project: `.vscode/mcp.json`.
 
 ```json title=".vscode/mcp.json"
 {
   "servers": {
-    "gameface_local": {
-      "command": "node",
-      "args": ["build/index.js"]
+    "gameface": {
+      "command": "npx",
+      "args": ["-y", "gameface-mcp@latest"]
     }
   }
 }
 ```
 
-:::caution[The Top-Level Key Differs Here]
-
-VS Code uses `servers` instead of `mcpServers`. Copying a config from another client without this change will fail silently.
-
-:::
+VS Code uses `servers` instead of `mcpServers`.
 
 </TabItem>
 <TabItem label="Gemini CLI">
 
-Use `.gemini/settings.json` for a single project, or `~/.gemini/settings.json` to
-apply it everywhere:
+Global: `~/.gemini/settings.json`. Project: `.gemini/settings.json`.
 
 ```json title=".gemini/settings.json"
 {
   "mcpServers": {
     "gameface": {
-      "command": "node",
-      "args": ["/absolute/path/to/Gameface-MCP/build/index.js"],
-      "timeout": 30000,
-      "trust": false
+      "command": "npx",
+      "args": ["-y", "gameface-mcp@latest"]
     }
   }
 }
 ```
 
+:::tip[Raise the Timeout]
+
+The automatic Player search can take up to a minute plus prompt time, all in
+one tool call. Add `"timeout": 90000` to the entry.
+
+:::
+
 </TabItem>
 <TabItem label="Claude Desktop">
 
-Edit `claude_desktop_config.json`, found under `%APPDATA%/Claude/` on Windows and
-`~/Library/Application Support/Claude/` on macOS:
+`%APPDATA%/Claude/claude_desktop_config.json` on Windows,
+`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS.
 
 ```json title="claude_desktop_config.json"
 {
   "mcpServers": {
     "gameface": {
-      "command": "node",
-      "args": ["/absolute/path/to/Gameface-MCP/build/index.js"]
+      "command": "npx",
+      "args": ["-y", "gameface-mcp@latest"]
     }
   }
 }
@@ -163,7 +183,85 @@ Edit `claude_desktop_config.json`, found under `%APPDATA%/Claude/` on Windows an
 </TabItem>
 </Tabs>
 
+:::note[Server Flags]
+
+Flags go inside the quoted command, after the package name, for example
+`npx add-mcp "npx -y gameface-mcp@latest --port 9445" --name gameface -g`.
+Flags override `~/.gameface-mcp/config.json`.
+
+:::
+
 ## Available Capabilities
+
+### Managing Players with Commands
+
+Commands are shortcuts for launching and managing Players mid development. They
+appear as slash commands, in Claude Code as `/mcp__gameface__<command>`. Arguments
+are positional, and `true`, `yes`, `y` and `1` all count as yes.
+
+#### Launching
+
+<Tabs>
+<TabItem label="Default Player">
+
+```text
+/mcp__gameface__launch-player
+/mcp__gameface__launch-player http://localhost:3000
+```
+
+Launches the default Player, optionally opening a URL.
+
+</TabItem>
+<TabItem label="Pick a Player">
+
+```text
+/mcp__gameface__launch-player true
+```
+
+Lists every configured Player, sorted by version, and launches the selected one.
+Useful for testing a UI against several Gameface versions.
+
+</TabItem>
+</Tabs>
+
+#### Adding Players
+
+<Tabs>
+<TabItem label="Scan the machine">
+
+```text
+/mcp__gameface__scan-players
+```
+
+Runs a search script inside the server and adds every Player found. The agent
+only sees the resulting list, not your files. The default Player is unchanged.
+
+</TabItem>
+<TabItem label="Add a folder">
+
+```text
+/mcp__gameface__add-player
+```
+
+Skips the scan. Provide a `Player.exe` or a folder of Players, and every Player
+inside is added. The default Player is unchanged.
+
+</TabItem>
+</Tabs>
+
+#### Changing the Default
+
+`/mcp__gameface__change-player-path` asks for a new default Player path. Pass
+`true` to search the machine instead.
+
+:::tip[Listing the Commands]
+
+Most clients list every available command after typing `/gameface`. The prefix
+matches the `--name` used at install time.
+
+:::
+
+### Tools
 
 These tools are rarely invoked by hand. Knowing what exists establishes what can
 reasonably be requested, and what to demand evidence of.
