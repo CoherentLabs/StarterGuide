@@ -66,8 +66,7 @@ The server connects to any engine running the Gameface SDK through the Chrome De
 
     :::caution[Install Once, Not Both]
 
-    Clients identify servers by name. A project `gameface` entry and a global
-    `gameface` entry compete instead of merging, and only one runs.
+     A project `gameface` MCP entry and a global gameface MCP entry compete instead of merging, and only one runs.
 
     :::
 
@@ -95,16 +94,20 @@ The server connects to any engine running the Gameface SDK through the Chrome De
     spec, then implements and validates with the MCP tools:
 
     ```bash
-    npx skills add CoherentLabs/Gameface-MCP -g
+    npx skills add CoherentLabs/Gameface-MCP --agent claude-code -g
     ```
 
     Drop `-g` to install into the current project only. Start a new session afterwards.
+
+    :::tip[Specify the Client]
+    Use the `--agent` flag to specify which client should use the skill. For example, `--agent claude-code` installs the skill for the Claude Code client.
+    :::
 
 </Steps>
 
 ## Client Configuration
 
-add-mcp writes the following entry for each detected client. No manual editing is needed.
+`add-mcp` writes the following entry for each detected client. No manual editing is needed.
 
 <Tabs>
 <TabItem label="Claude Code">

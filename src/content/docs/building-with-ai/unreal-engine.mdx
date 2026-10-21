@@ -47,9 +47,9 @@ With only Unreal MCP, the agent can change project files but cannot inspect the 
 
     Follow [Setting up the MCP Server](/building-with-ai/gameface-mcp-server/) if you haven't already.
 
-4. #### Add both servers to your agent
+4. #### Add the Unreal server to your agent
 
-    Create the configuration file in the Unreal project folder, beside the `.uproject` file. Replace the example Gameface path with the path to your built `Gameface-MCP/build/index.js`.
+    Create the configuration file in the Unreal project folder, beside the `.uproject` file. It only needs the Unreal entry. The `gameface` entry comes from the Gameface MCP install; if your agent doesn't have it yet, see [Client Configuration](/building-with-ai/gameface-mcp-server/#client-configuration).
 
     <Tabs>
     <TabItem label="Claude Code">
@@ -60,10 +60,6 @@ With only Unreal MCP, the agent can change project files but cannot inspect the 
         "unreal-mcp": {
           "type": "http",
           "url": "http://127.0.0.1:8000/mcp"
-        },
-        "gameface": {
-          "command": "node",
-          "args": ["/absolute/path/to/Gameface-MCP/build/index.js"]
         }
       }
     }
@@ -78,10 +74,6 @@ With only Unreal MCP, the agent can change project files but cannot inspect the 
         "unreal-mcp": {
           "type": "http",
           "url": "http://127.0.0.1:8000/mcp"
-        },
-        "gameface": {
-          "command": "node",
-          "args": ["/absolute/path/to/Gameface-MCP/build/index.js"]
         }
       }
     }
